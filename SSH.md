@@ -10,3 +10,5 @@ Secure Shell，加密的网络协议，用于安全地远程登录和传输数�
 - `scp file user@host:/path` 远程复制文件
 - `~/.ssh/config` 配置主机别名
 - 默认端口 22，密钥存放于 `~/.ssh/`
+- GitHub 的 SSH 地址格式为 `git@github.com:用户名/仓库.git`
+- `ssh -T git@github.com` 测试 SSH 认证是否可用
