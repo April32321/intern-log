@@ -37,7 +37,7 @@ gate: -
 | 写 `README.md` | ✅ | `/Users/wangjiaqi/Desktop/实习日志/README.md` |
 | 写 Markdown 速查 | ✅ | `notes/markdown.md` |
 | 建 20 天打卡表 | ✅ | `journal/INDEX.md` |
-| 首次 commit | ✅ | `day01: 建立仓库骨架与笔记规范` |
+| 首次 commit | ✅ | `97eb53e` — `day01: 建立仓库骨架与笔记规范` |
 
 ## 关键命令
 
