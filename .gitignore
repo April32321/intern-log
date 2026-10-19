@@ -1,2 +1,31 @@
+# 系统
 .DS_Store
 .kilo/
+
+# 数据
+data/raw/
+*.dcm
+*.nii
+*.nii.gz
+*.nrrd
+*.mha
+*.zip
+*.tar.gz
+
+# 模型与中间产物
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.h5
+models/
+
+# 敏感
+.env
+*.key
+*_rsa
+id_ed25519*
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
