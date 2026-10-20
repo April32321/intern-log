@@ -18,6 +18,14 @@
 | `report.md` | 复现报告（D20 定稿） |
 | `reflection.md` | 学习反思（D20 定稿） |
 
+## 快速开始
+
+```bash
+cd ~/Desktop/实习日志
+git status
+git log --oneline
+```
+
 ## 当前进度
 
 - **D1（2026-10-19）**：建立目录骨架、笔记规范与首次 commit。
