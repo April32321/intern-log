@@ -23,7 +23,7 @@ gate: -
 | 4 | 撤销演示 | 各执行一次 `git restore <file>` 与 `git restore --staged <file>`，能说清区别 | 命令输出 | ✅ |
 | 5 | 分支练习 | `git switch -c day02-notes` → 提交一次 → `git switch main` | `git log --oneline --all` | ✅ |
 | 6 | 远程同步 | `git push -u origin main` 成功；若失败，在日志写明原因 | 远程仓库页面 / 命令输出 | ✅ 已推送 |
-| 7 | 收尾提交与打卡 | commit `day02: git 提交规范、撤销与远程 - <结论>`；`journal/INDEX.md` 补 D2 行 | `git log`、`journal/INDEX.md` | 待办 |
+| 7 | 收尾提交与打卡 | commit `day02: git 提交规范、撤销与远程 - <结论>`；`journal/INDEX.md` 补 D2 行 | `git log`、`journal/INDEX.md` | ✅ 已完成 |
 
 ## 今日验收标准（收尾逐条核对）
 
@@ -39,13 +39,13 @@ gate: -
 
 | 计划 | 状态 | 证据（文件/命令/链接） |
 |---|---|---|
-| 干净的提交历史 | ✅ | `git log --oneline 300051f..HEAD`：今日 7 条（`4e8b79e`…`6d8593d`），message 均符合 `<scope>: 做了什么 - 结论` |
+| 干净的提交历史 | ✅ | `git log --oneline 300051f..HEAD`：今日 12 条（`4e8b79e`…`6a1d45c`），message 均符合 `<scope>: 做了什么 - 结论` |
 | 写 `notes/git.md` | ✅ | 合并 `Git copy.md` 原内容与 scope 分类，补齐提交规范、`diff`/`log`、撤销、`.gitignore`、远程与易错点；重复文件已删除 |
 | 补全 `journal/day02.md` | ✅ | 本文件：今日完成、关键命令、5 条卡点、Kilo 记录、7 条结论 |
 | 演示 `git restore` 与 `--staged` | ✅ | `restore` 后 `working tree clean`；`restore --staged` 后显示 `Changes not staged for commit`，内容仍在 |
-| 分支 `day02-notes` 建→提交→切回 | ✅ | `git log --oneline --all`：`3fb6902` 在 `day02-notes`，`main` 停在 `ada6c39` |
-| `git push -u origin main` | ✅ | `git push` 输出 `300051f..6d8593d  main -> main`；`git status` 显示 `up to date with 'origin/main'` |
-| 收尾 commit + 补 INDEX D2 行 | 待办 | `journal/INDEX.md` D2 行仍为空，收尾提交未做 |
+| 分支 `day02-notes` 建→提交→切回 | ✅ | `git log --oneline --all`：`3fb6902` 在 `day02-notes`，当时 `main` 停在 `ada6c39` |
+| `git push -u origin main` | ✅ | 多次推送成功，最终 `9cd8942..6a1d45c  main -> main`；`git status` 显示 `up to date with 'origin/main'` |
+| 收尾 commit + 补 INDEX D2 行 | ✅ | `journal/INDEX.md` D2 行已回填（`5d4e23e`，提交 `9cd8942`）；占位符修正提交 `1bb5670` |
 
 ## 关键命令
 
@@ -180,7 +180,7 @@ git merge --abort
 4. 撤销原则：已推送的提交只 `revert`（新增一个反向提交、不改写历史），不 `reset --hard`（移动分支指针并丢弃工作区/暂存区改动，已推送时会造成他人历史不一致）；未推送的才用 `restore` / `amend` 处理。遇到合并冲突先 `git merge --abort` 回到干净状态，不现场硬解。
 5. 文件末尾换行会影响 diff 可读性；保留末尾换行能避免“最后一行被改写”的假象。
 6. `notes/git.md` 已合并 `Git copy.md` 的内容，现覆盖核心概念、提交规范、基础操作、`diff`/`log`、撤销、`.gitignore`、分支、合并、远程与易错点；重复文件 `Git copy.md` 已删除并提交。
-7. `git push -u origin main` 建立了 `main` 与 `origin/main` 的跟踪关系，之后 `git status` 才能显示 ahead/behind；当前 `main` 已推送（`6d8593d`），本地与远程同步；`day02-notes` 在 `3fb6902` 未合并；`INDEX.md` 的 D2 行待回填。
+7. `git push -u origin main` 建立了 `main` 与 `origin/main` 的跟踪关系，之后 `git status` 才能显示 ahead/behind；当前 `main` 已推送并与远程同步；`day02-notes` 在 `3fb6902` 未合并；`INDEX.md` 的 D2 行已回填（`5d4e23e`，提交 `9cd8942`）。
 
 ## 明日 3 件事
 
