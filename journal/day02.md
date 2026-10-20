@@ -18,7 +18,7 @@ gate: -
 | # | 交付物 | 具体要求 | 证据 | 状态 |
 |---|---|---|---|---|
 | 1 | 干净的提交历史 | ≥4 个提交；message 符合 `<scope>: <做了什么> - <一句话结论>`；一个提交只做一件事 | `git log --oneline` | ✅ |
-| 2 | `notes/git.md` | 提交规范 + `diff`/`log` 四条命令 + 撤销四条命令 + `.gitignore` 语法；**不写冲突** | 文件本身 | ⚠️ 部分（仅 scope 分类） |
+| 2 | `notes/git.md` | 提交规范 + `diff`/`log` 四条命令 + 撤销四条命令 + `.gitignore` 语法；**不写冲突** | 文件本身 | ✅ 已合并 |
 | 3 | `journal/day02.md` | 今日目标、完成表、卡点原文、关键命令、Kilo 抓错记录、明日 3 件事 | 本文件 | ✅ |
 | 4 | 撤销演示 | 各执行一次 `git restore <file>` 与 `git restore --staged <file>`，能说清区别 | 命令输出 | ✅ |
 | 5 | 分支练习 | `git switch -c day02-notes` → 提交一次 → `git switch main` | `git log --oneline --all` | ✅ |
@@ -39,12 +39,12 @@ gate: -
 
 | 计划 | 状态 | 证据（文件/命令/链接） |
 |---|---|---|
-| 干净的提交历史 | ✅ | `git log --oneline`：D1 四条 + D2 两条（`4e8b79e`、`ada6c39`），message 均符合 `<scope>: 做了什么 - 结论` |
-| 写 `notes/git.md` | ⚠️ 部分 | `notes/git.md` 共 30 行，只完成 6 类 scope 分类；缺提交格式、`diff`/`log`、撤销、`.gitignore`、远程、自测记录 |
-| 补全 `journal/day02.md` | ✅ | 本文件：今日完成、关键命令、6 条卡点、Kilo 记录、7 条结论 |
+| 干净的提交历史 | ✅ | `git log --oneline`：D1 四条 + D2 三条（`4e8b79e`、`ada6c39`、`fcdf8c9`），另有 `f844aef` 整理 notes 目录；message 均符合 `<scope>: 做了什么 - 结论` |
+| 写 `notes/git.md` | ✅ | 合并 `Git copy.md` 原内容与 scope 分类，补齐提交规范、`diff`/`log`、撤销、`.gitignore`、远程与易错点；重复文件已删除 |
+| 补全 `journal/day02.md` | ✅ | 本文件：今日完成、关键命令、5 条卡点、Kilo 记录、7 条结论 |
 | 演示 `git restore` 与 `--staged` | ✅ | `restore` 后 `working tree clean`；`restore --staged` 后显示 `Changes not staged for commit`，内容仍在 |
 | 分支 `day02-notes` 建→提交→切回 | ✅ | `git log --oneline --all`：`3fb6902` 在 `day02-notes`，`main` 停在 `ada6c39` |
-| `git push -u origin main` | ❌ 未完成 | `git status`：`ahead of 'origin/main' by 6 commits`，尚未推送 |
+| `git push -u origin main` | ❌ 未完成 | `git status`：`ahead of 'origin/main' by 8 commits`，尚未推送 |
 | 收尾 commit + 补 INDEX D2 行 | 待办 | `journal/INDEX.md` D2 行仍为空，收尾提交未做 |
 
 ## 关键命令
@@ -178,8 +178,8 @@ git merge --abort
 3. 暂存区三态已能区分：`git diff` 看工作区 vs 暂存区，`git diff --staged` 看暂存区 vs HEAD；`restore` 丢内容，`restore --staged` 只退暂存、内容保留。
 4. 撤销原则：已推送的提交只 `revert`（新增一个反向提交、不改写历史），不 `reset --hard`（移动分支指针并丢弃工作区/暂存区改动，已推送时会造成他人历史不一致）；未推送的才用 `restore` / `amend` 处理。遇到合并冲突先 `git merge --abort` 回到干净状态，不现场硬解。
 5. 文件末尾换行会影响 diff 可读性；保留末尾换行能避免“最后一行被改写”的假象。
-6. `notes/git.md` 目前只完成 scope 分类，缺提交格式、`diff`/`log`、撤销、`.gitignore`、远程与自测记录，需另起一笔补全，提交信息不要再声称已覆盖这些内容。
-7. 当前状态：`main` 在 `ada6c39`，`day02-notes` 在 `3fb6902` 未合并；本地领先 `origin/main` 6 个提交，尚未 push；`INDEX.md` 的 D2 行待收尾回填。
+6. `notes/git.md` 已合并 `Git copy.md` 的内容，现覆盖核心概念、提交规范、基础操作、`diff`/`log`、撤销、`.gitignore`、分支、合并、远程与易错点；重复文件 `Git copy.md` 已删除，待提交。
+7. 当前状态：`main` 在 `f844aef`，`day02-notes` 在 `3fb6902` 未合并；本地领先 `origin/main` 8 个提交，尚未 push；`INDEX.md` 的 D2 行待收尾回填。
 
 ## 明日 3 件事
 
