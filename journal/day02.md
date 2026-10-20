@@ -22,7 +22,7 @@ gate: -
 | 3 | `journal/day02.md` | 今日目标、完成表、卡点原文、关键命令、Kilo 抓错记录、明日 3 件事 | 本文件 | ✅ |
 | 4 | 撤销演示 | 各执行一次 `git restore <file>` 与 `git restore --staged <file>`，能说清区别 | 命令输出 | ✅ |
 | 5 | 分支练习 | `git switch -c day02-notes` → 提交一次 → `git switch main` | `git log --oneline --all` | ✅ |
-| 6 | 远程同步 | `git push -u origin main` 成功；若失败，在日志写明原因 | 远程仓库页面 / 命令输出 | ❌ 未推送 |
+| 6 | 远程同步 | `git push -u origin main` 成功；若失败，在日志写明原因 | 远程仓库页面 / 命令输出 | ✅ 已推送 |
 | 7 | 收尾提交与打卡 | commit `day02: git 提交规范、撤销与远程 - <结论>`；`journal/INDEX.md` 补 D2 行 | `git log`、`journal/INDEX.md` | 待办 |
 
 ## 今日验收标准（收尾逐条核对）
@@ -30,7 +30,7 @@ gate: -
 - [x] 仓库里 ≥4 个提交，message 符合规范、粒度合理
 - [x] 能演示 `git diff` 与 `git log --oneline`
 - [x] 能演示一次 `git restore` 撤销，且说清它和 `git restore --staged` 的区别
-- [ ] 远程 `push` 成功（或说明为何暂无远程）
+- [x] 远程 `push` 成功（或说明为何暂无远程）
 - [x] 能解释 `git revert` 与 `git reset --hard` 的区别，并说明为什么**优先用 revert**
 - [x] 会建分支并切回 `main`；知道遇冲突先 `git merge --abort`
 - [x] 日志含当日报错原文，以及至少 1 条"Kilo 说 X，我核实是 Y"
@@ -39,12 +39,12 @@ gate: -
 
 | 计划 | 状态 | 证据（文件/命令/链接） |
 |---|---|---|
-| 干净的提交历史 | ✅ | `git log --oneline`：D1 四条 + D2 三条（`4e8b79e`、`ada6c39`、`fcdf8c9`），另有 `f844aef` 整理 notes 目录；message 均符合 `<scope>: 做了什么 - 结论` |
+| 干净的提交历史 | ✅ | `git log --oneline 300051f..HEAD`：今日 7 条（`4e8b79e`…`6d8593d`），message 均符合 `<scope>: 做了什么 - 结论` |
 | 写 `notes/git.md` | ✅ | 合并 `Git copy.md` 原内容与 scope 分类，补齐提交规范、`diff`/`log`、撤销、`.gitignore`、远程与易错点；重复文件已删除 |
 | 补全 `journal/day02.md` | ✅ | 本文件：今日完成、关键命令、5 条卡点、Kilo 记录、7 条结论 |
 | 演示 `git restore` 与 `--staged` | ✅ | `restore` 后 `working tree clean`；`restore --staged` 后显示 `Changes not staged for commit`，内容仍在 |
 | 分支 `day02-notes` 建→提交→切回 | ✅ | `git log --oneline --all`：`3fb6902` 在 `day02-notes`，`main` 停在 `ada6c39` |
-| `git push -u origin main` | ❌ 未完成 | `git status`：`ahead of 'origin/main' by 8 commits`，尚未推送 |
+| `git push -u origin main` | ✅ | `git push` 输出 `300051f..6d8593d  main -> main`；`git status` 显示 `up to date with 'origin/main'` |
 | 收尾 commit + 补 INDEX D2 行 | 待办 | `journal/INDEX.md` D2 行仍为空，收尾提交未做 |
 
 ## 关键命令
@@ -144,7 +144,7 @@ git merge --abort
 - **我的猜测**：以为 `code` 只有 Windows 能用。
 - **验证过程**：改用 `open -a "Visual Studio Code" notes/git.md` 能正常打开；查证后确认 `code` 是 VS Code 自带 CLI，只是没加入 PATH。
 - **根因**：macOS 版 VS Code 默认不安装命令行工具，Windows 安装器才会自动勾选。
-- **解决**：VS Code 里 `Cmd+Shift+P` → `Shell Command: Install 'code' command in PATH`；临时用 `open -a`。
+- **解决**：临时用 `open -a "Visual Studio Code" notes/git.md` 打开（已验证）；PATH 方案（`Cmd+Shift+P` → `Shell Command: Install 'code' command in PATH`）尚未执行，需要时再装并用 `which code` 验证。
 - **下次怎么避免**：报 `command not found` 先查工具是否安装、是否在 PATH，不要归因于操作系统。
 
 ### 卡点 5：`echo >>` 后 diff 显示最后一行被改写
@@ -158,6 +158,7 @@ git merge --abort
 - **我的猜测**：以为 git 把追加误判成修改。
 - **验证过程**：`tail -c 20 notes/git.md | xxd` 显示文件末尾是 `22`（`"`），没有 `0a`（换行符）。
 - **根因**：原文件末尾缺换行，`echo` 追加时把内容接在最后一行后面并补上换行，导致该行内容变化。
+- **补充说明**：终端宽度不足时该行会折行显示，看起来像新起一行，实际仍是同一行末尾；`xxd` 已确认原文件末尾是 `22`（`"`）而非 `0a`。
 - **解决**：`git restore notes/git.md` 恢复；后续保存文件保留末尾换行。
 - **下次怎么避免**：文本文件以换行结尾；追加前先确认 `tail -c 1` 是否为 `0a`。
 
@@ -169,17 +170,17 @@ git merge --abort
 - 问：`git show <ada6c39>` 为什么 parse error。答：尖括号是占位符/重定向符。核实：去掉尖括号后正常显示 commit 与 30 行 diff，一致。
 - 问：74 行的 `day02.md` 提交算不算“大提交”。答：按“一个提交一件事”判断，不看行数。核实：`git log --stat` 显示该提交只含 `journal/day02.md` 一个文件、单一目的，符合粒度要求。
 - 问：`git show ada6c39 --stat` 与不带 `--stat` 的区别。答：前者只给文件与增删行摘要。核实：输出 `1 file changed, 30 insertions(+)`，与完整 diff 结论一致。
-- **抓错记录**：Kilo 在示例中直接给出 `git add notes/git.md` 和 `git show <hash>` 两条命令，我照抄时前者因文件尚未创建会报 `pathspec` 错误，后者报 `parse error`。核实后确认：示例中的 `<hash>` 是占位符，且 `git add` 的前提是文件已经存在并修改过——命令必须结合当前仓库状态执行，不能机械粘贴。
+- **抓错记录**：Kilo 的示例直接给出 `git add notes/git.md` 和 `git show <hash>`，但没有标明前提。核实 `ls notes` 时 `git.md` 尚不存在，若直接执行 `git add` 会报 `pathspec ... did not match`；`git show <hash>` 照抄则实测报 `parse error`。结论：示例中的占位符和“先有改动再 add”的前提必须自己补齐，不能机械粘贴。
 
 ## 今日结论
 
 1. 提交粒度看“是否只做一件事”，不看行数：今天 `4e8b79e`（写入交付清单）与 `ada6c39`（scope 速查）各自单一目的，`day02-notes` 上的 `3fb6902` 也只做分支验证。
 2. Git 选项有三条硬规则：长选项是 `--xxx` 整体、单独的 `--` 表示后面是路径、`<...>` 是占位符不是命令。
-3. 暂存区三态已能区分：`git diff` 看工作区 vs 暂存区，`git diff --staged` 看暂存区 vs HEAD；`restore` 丢内容，`restore --staged` 只退暂存、内容保留。
+3. 暂存区三态已能区分：`git diff` 看工作区 vs 暂存区，`git diff --staged` 看暂存区 vs HEAD；对**未暂存**改动，`restore` 丢弃内容；若改动已暂存，`restore` 只把工作区恢复成暂存版本，不会取消暂存；`restore --staged` 只退暂存、内容保留。
 4. 撤销原则：已推送的提交只 `revert`（新增一个反向提交、不改写历史），不 `reset --hard`（移动分支指针并丢弃工作区/暂存区改动，已推送时会造成他人历史不一致）；未推送的才用 `restore` / `amend` 处理。遇到合并冲突先 `git merge --abort` 回到干净状态，不现场硬解。
 5. 文件末尾换行会影响 diff 可读性；保留末尾换行能避免“最后一行被改写”的假象。
-6. `notes/git.md` 已合并 `Git copy.md` 的内容，现覆盖核心概念、提交规范、基础操作、`diff`/`log`、撤销、`.gitignore`、分支、合并、远程与易错点；重复文件 `Git copy.md` 已删除，待提交。
-7. 当前状态：`main` 在 `f844aef`，`day02-notes` 在 `3fb6902` 未合并；本地领先 `origin/main` 8 个提交，尚未 push；`INDEX.md` 的 D2 行待收尾回填。
+6. `notes/git.md` 已合并 `Git copy.md` 的内容，现覆盖核心概念、提交规范、基础操作、`diff`/`log`、撤销、`.gitignore`、分支、合并、远程与易错点；重复文件 `Git copy.md` 已删除并提交。
+7. `git push -u origin main` 建立了 `main` 与 `origin/main` 的跟踪关系，之后 `git status` 才能显示 ahead/behind；当前 `main` 已推送（`6d8593d`），本地与远程同步；`day02-notes` 在 `3fb6902` 未合并；`INDEX.md` 的 D2 行待回填。
 
 ## 明日 3 件事
 
