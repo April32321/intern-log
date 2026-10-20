@@ -144,7 +144,23 @@ reset 后：  A --- B         (main)
 - `git merge --no-ff <branch>` 强制生成合并提交
 - 冲突标记三段：`<<<<<<< HEAD` 到 `=======` 是当前分支内容，`=======` 到 `>>>>>>> 分支名` 是对方内容
 - 解决冲突：编辑文件删掉标记 → `git add <file>` → `git commit`
-- `git merge --abort` 放弃本次合并，恢复到合并前状态
+
+### `git merge --abort`
+
+取消**正在进行的合并**，把仓库恢复到执行 `git merge` 之前的状态：
+
+```text
+git merge feature  →  冲突暂停  →  git merge --abort  →  回到合并前
+```
+
+- 恢复 `HEAD` 到合并前的位置，取消这次合并的暂存状态，清掉冲突标记和半成品结果
+- 不删除分支，也不删除提交，只放弃“这次合并动作”
+- 只对未完成的合并有效；合并已经提交后再执行会报 `fatal: There is no merge to abort`，此时应改用 `git revert -m 1 <merge提交>` 撤销
+- 冲突解决完、还未提交时，用 `git merge --continue` 继续完成合并
+- 合并前如有未提交改动，先 commit 或 stash，避免 abort 时无法完整还原
+- 判断是否有合并未完成：`git status` 显示 `You have unmerged paths` 或 `All conflicts fixed but you are still merging`
+
+本项目的单人单分支工作流里，冲突属于不该发生的情况：遇冲突先 `git merge --abort` 回到干净状态，再找负责人排查，不现场硬解。
 
 ## 远程仓库
 
