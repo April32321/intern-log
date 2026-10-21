@@ -329,7 +329,135 @@ sed -n '/LUNG1-00/p' names.txt  # 打印匹配行
 - `-n` 关闭默认输出，配合 `p` 只打印需要的行
 - 真正改文件用 `-i`，但 macOS 与 GNU 语法不同（macOS 需 `-i ''`），改前先备份
 
-## 8. 今日易错点
+## 8. 实战：DICOM 命名审计
+
+目标：不用图形界面完成“造数据 → 找不合规 → 按患者统计 → 写成 CSV”。这是 D11 数据清点的预演。
+
+### 合法命名规则
+
+```text
+^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$
+```
+
+- `^` / `$`：整行匹配，防止 `xxx.dcm.bak` 这类后缀漏过
+- `[0-9]{3}`：PID 三位数字
+- `_ct_`：modality 必须小写
+- `[0-9]{2}`：序号两位
+- `\.`：转义点号
+
+### 造 30 个测试文件
+
+```bash
+mkdir -p audit
+for p in 1 2 3 4 5 6 7 8 9 10; do
+  pid=$(printf "LUNG1-%03d" "$p")
+  n=$(( (p - 1) % 5 + 1 ))
+  for i in $(seq -f "%02g" 1 "$n"); do
+    touch "audit/${pid}_ct_${i}.dcm"
+  done
+done
+```
+
+- `printf "%03d"` / `seq -f "%02g"`：补零，保证文件名宽度固定
+- 文件数按 1–5 循环，避免统计结果全是同一个数字
+
+### 找不合规文件
+
+```bash
+ls audit | grep -Ev '^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$'
+```
+
+- `-E` 用扩展正则，`{3}`/`{2}` 才是“重复次数”
+- `-v` 反向选择，输出**不匹配**的行
+- 不加 `-E` 时必须写 `\{3\}`/`\{2\}`；写成 `{3}` 会被当字面量，`grep -c` 结果为 0
+
+实测：30 个文件中 27 个合规、3 个不合规。
+
+### 按患者统计文件数
+
+```bash
+ls audit | cut -d_ -f1 | sort | uniq -c
+```
+
+- `cut -d_ -f1` 取第一个下划线前的 PID
+- `sort` 必须在前，`uniq -c` 只合并相邻重复
+- 输出格式：`次数 PID`
+
+实测输出（10 行）：
+
+```text
+1 LUNG1-001
+2 LUNG1-002
+3 LUNG1-003
+4 LUNG1-004
+5 LUNG1-005
+1 lung1-006
+2 LUNG1-007
+3 LUNG1-008
+4 LUNG1-009
+5 LUNG1-010
+```
+
+发现：`LUNG1-006` 因为文件被改成小写，整组从统计里消失，另立为 `lung1-006`。**大小写错误会把同一患者拆成两个 PID**，必须在合并临床表之前审计。
+
+### 生成 `name_audit.csv`
+
+```bash
+declare -A cnt
+for f in $(ls audit); do
+  pid=${f%%_*}
+  cnt[$pid]=$(( ${cnt[$pid]:-0} + 1 ))
+done
+
+{
+  echo "filename,pid,modality,seq_no,valid,patient_file_count"
+  for f in $(ls audit); do
+    if [[ "$f" =~ ^(LUNG1-[0-9]{3})_(ct)_([0-9]{2})\.dcm$ ]]; then
+      pid=${BASH_REMATCH[1]}
+      mod=${BASH_REMATCH[2]}
+      seq=${BASH_REMATCH[3]}
+      valid=yes
+    else
+      pid=${f%%_*}
+      mod=""
+      seq=""
+      valid=no
+    fi
+    echo "$f,$pid,$mod,$seq,$valid,${cnt[$pid]}"
+  done
+} > name_audit.csv
+```
+
+CSV 列含义：
+
+| 列 | 含义 |
+|---|---|
+| `filename` | 原始文件名 |
+| `pid` | 文件名第一段；不合规时仅按 `_` 切分，可能带大小写问题 |
+| `modality` | 仅合规行填写；不合规留空 |
+| `seq_no` | 仅合规行填写；不合规留空 |
+| `valid` | `yes`/`no`，由整行正则判定 |
+| `patient_file_count` | 该 PID 前缀下的**全部**文件数（含不合规文件） |
+
+坑：`declare -A` 只在当前 shell 会话有效；退出 SSH 或新开终端后数组丢失，需要重跑统计段。
+
+### 多层目录的写法（D11 用，未验证）
+
+```bash
+find audit -type f -name '*.dcm' -printf '%f\n' \
+  | awk -F_ '{
+      pid=$1; mod=$2; seq=$3
+      sub(/\.dcm$/, "", seq)
+      ok = ($0 ~ /^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$/) ? "yes" : "no"
+      print $0 "," pid "," mod "," seq "," ok
+    }'
+```
+
+- `find` 递归，`-printf '%f\n'` 只输出文件名（GNU find；macOS 用 `-exec basename {} \;`）
+- `awk -F_` 分列，`sub()` 去掉 `.dcm`，`$0 ~ /正则/` 判定合规
+- 本条尚未在真实多层目录跑过，D11 使用时先小样本验证再全量
+
+## 9. 今日易错点
 
 1. `ls -l deep` 失败：`deep` 在 `sub/` 下，相对路径要写 `sub/deep`
 2. `/50` 搜的是**内容**，`50g` 才是跳**行号**
