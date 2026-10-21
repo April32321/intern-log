@@ -39,7 +39,7 @@ gate: -
 |---|---|---|
 | 写入今日交付清单并提交 | ✅ | commit `b6dc05a`，`journal/day03.md` 83 行 |
 | 生成 `results/tables/name_audit.csv` | 待做 | — |
-| 写 `notes/linux-cli.md` | 进行中 | `9a1ec53` 已提交第 1–5、8 节；第 6 节待目录权限输出，第 7 节待管道/awk |
+| 写 `notes/linux-cli.md` | 进行中 | `9a1ec53` 已提交；第 6 节权限已补实测记录，第 7 节待管道/awk |
 | 补全 `journal/day03.md` | 进行中 | 本文件「关键命令」「卡点」「Kilo 使用记录」 |
 | 回填 `journal/INDEX.md` D3 行 | 待做 | — |
 | 完成当日 commit | 部分完成 | `b6dc05a`（计划提交）；收尾提交待做 |
@@ -101,6 +101,13 @@ chmod 700 script.sh             # -rwx------
 chmod 644 script.sh             # -rw-r--r--
 chmod +x script.sh              # -rwxr-xr-x（755）
 umask                           # 0002
+
+mkdir -p permtest               # drwxrwxr-x（775）
+touch permtest/a.txt            # -rw-rw-r--
+chmod 600 permtest              # drw-------
+cd permtest                     # Permission denied（无 x）
+chmod 700 permtest              # drwx------
+cd permtest && pwd && cd ..     # 进入成功
 ```
 
 ## 卡点与报错（本节不许空着）
@@ -153,7 +160,8 @@ umask                           # 0002
 3. `less` 中 `/` 搜内容、`n`/`N` 前后匹配、`数字g` 跳行号；`/50` 匹配包含 50 的行，`/^50$` 才匹配整行等于 50。
 4. 相对路径以当前目录为基准：`deep` 在 `sub/` 下时，必须写 `sub/deep`。
 5. 提交信息要覆盖实际改动，今天的计划提交 `b6dc05a` 只含 `journal/day03.md` 一个文件。
-6. 权限数字按 `r=4`、`w=2`、`x=1` 分属主/属组/其他人相加；`chmod +x` 不给 `u/g/o` 时三类都加（644→755），`chmod u+x` 才只给属主（644→744）；`umask 0002` 下新文件为 `664`。
+6. 权限数字按 `r=4`、`w=2`、`x=1` 分属主/属组/其他人相加；`chmod +x` 不给 `u/g/o` 时三类都加（644→755），`chmod u+x` 才只给属主（644→744）；`umask 0002` 下新文件为 `664`、新目录为 `775`。
+7. 目录的 `x` 是进入权限：`chmod 600 permtest` 后 `cd` 报 `Permission denied`，恢复 `700` 后正常进入；`r` 只决定能否列目录内容。
 
 ## 明日 3 件事
 
