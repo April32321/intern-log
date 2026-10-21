@@ -18,7 +18,7 @@ gate: -
 | # | 交付物 | 具体要求 | 证据 | 状态 |
 |---|---|---|---|---|
 | 1 | `results/tables/name_audit.csv` | 造 30 个假 DICOM 文件名（`LUNG1-001_ct_01.dcm` 之类），用纯命令行统计每患者文件数、找出不符合 `<PID>_<modality>_<n>.dcm` 的文件，结果写入 CSV | 文件本身 + 生成命令 | 待做 |
-| 2 | `notes/linux-cli.md` | 目录结构图 + 权限数字换算表（`755`=`rwxr-xr-x`）+ **≥5 条管道实例** + 我的 awk 一行流合集 | 文件本身 | 待做 |
+| 2 | `notes/linux-cli.md` | 目录结构图 + 权限数字换算表（`755`=`rwxr-xr-x`）+ **≥5 条管道实例** + 我的 awk 一行流合集 | 文件本身 | 进行中（`9a1ec53`） |
 | 3 | `journal/day03.md` | 今日目标、完成表、关键命令、卡点报错原文与解决过程、至少 1 条"抓 Kilo 错" | 本文件 | 进行中 |
 | 4 | `journal/INDEX.md` D3 行 | 收尾回填日期、主题、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 5 | 当日 commit | 至少 1 次，格式 `<scope>: <做了什么> - <一句话结论>`；任务卡指定 `day03: linux cli 文件操作与文本处理` | `git log --oneline` | 部分完成（`b6dc05a`） |
@@ -39,7 +39,7 @@ gate: -
 |---|---|---|
 | 写入今日交付清单并提交 | ✅ | commit `b6dc05a`，`journal/day03.md` 83 行 |
 | 生成 `results/tables/name_audit.csv` | 待做 | — |
-| 写 `notes/linux-cli.md` | 待做 | — |
+| 写 `notes/linux-cli.md` | 进行中 | `9a1ec53` 已提交第 1–5、8 节；第 6 节待目录权限输出，第 7 节待管道/awk |
 | 补全 `journal/day03.md` | 进行中 | 本文件「关键命令」「卡点」「Kilo 使用记录」 |
 | 回填 `journal/INDEX.md` D3 行 | 待做 | — |
 | 完成当日 commit | 部分完成 | `b6dc05a`（计划提交）；收尾提交待做 |
@@ -93,6 +93,14 @@ sed -n '50p' numbers.txt
 seq 1 200 > n200.txt
 less n200.txt                   # /50 → 第 50 行；n → 第 150 行
 less n200.txt                   # /^50$ 只匹配整行等于 50 的行
+
+# 权限
+touch script.sh
+ls -l script.sh                 # -rw-rw-r--
+chmod 700 script.sh             # -rwx------
+chmod 644 script.sh             # -rw-r--r--
+chmod +x script.sh              # -rwxr-xr-x（755）
+umask                           # 0002
 ```
 
 ## 卡点与报错（本节不许空着）
@@ -132,7 +140,9 @@ less n200.txt                   # /^50$ 只匹配整行等于 50 的行
 - 问：`/50` 是跳到含 50 的行还是第 50 行。答：`/` 搜内容，`50g` 才是跳行号。核实：`seq 1 200` 中 `/50` 后按 `n` 跳到第 150 行，一致。
 - 问：`mkdir -p` 和 `nested` 的作用。答：`-p` 一次建多层且已存在不报错；`nested` 只是第三层目录名。核实：`mkdir -p sub/deep/nested` 成功，`ls -l sub/deep` 能看到 `nested`，与解释一致。
 - 问：`^[OA50: command not found` 是什么。答：当时已退出 `less`，方向键转义序列与 `50` 被拼成命令名。核实：重新进入 `less` 用 `/50` 正常，一致。
-- **抓错记录**：Kilo 给 `git add journal/day03.md` 时只标了【Mac】，没写明必须先进入仓库目录；我在 `~` 下执行报 `fatal: not a git repository`。核实后确认：命令本身没错，缺的是工作目录前提。结论：照抄命令前先核对 `pwd`。
+- 问：权限数字怎么来的、`umask` 是什么。答：`r=4`、`w=2`、`x=1`，三位分别对应属主/属组/其他人；`umask` 是新建文件/目录时默认屏蔽掉的位。核实：`chmod 700` → `-rwx------`，`chmod 644` → `-rw-r--r--`，`umask` 输出 `0002`，与换算一致。
+- **抓错记录 1**：Kilo 说 `chmod +x` 后应为 `-rwxr--r--`（744）；我实测是 `-rwxr-xr-x`（755）。核实：不指定 `u/g/o` 时 `+x` 作用于全部三类，`umask 0002` 不含 `x` 位，不会挡住。结论：`chmod u+x` 才是 744，`chmod +x` 是 755。
+- **抓错记录 2**：Kilo 给 `git add journal/day03.md` 时只标了【Mac】，没写明必须先进入仓库目录；我在 `~` 下执行报 `fatal: not a git repository`。核实后确认：命令本身没错，缺的是工作目录前提。结论：照抄命令前先核对 `pwd`。
 
 ## 今日结论
 
@@ -143,6 +153,7 @@ less n200.txt                   # /^50$ 只匹配整行等于 50 的行
 3. `less` 中 `/` 搜内容、`n`/`N` 前后匹配、`数字g` 跳行号；`/50` 匹配包含 50 的行，`/^50$` 才匹配整行等于 50。
 4. 相对路径以当前目录为基准：`deep` 在 `sub/` 下时，必须写 `sub/deep`。
 5. 提交信息要覆盖实际改动，今天的计划提交 `b6dc05a` 只含 `journal/day03.md` 一个文件。
+6. 权限数字按 `r=4`、`w=2`、`x=1` 分属主/属组/其他人相加；`chmod +x` 不给 `u/g/o` 时三类都加（644→755），`chmod u+x` 才只给属主（644→744）；`umask 0002` 下新文件为 `664`。
 
 ## 明日 3 件事
 
