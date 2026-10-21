@@ -141,17 +141,67 @@ rm -i fake_dicom/link-to-demo              # 只删链接，不动目标
 
 > 典型误操作：已经退出 `less` 回到 shell，仍直接敲 `50` 回车，结果 `50: command not found`；若此时按了方向键，还会把转义序列一起带进命令（如 `^[OA50`）。判断方法：屏幕底部有 `:`/`(END)` 才在 `less` 里，看到 shell 提示符就不是。
 
-## 5. 重定向与管道
+## 5. 重定向、管道与退出码
+
+### 重定向
+
+| 写法 | 作用 |
+|---|---|
+| `命令 > 文件` | 标准输出写入文件，**覆盖**原内容 |
+| `命令 >> 文件` | 标准输出追加到文件末尾 |
+| `命令 2> 文件` | 只把错误输出写入文件 |
+| `命令 2>&1` | 把错误输出并入标准输出，之后才能进管道 |
+| `命令 \| tee 文件` | 同时输出到屏幕和文件 |
 
 ```bash
-seq 1 100 > numbers.txt          # > 覆盖写入
-echo "第一行" >> demo.txt         # >> 追加
-ls -l | wc -l                    # 管道：前一条的输出作为后一条的输入
+seq 1 100 > numbers.txt          # 覆盖写入
+echo "第一行" >> demo.txt         # 追加
+ls /no-such-path 2> err.log      # 只存错误
+ls /no-such-path 2>&1 | tee err.log   # 屏幕 + 文件各一份
 ```
 
 - `>` 会**清空原文件**，重要文件先用 `ls` 确认
 - `>>` 追加，不破坏原内容
 - 文本文件末尾保留换行，可避免 `echo >>` 后 diff 显示“最后一行被改写”
+
+### 管道
+
+`|` 把前一条命令的 **stdout** 交给后一条命令的 **stdin**，不需要临时文件。
+
+```text
+命令A ──stdout──> | ──stdin──> 命令B
+```
+
+实测例子：
+
+| 命令 | 结果 |
+|---|---|
+| `ls -l \| wc -l` | `9`（含 `total`、`.`、`..`） |
+| `find . -type f \| wc -l` | `7`（递归统计普通文件） |
+| `grep -n "5" numbers.txt \| head -n 3` | 只输出前 3 条匹配，格式 `行号:内容` |
+| `ls -l \| awk '{print $9}'` | 取文件名列；`total` 行没有第 9 列，输出空行 |
+
+要点：
+
+- 管道只传 stdout，stderr 不走管道；要 `2>&1` 合并
+- 右边的命令必须会读 stdin：`grep`、`wc`、`head`、`awk`、`cut`、`sort`、`uniq`、`tee`
+- 可以多级串联：`cut ... | sort | uniq -c | sort -rn | head`
+- `|` 是交给下一个命令，`>` 是写进文件，两者不同
+
+### 退出码与 `pipefail`
+
+- `$?` 取上一条命令的退出码，`0` 成功，非 `0` 失败
+- **管道的退出码默认等于最后一个命令**，前面的失败会被 `tee`/`head` 的成功掩盖
+
+```bash
+ls /no-such-path; echo "status=$?"                       # status=2
+ls /no-such-path 2>&1 | tee err.log; echo "status=$?"    # status=0
+set -o pipefail
+ls /no-such-path 2>&1 | tee err.log; echo "status=$?"    # status=2
+```
+
+- 脚本开头写 `set -euo pipefail`：出错即停、未定义变量报错、管道任一环失败即失败
+- `set -o pipefail` 只对当前 shell 会话有效，新终端会恢复默认
 
 ## 6. 权限
 
@@ -196,9 +246,88 @@ cd permtest          → 成功进入
 
 > 结论：目录权限里的 `x` 是“通行证”，`r` 只决定能否列出内容；`600` 的目录连 `cd` 都不行。
 
-## 7. 管道与文本处理三件套（待补）
+## 7. 文本处理三件套
 
-> 第 5–6 步完成后补：`grep -n/-i/-r/-E`、`cut`/`awk` 按列取、`sort | uniq -c` 计数、`sed -n '1,5p'`，以及“我的 awk 一行流合集”。
+### grep：按内容过滤
+
+```bash
+grep -n "5" numbers.txt        # -n 显示行号
+grep -in "lung" notes/*.md     # -i 忽略大小写
+grep -rn "TODO" notes/         # -r 递归目录
+grep -E "LUNG1-00[1-3]" names.txt   # -E 扩展正则
+grep -v "ct" names.txt         # -v 反向匹配（排除）
+```
+
+`grep -n` 输出格式为 `行号:内容`，如 `5:5` 表示第 5 行内容为 `5`。
+
+### cut：按分隔符取列
+
+```bash
+cut -d: -f1 /etc/passwd              # 以 : 分隔，取第 1 列（用户名）
+cut -d: -f7 /etc/passwd              # 取第 7 列（登录 shell）
+ls audit | cut -d_ -f1 | sort | uniq -c   # 按 _ 取 PID 并计数
+```
+
+`cut` 只能处理**单个字符**分隔符，且不能按正则切；复杂场景用 `awk`。
+
+### awk：按列取、过滤、统计
+
+基本结构：`awk -F分隔符 '条件 {动作}' 文件`。
+
+```bash
+awk -F: '{print $1, $7}' /etc/passwd        # 打印用户和 shell
+awk -F: '$3 >= 1000 {print $1, $3}' /etc/passwd   # 过滤 UID≥1000
+awk 'NR>=1 && NR<=5' numbers.txt            # 打印第 1–5 行
+awk '{sum += $1} END {print sum}' numbers.txt     # 求和
+```
+
+常用变量：`$0` 整行、`$1` 第 1 列、`$NF` 最后一列、`NR` 当前行号、`-F` 指定分隔符。
+
+#### 我的 awk 一行流合集
+
+已验证：
+
+```bash
+# 1. 取 ls -l 的文件名列
+ls -l | awk '{print $9}'
+
+# 2. 按冒号取用户名与登录 shell
+awk -F: '{print $1, $7}' /etc/passwd
+
+# 3. 统计每种 shell 的用户数（等价于 cut | sort | uniq -c）
+awk -F: '{c[$7]++} END {for (k in c) print c[k], k}' /etc/passwd
+```
+
+待验证（尚未实际跑过，跑通后再移到上面）：
+
+```bash
+# 4. 过滤 UID≥1000 的用户
+awk -F: '$3 >= 1000 {print $1, $3}' /etc/passwd
+
+# 5. 对第 1 列求和
+awk '{s += $1} END {print s}' numbers.txt
+```
+
+### sort | uniq -c：排序去重计数
+
+```bash
+cut -d: -f7 /etc/passwd | sort | uniq -c | sort -rn | head
+```
+
+- `sort` 必须先排序，`uniq -c` 只合并**相邻**重复行
+- `uniq -c` 输出 `次数 内容`
+- `sort -rn` 按次数数值倒序；`sort -u` 直接去重
+- 实测结果：`32 /usr/sbin/nologin`、`3 /bin/false`、`3 /bin/bash`、`1 /bin/sync`
+
+### sed：按行处理
+
+```bash
+sed -n '1,5p' numbers.txt       # 只打印第 1–5 行
+sed -n '/LUNG1-00/p' names.txt  # 打印匹配行
+```
+
+- `-n` 关闭默认输出，配合 `p` 只打印需要的行
+- 真正改文件用 `-i`，但 macOS 与 GNU 语法不同（macOS 需 `-i ''`），改前先备份
 
 ## 8. 今日易错点
 
@@ -208,3 +337,5 @@ cd permtest          → 成功进入
 4. `mv` 覆盖同名文件不提示，移动前先 `ls` 目标目录
 5. `rm -rf "$VAR"/` 在 `$VAR` 为空时会删到根目录：脚本里用 `set -u`，删除前先 `echo "$VAR"` 并 `ls` 确认
 6. 路径含空格必须加引号：`"$var"`，不要裸写 `$var`
+7. 引号未闭合时提示符变成 `>`（PS2 续行），不是重定向；按 `Ctrl+C` 取消重来
+8. 管道退出码默认取最后一条命令，`ls | tee` 可能显示报错却返回 `0`；脚本用 `set -o pipefail`
