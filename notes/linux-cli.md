@@ -153,7 +153,7 @@ ls -l | wc -l                    # 管道：前一条的输出作为后一条的
 - `>>` 追加，不破坏原内容
 - 文本文件末尾保留换行，可避免 `echo >>` 后 diff 显示“最后一行被改写”
 
-## 6. 权限（第 4 步实操后补验证）
+## 6. 权限
 
 ### 权限数字换算
 
@@ -172,10 +172,29 @@ ls -l | wc -l                    # 管道：前一条的输出作为后一条的
 | `755` | `rwx` | `r-x` | `r-x` | 可执行脚本、公开目录 |
 
 - 目录的 `x` 表示“可进入”，没有 `x` 即使有 `r` 也 `cd` 不进去
-- `chmod +x 文件` 只加执行位，不改变读/写
-- `umask` 决定新建文件的默认权限：常见 `0002` → 文件 `664`、目录 `775`
+- `chmod +x` 不写 `u/g/o` 时**三类都加**执行位；只给属主用 `chmod u+x`
+- `umask` 决定新建文件/目录的默认权限：常见 `0002` → 文件 `664`、目录 `775`
 
-> 待补：`chmod 700/644/+x`、`umask`、`ls -ld permtest` 的实际输出。
+### 实测记录（t12ub，2026-10-21）
+
+```text
+touch script.sh      → -rw-rw-r--   664（umask 0002）
+chmod 700 script.sh  → -rwx------   700
+chmod 644 script.sh  → -rw-r--r--   644
+chmod +x  script.sh  → -rwxr-xr-x   755（三类都加 x）
+umask                → 0002
+
+mkdir permtest       → drwxrwxr-x   775
+touch permtest/a.txt → -rw-rw-r--   664
+
+chmod 600 permtest   → drw-------   600
+cd permtest          → Permission denied（无 x，不能进入）
+
+chmod 700 permtest   → drwx------   700
+cd permtest          → 成功进入
+```
+
+> 结论：目录权限里的 `x` 是“通行证”，`r` 只决定能否列出内容；`600` 的目录连 `cd` 都不行。
 
 ## 7. 管道与文本处理三件套（待补）
 
