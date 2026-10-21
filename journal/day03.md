@@ -153,6 +153,11 @@ awk -F, 'NR>1 && $5=="no"' name_audit.csv                    # 3 行
 
 # 回 Mac 仓库
 scp t12ub:~/d3-practice/name_audit.csv results/tables/
+
+# scp 完整性校验
+shasum -a 256 results/tables/name_audit.csv      # Mac
+sha256sum ~/d3-practice/name_audit.csv           # t12ub
+# 两端均为 8d2dc622597302c889bbbc19428246f943e2713d522578444cc834b570440654
 ```
 
 ## 卡点与报错（本节不许空着）
