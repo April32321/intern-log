@@ -18,7 +18,7 @@ gate: -
 | # | 交付物 | 具体要求 | 证据 | 状态 |
 |---|---|---|---|---|
 | 1 | `results/tables/name_audit.csv` | 造 30 个假 DICOM 文件名（`LUNG1-001_ct_01.dcm` 之类），用纯命令行统计每患者文件数、找出不符合 `<PID>_<modality>_<n>.dcm` 的文件，结果写入 CSV | 文件本身 + 生成命令 | 待做 |
-| 2 | `notes/linux-cli.md` | 目录结构图 + 权限数字换算表（`755`=`rwxr-xr-x`）+ **≥5 条管道实例** + 我的 awk 一行流合集 | 文件本身 | 进行中（`9a1ec53`） |
+| 2 | `notes/linux-cli.md` | 目录结构图 + 权限数字换算表（`755`=`rwxr-xr-x`）+ **≥5 条管道实例** + 我的 awk 一行流合集 | 文件本身 | ✅（`9a1ec53`+） |
 | 3 | `journal/day03.md` | 今日目标、完成表、关键命令、卡点报错原文与解决过程、至少 1 条"抓 Kilo 错" | 本文件 | 进行中 |
 | 4 | `journal/INDEX.md` D3 行 | 收尾回填日期、主题、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 5 | 当日 commit | 至少 1 次，格式 `<scope>: <做了什么> - <一句话结论>`；任务卡指定 `day03: linux cli 文件操作与文本处理` | `git log --oneline` | 部分完成（`b6dc05a`） |
@@ -39,7 +39,7 @@ gate: -
 |---|---|---|
 | 写入今日交付清单并提交 | ✅ | commit `b6dc05a`，`journal/day03.md` 83 行 |
 | 生成 `results/tables/name_audit.csv` | 待做 | — |
-| 写 `notes/linux-cli.md` | 进行中 | `9a1ec53` 已提交；第 6 节权限已补实测记录，第 7 节待管道/awk |
+| 写 `notes/linux-cli.md` | ✅ | `9a1ec53` 起持续补充；权限实测、管道、awk 一行流已写入，2 条 awk 标「待验证」 |
 | 补全 `journal/day03.md` | 进行中 | 本文件「关键命令」「卡点」「Kilo 使用记录」 |
 | 回填 `journal/INDEX.md` D3 行 | 待做 | — |
 | 完成当日 commit | 部分完成 | `b6dc05a`（计划提交）；收尾提交待做 |
