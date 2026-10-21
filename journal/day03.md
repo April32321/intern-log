@@ -17,18 +17,18 @@ gate: -
 
 | # | 交付物 | 具体要求 | 证据 | 状态 |
 |---|---|---|---|---|
-| 1 | `results/tables/name_audit.csv` | 造 30 个假 DICOM 文件名（`LUNG1-001_ct_01.dcm` 之类），用纯命令行统计每患者文件数、找出不符合 `<PID>_<modality>_<n>.dcm` 的文件，结果写入 CSV | 文件本身 + 生成命令 | 待做 |
+| 1 | `results/tables/name_audit.csv` | 造 30 个假 DICOM 文件名（`LUNG1-001_ct_01.dcm` 之类），用纯命令行统计每患者文件数、找出不符合 `<PID>_<modality>_<n>.dcm` 的文件，结果写入 CSV | 文件本身 + 生成命令 | ✅（`ba16470`） |
 | 2 | `notes/linux-cli.md` | 目录结构图 + 权限数字换算表（`755`=`rwxr-xr-x`）+ **≥5 条管道实例** + 我的 awk 一行流合集 | 文件本身 | ✅（`9a1ec53`+） |
 | 3 | `journal/day03.md` | 今日目标、完成表、关键命令、卡点报错原文与解决过程、至少 1 条"抓 Kilo 错" | 本文件 | 进行中 |
 | 4 | `journal/INDEX.md` D3 行 | 收尾回填日期、主题、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
-| 5 | 当日 commit | 至少 1 次，格式 `<scope>: <做了什么> - <一句话结论>`；任务卡指定 `day03: linux cli 文件操作与文本处理` | `git log --oneline` | 部分完成（`b6dc05a`） |
+| 5 | 当日 commit | 至少 1 次，格式 `<scope>: <做了什么> - <一句话结论>`；任务卡指定 `day03: linux cli 文件操作与文本处理` | `git log --oneline` | 进行中（`b6dc05a`…`ba16470`） |
 
 ## 今日验收标准（收尾逐条核对）
 
-- [ ] `results/tables/name_audit.csv` 已生成，且每一列、每条命令都能解释
-- [ ] 能口述 `chmod 700` 与 `chmod 644` 分别给属主/属组/其他人什么权限
-- [ ] `notes/linux-cli.md` 含权限换算表与 ≥5 条管道实例
-- [ ] 日志含当日报错原文，以及至少 1 条"Kilo 说 X，我核实是 Y"
+- [x] `results/tables/name_audit.csv` 已生成，且每一列、每条命令都能解释
+- [x] 能口述 `chmod 700` 与 `chmod 644` 分别给属主/属组/其他人什么权限
+- [x] `notes/linux-cli.md` 含权限换算表与 ≥5 条管道实例
+- [x] 日志含当日报错原文，以及至少 1 条"Kilo 说 X，我核实是 Y"
 - [ ] 当日 commit 完成，`journal/INDEX.md` D3 行已回填
 
 ## 今日完成
@@ -38,11 +38,8 @@ gate: -
 | 计划 | 状态 | 证据（文件/命令/链接） |
 |---|---|---|
 | 写入今日交付清单并提交 | ✅ | commit `b6dc05a`，`journal/day03.md` 83 行 |
-| 生成 `results/tables/name_audit.csv` | 待做 | — |
+| 生成 `results/tables/name_audit.csv` | ✅ | commit `ba16470`；31 行（表头 + 30 条），`awk` 筛出 3 条 `valid=no` |
 | 写 `notes/linux-cli.md` | ✅ | `9a1ec53` 起持续补充；权限实测、管道、awk 一行流已写入，2 条 awk 标「待验证」 |
-| 补全 `journal/day03.md` | 进行中 | 本文件「关键命令」「卡点」「Kilo 使用记录」 |
-| 回填 `journal/INDEX.md` D3 行 | 待做 | — |
-| 完成当日 commit | 部分完成 | `b6dc05a`（计划提交）；收尾提交待做 |
 
 ## 关键命令
 
@@ -127,6 +124,35 @@ ls /no-such-path; echo "status=$?"                        # 2
 ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 0
 set -o pipefail
 ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 2
+
+# 命名审计（第 7 步，完整脚本见 notes/linux-cli.md 第 8 节）
+mkdir -p audit
+for p in 1 2 3 4 5 6 7 8 9 10; do
+  pid=$(printf "LUNG1-%03d" "$p")
+  n=$(( (p - 1) % 5 + 1 ))
+  for i in $(seq -f "%02g" 1 "$n"); do
+    touch "audit/${pid}_ct_${i}.dcm"
+  done
+done
+ls audit | wc -l                                             # 30
+
+# 改坏 3 个名字：缺序号、modality 大写、PID 小写
+mv audit/LUNG1-002_ct_02.dcm audit/LUNG1-002_ct.dcm
+mv audit/LUNG1-004_ct_03.dcm audit/LUNG1-004_CT_03.dcm
+mv audit/LUNG1-006_ct_01.dcm audit/lung1-006_ct_01.dcm
+
+ls audit | grep -Ev '^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$'      # 3 个不合规
+ls audit | grep -Ec '^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$'     # 27
+ls audit | grep -c  '^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$'     # 0（BRE 不识别 {3}）
+ls audit | grep -c  '^LUNG1-[0-9]\{3\}_ct_[0-9]\{2\}\.dcm$'  # 27
+
+# 按 PID 统计，生成 CSV 后核对
+ls audit | cut -d_ -f1 | sort | uniq -c                      # LUNG1-006 消失，lung1-006 单列
+wc -l name_audit.csv                                         # 31
+awk -F, 'NR>1 && $5=="no"' name_audit.csv                    # 3 行
+
+# 回 Mac 仓库
+scp t12ub:~/d3-practice/name_audit.csv results/tables/
 ```
 
 ## 卡点与报错（本节不许空着）
@@ -178,6 +204,19 @@ ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 2
 - **解决**：`Ctrl+C` 取消当前行，重新输入完整命令。
 - **下次怎么避免**：引号成对输入；提示符变成 `>` 时先 `Ctrl+C`，不要继续敲命令。
 
+### 卡点 5：`grep -c` 返回 0，但文件明明有 27 个合规名
+
+- **现象**：
+  ```text
+  ls audit | grep -Ec '^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$'   # 27
+  ls audit | grep -c  '^LUNG1-[0-9]{3}_ct_[0-9]{2}\.dcm$'   # 0
+  ```
+- **我的猜测**：以为 `{3}` 在两套正则里写法相同。
+- **验证过程**：加 `-E` 得 27；把 `{3}` 改成 `\{3\}`、`{2}` 改成 `\{2\}` 后，不加 `-E` 也得到 27。
+- **根因**：默认 BRE 中 `{n}` 是普通字符；只有 `-E`（ERE）或转义后的 `\{n\}` 才是“重复 n 次”。
+- **解决**：正则里用 `{n}` 时统一加 `-E`，或写成 `\{n\}`。
+- **下次怎么避免**：看到计数为 0 先检查正则语法和分隔符，不要先怀疑文件。
+
 ## Kilo 使用记录
 
 - 问：`tree -L 2` 是什么，`nested` 有什么用。答：树形列目录，`-L` 限制层数；`nested` 只用于验证层数。核实：`tree -L 2` 输出 4 个目录 1 个文件，`tree -L 3` 才能看到 `nested`，一致。
@@ -193,6 +232,7 @@ ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 2
 - 问：命令明明报错，为什么说没问题。答：路径是故意写错的，用于验证 `2>&1 | tee`；报错文字与退出码是两件事。核实：`err.log` 与屏幕内容一致；退出码依次为 2、0、2，与解释一致。
 - **抓错记录 1**：Kilo 说 `chmod +x` 后应为 `-rwxr--r--`（744）；我实测是 `-rwxr-xr-x`（755）。核实：不指定 `u/g/o` 时 `+x` 作用于全部三类，`umask 0002` 不含 `x` 位，不会挡住。结论：`chmod u+x` 才是 744，`chmod +x` 是 755。
 - **抓错记录 2**：Kilo 给 `git add journal/day03.md` 时只标了【Mac】，没写明必须先进入仓库目录；我在 `~` 下执行报 `fatal: not a git repository`。核实后确认：命令本身没错，缺的是工作目录前提。结论：照抄命令前先核对 `pwd`。
+- **抓错记录 3**：Kilo 说“基础正则下也能用，因为这里没写 `{}`”，但给出的命令里含 `{3}`、`{2}`。我实测 `grep -c` 为 `0`，加 `-E` 或写成 `\{3\}` 才是 `27`。核实：BRE 不把 `{n}` 当量词。结论：用 `{n}` 必须配 `-E` 或转义。
 
 ## 今日结论
 
@@ -201,12 +241,10 @@ ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 2
 1. 服务器只做练习（`~/d3-practice`），仓库、日志和 commit 都在 Mac；产出要 `scp` 回仓库再提交。
 2. 软链接不复制内容，读写跟随目标；删除链接不影响目标文件（`wc -c` 两边同为 10 字节，删链接后 `demo.txt` 仍在）。
 3. `less` 中 `/` 搜内容、`n`/`N` 前后匹配、`数字g` 跳行号；`/50` 匹配包含 50 的行，`/^50$` 才匹配整行等于 50。
-4. 相对路径以当前目录为基准：`deep` 在 `sub/` 下时，必须写 `sub/deep`。
-5. 提交信息要覆盖实际改动，今天的计划提交 `b6dc05a` 只含 `journal/day03.md` 一个文件。
-6. 权限数字按 `r=4`、`w=2`、`x=1` 分属主/属组/其他人相加；`chmod +x` 不给 `u/g/o` 时三类都加（644→755），`chmod u+x` 才只给属主（644→744）；`umask 0002` 下新文件为 `664`、新目录为 `775`。
-7. 目录的 `x` 是进入权限：`chmod 600 permtest` 后 `cd` 报 `Permission denied`，恢复 `700` 后正常进入；`r` 只决定能否列目录内容。
-8. 管道只传 stdout；stderr 要 `2>&1` 才进管道；管道退出码默认取最后一条命令，脚本里必须 `set -o pipefail`，否则前面的失败会被 `tee`/`head` 的成功掩盖。
-9. 文本处理分工：`awk` 按列取值与重排、`cut -d: -f1` 按分隔符取列、`sort | uniq -c` 必须先排序再计数、`sed -n '1,5p'` 取行范围。
+4. 相对路径以当前目录为基准：`deep` 在 `sub/` 下时，必须写 `sub/deep`；提交信息要覆盖实际改动，`b6dc05a` 只含 `journal/day03.md` 一个文件。
+5. 权限：数字按 `r=4`、`w=2`、`x=1` 分三类相加；`chmod +x` 不给 `u/g/o` 时三类都加（644→755），`chmod u+x` 才只给属主（644→744）；`umask 0002` 下新文件 `664`、新目录 `775`；目录没有 `x` 时 `cd` 报 `Permission denied`。
+6. 管道只传 stdout，stderr 要 `2>&1`；管道退出码默认取最后一条命令，脚本必须 `set -o pipefail`；文本处理分工：`awk` 按列、`cut` 按分隔符、`sort | uniq -c` 先排序再计数、`sed -n` 取行范围。
+7. 命名审计：30 个文件中 27 个合规、3 个不合规；`valid=no` 行的 `modality`/`seq_no` 留空；大小写错误会把同一患者拆成两个 PID（`LUNG1-006` → `lung1-006`），审计必须在合并临床表之前完成；`patient_file_count` 按 PID 前缀统计，包含不合规文件。
 
 ## 明日 3 件事
 
