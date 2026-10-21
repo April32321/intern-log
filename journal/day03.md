@@ -108,6 +108,25 @@ chmod 600 permtest              # drw-------
 cd permtest                     # Permission denied（无 x）
 chmod 700 permtest              # drwx------
 cd permtest && pwd && cd ..     # 进入成功
+
+# 管道与文本处理
+ls -l | wc -l                   # 9（含 total、.、..）
+find . -type f | wc -l          # 7
+grep -n "5" numbers.txt | head -n 3     # 5:5、15:15、25:25
+
+ls -l | awk '{print $9}' | head         # 文件名列；total 行输出空行
+head -n 5 /etc/passwd | cut -d: -f1     # root/daemon/bin/sys/sync
+head -n 5 /etc/passwd | awk -F: '{print $1, $7}'
+cut -d: -f7 /etc/passwd | sort | uniq -c | sort -rn | head
+sed -n '1,5p' numbers.txt               # 只打印第 1–5 行
+
+ls /no-such-path 2>&1 | tee err.log     # 屏幕与文件各一份
+cat err.log
+
+ls /no-such-path; echo "status=$?"                        # 2
+ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 0
+set -o pipefail
+ls /no-such-path 2>&1 | tee err.log; echo "status=$?"     # 2
 ```
 
 ## 卡点与报错（本节不许空着）
@@ -137,6 +156,28 @@ cd permtest && pwd && cd ..     # 进入成功
 - **解决**：在 `less` 内用 `/50` 回车搜索，`n` 下一个、`N` 上一个、`q` 退出；终端状态异常时执行 `reset`。
 - **下次怎么避免**：看屏幕底部提示判断是否还在 `less`；搜索一律先按 `/`。
 
+### 卡点 3：管道让失败命令的退出码变成 0
+
+- **现象**：
+  ```text
+  ls: cannot access '/no-such-path': No such file or directory
+  status=0
+  ```
+- **我的猜测**：以为只要屏幕出现报错，退出码就一定非 0。
+- **验证过程**：单独执行 `ls /no-such-path` 得 `status=2`；接 `2>&1 | tee err.log` 后得 `status=0`；执行 `set -o pipefail` 后再跑，恢复为 `status=2`。
+- **根因**：管道默认只返回**最后一个命令**的退出码，`tee` 成功即返回 0，`ls` 的失败被吞掉。
+- **解决**：脚本开头启用 `set -o pipefail`（配合 `set -euo pipefail`），让管道中任一命令失败都算失败。
+- **下次怎么避免**：看到报错文字时不要只看输出，还要 `echo $?` 确认退出码。
+
+### 卡点 4：引号未闭合导致 `>` 续行
+
+- **现象**：执行 `echo "status=$?` 后没有回到提示符，出现 `>`，后续输入都被吞进字符串。
+- **我的猜测**：以为 `>` 是重定向符，命令已经执行。
+- **验证过程**：按 `Ctrl+C` 取消，补上结尾双引号重新执行，输出 `status=2` 正常。
+- **根因**：双引号没有闭合，bash 显示的是**续行提示符 PS2**，等待剩余输入。
+- **解决**：`Ctrl+C` 取消当前行，重新输入完整命令。
+- **下次怎么避免**：引号成对输入；提示符变成 `>` 时先 `Ctrl+C`，不要继续敲命令。
+
 ## Kilo 使用记录
 
 - 问：`tree -L 2` 是什么，`nested` 有什么用。答：树形列目录，`-L` 限制层数；`nested` 只用于验证层数。核实：`tree -L 2` 输出 4 个目录 1 个文件，`tree -L 3` 才能看到 `nested`，一致。
@@ -148,6 +189,8 @@ cd permtest && pwd && cd ..     # 进入成功
 - 问：`mkdir -p` 和 `nested` 的作用。答：`-p` 一次建多层且已存在不报错；`nested` 只是第三层目录名。核实：`mkdir -p sub/deep/nested` 成功，`ls -l sub/deep` 能看到 `nested`，与解释一致。
 - 问：`^[OA50: command not found` 是什么。答：当时已退出 `less`，方向键转义序列与 `50` 被拼成命令名。核实：重新进入 `less` 用 `/50` 正常，一致。
 - 问：权限数字怎么来的、`umask` 是什么。答：`r=4`、`w=2`、`x=1`，三位分别对应属主/属组/其他人；`umask` 是新建文件/目录时默认屏蔽掉的位。核实：`chmod 700` → `-rwx------`，`chmod 644` → `-rw-r--r--`，`umask` 输出 `0002`，与换算一致。
+- 问：什么是管道。答：`|` 把前一条的 stdout 交给后一条的 stdin，stderr 需要 `2>&1` 才会进入管道。核实：`ls -l | wc -l` 得 9，`grep ... | head -n 3` 只输出 3 行，一致。
+- 问：命令明明报错，为什么说没问题。答：路径是故意写错的，用于验证 `2>&1 | tee`；报错文字与退出码是两件事。核实：`err.log` 与屏幕内容一致；退出码依次为 2、0、2，与解释一致。
 - **抓错记录 1**：Kilo 说 `chmod +x` 后应为 `-rwxr--r--`（744）；我实测是 `-rwxr-xr-x`（755）。核实：不指定 `u/g/o` 时 `+x` 作用于全部三类，`umask 0002` 不含 `x` 位，不会挡住。结论：`chmod u+x` 才是 744，`chmod +x` 是 755。
 - **抓错记录 2**：Kilo 给 `git add journal/day03.md` 时只标了【Mac】，没写明必须先进入仓库目录；我在 `~` 下执行报 `fatal: not a git repository`。核实后确认：命令本身没错，缺的是工作目录前提。结论：照抄命令前先核对 `pwd`。
 
@@ -162,6 +205,8 @@ cd permtest && pwd && cd ..     # 进入成功
 5. 提交信息要覆盖实际改动，今天的计划提交 `b6dc05a` 只含 `journal/day03.md` 一个文件。
 6. 权限数字按 `r=4`、`w=2`、`x=1` 分属主/属组/其他人相加；`chmod +x` 不给 `u/g/o` 时三类都加（644→755），`chmod u+x` 才只给属主（644→744）；`umask 0002` 下新文件为 `664`、新目录为 `775`。
 7. 目录的 `x` 是进入权限：`chmod 600 permtest` 后 `cd` 报 `Permission denied`，恢复 `700` 后正常进入；`r` 只决定能否列目录内容。
+8. 管道只传 stdout；stderr 要 `2>&1` 才进管道；管道退出码默认取最后一条命令，脚本里必须 `set -o pipefail`，否则前面的失败会被 `tee`/`head` 的成功掩盖。
+9. 文本处理分工：`awk` 按列取值与重排、`cut -d: -f1` 按分隔符取列、`sort | uniq -c` 必须先排序再计数、`sed -n '1,5p'` 取行范围。
 
 ## 明日 3 件事
 
