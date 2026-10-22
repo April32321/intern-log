@@ -24,11 +24,11 @@ gate: -
 | 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | 待做 |
-| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 待做 |
+| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10 完成；§11–§14 待做） |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
-| 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | 待做 |
-| 8 | 服务器练习目录 | `~/d4-practice/`（tmux、nohup、日志都放这里，**不写进仓库 `logs/`**） | `ls ~/d4-practice` | 待做 |
+| 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅（day04 已 5 次，最新 `799f75b`） |
+| 8 | 服务器练习目录 | `~/d4-practice/`（tmux、nohup、日志都放这里，**不写进仓库 `logs/`**） | `ls ~/d4-practice` | ✅（`trap_demo.py`、`term.log`、`kill9.log`、`nohup.out`、各 `*.pid`） |
 
 ## 平台前提（今日命令分两处跑）
 
@@ -59,7 +59,7 @@ gate: -
 |---|---|---|
 | 绝对/相对路径自测（4 题） | 进行中（笔记已写，终端复跑待做） | `notes/linux-cli.md` §1 新增自测表；首答 2/4 → 纠错后 4/4；`journal/day04.md` 卡点 1 + 易错点已记 |
 | 2 例数据 scp + 校验 + 打开 CT | ✅ | `data/raw/lung1_smoke/` 2 例 232 个 `.dcm`、150M；两端 SHA-256 232/232 一致；Slicer 5.12.4 打开 CT（94 层） |
-| 进程与资源（ps/top/kill/jobs） | 待填 | |
+| 进程与资源（ps/top/kill/jobs） | ✅ | `notes/linux-cli.md` §10；`t12ub` 实测：`nproc=12`、load 0.03；`jobs` 三态；TERM 有 `got SIGTERM, cleaning up`、KILL 只有 `start`（退出码 137）；3A/3B/3C 与四组保命对照见「实验记录」 |
 | tmux 长任务（含 5 分钟验收） | 待填 | |
 | 环境变量与 PATH 排错 | 待填 | |
 | 写 `code/setup_check.sh` 并两端跑通 | 待填 | |
@@ -129,15 +129,28 @@ open -a Slicer
 
 ```bash
 # ——【t12ub】进程与资源 ——
-ps aux | grep -i python
-top -b -n1 | head -20
+ps aux | grep -i '[p]ython'          # 2 行：root 的 unattended-upgrade、xufumin 的 devpi-server；无 jqw
+ps aux --sort=-%cpu | head -5        # 榜首百度网盘 %CPU 2.7 / TIME 543:36（平均值，非瞬时）
+top -b -n1 | head -20                # load 0.03/0.05/0.01，302 tasks，id 96.8，wa 1.3
+free -h; uptime; df -h ~             # 内存 3.3G 用 / 8.4G 可用；swap 用 2.7G；磁盘 3.5T 可用（6%）
+nproc                                # 12 → load 0.03 约 0.25%，基本空闲
 
-sleep 300 &                          # 造一个可杀的进程
-jobs -l
-kill %1                              # 先礼
-kill -9 <PID>                        # 后兵：换成真实 PID
+sleep 300                            # 前台，Ctrl+C → exit=130
+sleep 300 &                          # [1] 1635730；PGID 独立，SID=shell，TTY=pts/1
+jobs -l                              # Running
+fg %1                                # 拉回前台，Ctrl+Z → Stopped
+bg %1                                # 回 Running
+kill %1                              # [1]+ Terminated；ps 空 + exit=1
 
-# 输出要点：
+# 先礼后兵（trap_demo.py 装了 SIGTERM 处理器）
+kill %1                              # term.log：start + got SIGTERM, cleaning up；jobs=Done；exit=0
+kill -9 "$PID"                       # kill9.log 只有 start；jobs=Killed；wait → exit=137
+
+# 断线三组：手动 exit 不发 HUP（huponexit=off）
+#   3A exit       → 存活 PPID=1 SID=旧shell TTY=?
+#   3B 真断线     → DEAD exit=1
+#   3C huponexit on + exit → DEAD exit=1
+# 四组对照（一次 kill -HUP $$ 断线）：plain DEAD；nohup/disown 活（SID 不变）；setsid 活（SID=自身）
 ```
 
 ```bash
@@ -156,8 +169,8 @@ tmux attach -t work
 # ——【t12ub】nohup 与日志 ——
 nohup sleep 300 > ~/d4-practice/long_run.log 2>&1 &
 jobs -l
-tail -n 5 ~/d4-practice/long_run.log
-# 对比结论（nohup vs tmux）写进 notes/linux-cli.md §11
+tail -n 5 ~/d4-practice/long_run.log   # sleep 无输出 → 文件 0 字节
+# 实测：kill -HUP $$ 断线后进程存活，SID 仍是旧 shell、TTY=?；见「信号与保命方式四组对照」
 ```
 
 ```bash
@@ -225,20 +238,38 @@ unzip -l /tmp/x.zip
 
 | 场景 | 命令 | 关键输出 | 结论 |
 |---|---|---|---|
-| 查 python 进程 | `ps aux \| grep -i python` | | |
-| 后台作业 | `sleep 300 &` + `jobs -l` | | |
-| 温和终止 | `kill %1` | | |
-| 强制终止 | `kill -9 <PID>` | | |
-| 断 SSH 后 | 重连 + `ps` | | |
+| 查 python 进程 | `ps aux \| grep -i '[p]ython'` | 2 行：PID 1122 `root` `unattended-upgrade-shutdown`（RSS 6292KB）；PID 1318 `xufumin` `devpi-server`（RSS 1384616KB，%MEM 11.3）；均 `Ssl`、`TTY=?`；无 jqw | 自己没跑 python；两条都是别人的守护进程 |
+| 后台作业 | `sleep 300 &` + `jobs -l` | `[1] 1635730`；`PGID=1635730`、`SID=1630611`（= shell）、`TTY=pts/1`、`S` | `&` 只改作业调度，未脱离会话 |
+| 温和终止 | `kill %1`（trap_demo.py） | `jobs` 显示 `Done`；`term.log`：`start pid=...` + `got SIGTERM, cleaning up` | TERM 可捕获，处理器 `sys.exit(0)` → 退出码 0 |
+| 强制终止 | `kill -9 1639587` | `jobs` 显示 `Killed`；`kill9.log` 只有 `start`；`ps` 空 + `exit=1`；`wait` → `137` | KILL 不可捕获，无清理机会 |
+| 断 SSH 后 | 3A 手动 `exit` | 存活：`1640524 PPID=1 SID=1630611 TTY=? S` | `huponexit=off`，手动退出不补发 HUP |
+| 断 SSH 后 | 3B 真断线（`pkill` / `kill -HUP $$`） | 空输出 + `exit=1` | 内核发 HUP → bash 转发给所有作业 |
+| 断 SSH 后 | 3C `shopt -s huponexit` + `exit` | 空输出 + `exit=1` | 3A 的存活由开关造成，不是 `&` 有保护 |
+
+### 信号与保命方式四组对照（2026-10-22）
+
+同一次 `kill -HUP $$` 制造断线，四个进程用不同 `sleep` 时长区分：
+
+| 方式 | 启动 | 断线前 SID / TTY | 断线后 |
+|---|---|---|---|
+| 普通 `&`（对照） | `sleep 311 &` | `1642851` / `pts/1` | **DEAD** |
+| `nohup` | `nohup sleep 313 > long_run.log 2>&1 &` | `1642851` / `pts/1` | 存活 `1645929`，SID 不变、`TTY=?` |
+| `disown` | `sleep 317 &` + `disown` | `1642851` / `pts/1` | 存活 `1645985`，SID 不变、`TTY=?` |
+| `setsid` | `setsid sleep 319 > /dev/null 2>&1 &` | `1646044`（=自身）/ `?` | 存活 `1646044`，`Ss`、`PPID=1` |
+
+结论：`nohup`/`disown` 让进程收不到或忽略 HUP，**会话归属没变**；只有 `setsid` 换了会话。
+
+`nohup.out` 实测：不重定向时生成，`-rw-------`（0600）、0 字节（`sleep` 无输出），stderr 提示
+`nohup: ignoring input and appending output to 'nohup.out'` 不进文件。
 
 ### nohup / tmux 对比
 
 | 维度 | `nohup ... &` | `tmux` |
 |---|---|---|
-| 断 SSH 是否存活 | | |
-| 能否重新接管/交互 | | |
-| 输出落点 | | |
-| 适用场景 | | |
+| 断 SSH 是否存活 | 是（忽略 HUP；实测四个进程里唯一 DEAD 的是普通 `&`） | 是（pane 的父进程是 tmux server，与 sshd 无关） |
+| 能否重新接管/交互 | 不能，只能看日志文件 | 能，`attach` 回来继续操作、向上翻 scrollback |
+| 输出落点 | `nohup.out` 或你指定的重定向文件（`nohup.out` 权限 0600） | pane 的 scrollback，可复制、可分屏 |
+| 适用场景 | 一次性脚本、跑完只要结果 | 需要观察进度、中途交互、多任务并行（D17 用） |
 
 ### `set -euo pipefail` 逐字解释
 
@@ -315,16 +346,34 @@ unzip -l /tmp/x.zip
 - **解决**：先 `cd /Users/wangjiaqi/Desktop/实习日志`，或用 `git add ../../journal/day04.md ../../notes/linux-cli.md`。
 - **下次怎么避免**：提交前先 `pwd`；在子目录里操作时，直接复制 `git status` 输出的相对路径，或先 `cd` 回仓库根。
 
-### 卡点 3：待填
+### 卡点 3：heredoc 终止符带尾随空格，提示符卡在 `>` 不返回
 
 - **现象**：
   ```text
+  jqw@t12ub:~/d4-practice$ cat > ~/d4-practice/trap_demo.py <<'EOF'
+  > import os, signal, sys, time
+  > ...
+  > EOF
+  >
   ```
-- **我的猜测**：
-- **验证过程**：
-- **根因**：
-- **解决**：
-- **下次怎么避免**：
+  敲了 `EOF` 回车，提示符没有回到 `jqw@...$`，仍是 `>`，看起来像卡死。
+- **我的猜测**：以为 `EOF` 已经结束了输入，是终端没刷新；又试了一次 `EOF`，仍然是 `>`。
+- **验证过程**：按 `Ctrl+C` 退出后 `ls -l ~/d4-practice/trap_demo.py`，文件内容不完整；改用
+  `printf '%s\n' '...' > trap_demo.py` 写文件，再用 `python3 -c "import ast; ast.parse(...)"` 验证语法通过。
+  回头看粘贴的那行 `EOF`，末尾带了空格（截图里不可见）。
+- **根因**：heredoc 的终止符必须**独占一行、从第 1 列开始、后面紧跟换行**；多一个空格或制表符就不匹配，
+  bash 会一直停留在 PS2 续行状态（`>`），等待更多输入。
+- **解决**：`Ctrl+C` 放弃本次输入；重新输入时确保 `EOF` 后无空格；或改用 `printf '%s\n' ... > 文件`
+  这类不依赖终止符的写法。
+- **下次怎么避免**：粘贴多行内容前先确认末行干净；`>` 提示符出现时先想到「还在等输入」，
+  用 `Ctrl+C` 回到主提示符再重试，不要在 `>` 里继续敲命令（会被当作文件内容写进去）。
+
+### 易错点（非报错）：`jobs -1` 把字母 `l` 敲成数字 `1`
+
+- **现象**：`jobs -1` 报 `-bash: jobs: -1: invalid option`。
+- **根因**：`jobs` 的长格式选项是小写字母 `l`，数字 `1` 不是合法选项；同一批命令里 `jpbs -l` 则是把 `jobs` 拼错。
+- **判定方法**：报错里给出用法 `jobs [-lnprs] [jobspec ...]`，对照即可。
+- **结论**：`jobs -l` 的 `l` 是 list；命令拼写错误不会影响已启动的后台进程，重敲正确命令即可。
 
 ## Kilo 使用记录
 
