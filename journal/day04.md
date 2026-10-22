@@ -24,7 +24,7 @@ gate: -
 | 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | 待做 |
-| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10 完成；§11–§14 待做） |
+| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10–§11 完成；§12–§14 待做） |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅（day04 已 5 次，最新 `799f75b`） |
@@ -46,7 +46,7 @@ gate: -
 - [ ] 4 道路径自测题全对，能解释 `cd ..` 与 `cd -`、`../notes` 与 `notes` 的区别
 - [x] 2 例数据两端 SHA-256 一致（232/232），Slicer 能打开 CT 看一眼
 - [ ] `bash code/setup_check.sh` 能跑，输出清晰 PASS/WARN，缺命令显示 `MISSING` 而不崩
-- [ ] tmux 跑 5 分钟 `sleep`，detach 后 `tmux ls` 仍可见，attach 回来任务还在
+- [x] tmux 跑 5 分钟 `sleep`，detach 后 `tmux ls` 仍可见，attach 回来任务还在
 - [ ] 能解释 `pip install` 后 `command not found`（PATH + venv + shell hash 缓存）
 - [ ] 日志含当日报错原文，以及至少 1 条「Kilo 说 X，我核实是 Y」
 - [ ] 当日 commit 完成，`journal/INDEX.md` D4 行已回填
@@ -60,7 +60,7 @@ gate: -
 | 绝对/相对路径自测（4 题） | 进行中（笔记已写，终端复跑待做） | `notes/linux-cli.md` §1 新增自测表；首答 2/4 → 纠错后 4/4；`journal/day04.md` 卡点 1 + 易错点已记 |
 | 2 例数据 scp + 校验 + 打开 CT | ✅ | `data/raw/lung1_smoke/` 2 例 232 个 `.dcm`、150M；两端 SHA-256 232/232 一致；Slicer 5.12.4 打开 CT（94 层） |
 | 进程与资源（ps/top/kill/jobs） | ✅ | `notes/linux-cli.md` §10；`t12ub` 实测：`nproc=12`、load 0.03；`jobs` 三态；TERM 有 `got SIGTERM, cleaning up`、KILL 只有 `start`（退出码 137）；3A/3B/3C 与四组保命对照见「实验记录」 |
-| tmux 长任务（含 5 分钟验收） | 待填 | |
+| tmux 长任务（含 5 分钟验收） | ✅ | 默认会话 `0` 改名为 `work`；`sleep 300` 运行中 `Ctrl+b d` detach → `tmux ls` 无 attached → `exit` 断 SSH → 重连 `attach` 仍在；`notes/linux-cli.md` §11 |
 | 环境变量与 PATH 排错 | 待填 | |
 | 写 `code/setup_check.sh` 并两端跑通 | 待填 | |
 | 压缩与归档（tar/unzip） | 待填 | |
@@ -155,14 +155,28 @@ kill -9 "$PID"                       # kill9.log 只有 start；jobs=Killed；wa
 
 ```bash
 # ——【t12ub】tmux（今日重点）——
-tmux new -s work
+tmux ls                              # 0: 1 windows (created Tue Oct 20 17:25:43 2026) —— 默认名是数字
+tmux rename-session -t 0 work        # 改名不影响进程
+tmux list-windows -t work            # 0: bash* (1 panes) [81x29] ... (active)
+tmux list-panes -t work -F '#{window_index}.#{pane_index} pid=#{pane_pid} tty=#{pane_tty} cmd=#{pane_current_command}'
+                                     # 0:0.0 pid=1390256 tty=/dev/pts/4 cmd=bash
+
+tmux attach -t work
 #   会话内：sleep 300
 #   Ctrl+b 松开后按 d  → detach
+tmux ls                              # work: 1 windows ...（无 attached = 已 detach）
+exit                                 # 彻底断开 SSH
 
-tmux ls
-tmux attach -t work
-#   回来确认 sleep 仍在跑；再退出用 exit
-# 输出要点：
+# 重连后
+tmux ls                              # work 仍在
+tmux attach -t work                  # 回到 pane，sleep 仍在跑 → Ctrl+C
+```
+
+```bash
+# ——【t12ub】tmux 机制证据 ——
+ps -o pid,ppid,sid,tty,stat,cmd -p 1390255   # server：PPID=1、SID=自身、TTY=?、Ss
+ps -o pid,ppid,pgid,sid,tty,stat,cmd -p 1390256  # pane bash：PPID=1390255、SID=自身、TTY=pts/4、Ss+
+pgrep -a tmux                        # 混有 xufumin 的 wk 会话；用 pgrep -u "$USER" 过滤
 ```
 
 ```bash
@@ -270,6 +284,22 @@ unzip -l /tmp/x.zip
 | 能否重新接管/交互 | 不能，只能看日志文件 | 能，`attach` 回来继续操作、向上翻 scrollback |
 | 输出落点 | `nohup.out` 或你指定的重定向文件（`nohup.out` 权限 0600） | pane 的 scrollback，可复制、可分屏 |
 | 适用场景 | 一次性脚本、跑完只要结果 | 需要观察进度、中途交互、多任务并行（D17 用） |
+
+### tmux 会话实测（2026-10-22）
+
+| 项 | 实测 |
+|---|---|
+| 已有会话 | 默认名 `0`（`created Tue Oct 20 17:25:43 2026`），`1 windows`；`attach -t work` 报 `can't find session: work` |
+| 改名 | `tmux rename-session -t 0 work` 成功，进程不变 |
+| 窗口/pane | `0: bash* (1 panes) [81x29]`；`pane_pid=1390256`、`tty=/dev/pts/4`、`cmd=bash` |
+| detach | `Ctrl+b` 松开再按 `d`；`tmux ls` 仍列出 `work`，无 `(attached)` |
+| 断 SSH 后 | `exit` → 重连 → `tmux ls` 仍有 `work` → `attach` 回到 pane，`sleep 300` 仍在跑 |
+| server | `1390255`：`PPID=1`、`SID=1390255`、`TTY=?`、`Ss` |
+| pane shell | `1390256`：`PPID=1390255`、`PGID=1390256`、`SID=1390256`、`TTY=pts/4`、`Ss+` |
+| 共享机发现 | `pgrep -a tmux` 混入 `xufumin` 的 `tmux -2 new-session -s wk`（`1431887`）；`pgrep -u "$USER"` 只剩自己的 `1390255` |
+
+结论：pane 的父进程是 tmux server（`PPID=1390255`），server 又被 init 收养（`PPID=1`、无终端），
+所以断 SSH 只销毁 sshd 的 pty，碰不到 tmux 的 pty；`attach` 回来连屏幕历史都在。
 
 ### `set -euo pipefail` 逐字解释
 
