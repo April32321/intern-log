@@ -1,7 +1,7 @@
-# Linux CLI：文件、权限、管道、文本处理、进程与资源
+# Linux CLI：文件、权限、管道、文本处理、进程与资源、tmux
 
 > Day 3–4 笔记。§1–§9 来源：`每日计划/Day03.md` + 2026-10-21 在 `t12ub` 的 `~/d3-practice` 实际操作；
-> §10 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
+> §10–§11 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
 > 练习目录与仓库分离：命令在服务器跑，笔记、日志和 commit 在 Mac 仓库完成。
 
 ## 1. 目录结构与导航
@@ -807,3 +807,160 @@ pane 的 shell `PPID` 是 tmux server，不是 sshd，所以断 SSH 碰不到它
 8. 后台 `&` 不等于脱离终端；`TTY` 还在 `pts/*` 就说明它仍挂在会话上，SSH 一断照样收 `SIGHUP`。
 9. `cat > 文件 <<'EOF'` 的终止符**不能有尾随空格或缩进**，否则提示符一直停在 `>`，看起来像卡死；`Ctrl+C` 安全退出。粘贴多行代码时优先用 `printf '%s\n' ...` 或 `python3 - <<'PY'`。
 10. `jobs -l` 的 `l` 是字母 L；敲成 `jobs -1` 会报 `invalid option`。`jobs` 只列当前 shell 的作业，`ps` 才是全机视角。
+
+## 11. tmux：可重连的长任务会话
+
+> 2026-10-22 在 `t12ub` 实测：把一个默认名为 `0` 的会话改名为 `work`，跑 `sleep 300` 后 detach，
+> 再 `exit` 断开 SSH、重连、`attach` 回来，任务仍在。
+
+### 11.1 解决什么问题
+
+`nohup` 只能保证进程**不死**，看不到、也接不回去；tmux 把 shell 放进一个由 tmux server 托管的伪终端里，
+**断 SSH 只是断开了「观看者」，会话本身还在**，重连后 `attach` 就能接着操作、向上翻历史输出。
+D17 的全量特征提取跑几小时，必须在这种会话里跑。
+
+| | `nohup ... &` | `tmux` |
+|---|---|---|
+| 断 SSH 后 | 进程活，但看不见 | 会话活，可重新接管 |
+| 交互 | 无 | 有，可输入、可分屏 |
+| 输出 | 只能重定向到文件 | pane 的 scrollback，可翻页/复制 |
+| 结构 | 一个进程 | 多会话 / 多窗口 / 多窗格 |
+
+### 11.2 会话的完整生命周期
+
+```bash
+tmux new -s work          # 新建并进入（名字已存在会报 duplicate session）
+#  Ctrl+b 松开，再按 d    → detach：离开，会话继续跑
+tmux ls                   # 列出会话（= list-sessions）
+tmux attach -t work       # 重新进入；简写 tmux a -t work
+tmux rename-session -t 0 work   # 在外部：把名为 0 的会话改名
+tmux rename-session work        # 在 tmux 内部：改当前会话
+tmux kill-session -t work       # 只杀这一个会话
+```
+
+| 动作 | 命令 | 结果 |
+|---|---|---|
+| 新建 | `tmux new -s work` | 进入新会话 |
+| 离开但保留 | `Ctrl+b` `d` | 会话变 detached，进程继续跑 |
+| 列出 | `tmux ls` | `work: 1 windows (created ...)` |
+| 重新进入 | `tmux attach -t work` | 回到原来的 pane，屏幕内容还在 |
+| 改名 | `tmux rename-session -t 0 work` | 标签改变，**不影响进程** |
+| 销毁 | `tmux kill-session -t work` | pane 里的进程一起结束 |
+
+> 会话名只是标签。默认名是数字（本次是 `0`），所以照抄 `attach -t work` 会报
+> `can't find session: work`；先 `tmux ls` 看真实名字。
+
+### 11.3 前缀键与常用操作
+
+所有快捷键都要先按 **`Ctrl+b`，松开，再按功能键**（不是组合键同时按）。
+
+| 操作 | 按键 | 说明 |
+|---|---|---|
+| detach | `Ctrl+b` `d` | 最常用，离开不杀 |
+| 新建窗口 | `Ctrl+b` `c` | 状态栏出现 `1:bash*` |
+| 切换窗口 | `Ctrl+b` `n` / `p` / 数字 | 下一个 / 上一个 / 指定编号 |
+| 列出窗口 | `Ctrl+b` `w` | 交互式选择 |
+| 重命名窗口 | `Ctrl+b` `,` | 如改成 `feat` |
+| 左右分屏 | `Ctrl+b` `%` | |
+| 上下分屏 | `Ctrl+b` `"` | |
+| 切换窗格 | `Ctrl+b` `o` | |
+| 关闭窗格/窗口 | `exit` 或 `Ctrl+b` `x` | `x` 会先确认 |
+| 进入复制模式 | `Ctrl+b` `[` | 用方向键/`PgUp` 翻 scrollback |
+
+复制模式里：`q` 退出，`/关键词` 向上搜索，`空格` 开始选区，`Enter` 复制到 tmux 缓冲区。
+停止一个前台任务仍然是 `Ctrl+C`，与 tmux 无关。
+
+### 11.4 状态栏怎么读
+
+```text
+[work] 0:bash*                      "t12ub" 14:30 22-Oct-26
+```
+
+- `[work]`：当前会话名
+- `0:bash*`：窗口编号 `0`、窗口名 `bash`、`*` 表示当前活动窗口
+- `"t12ub"` 与时间：主机名与系统时间
+- 底部出现这条栏，就说明你在 tmux 里；`echo $TMUX` 有值也是判据
+
+### 11.5 实测：detach → 断 SSH → attach
+
+```bash
+tmux attach -t work
+cd ~/d4-practice
+sleep 300                 # 前台运行，提示符消失
+# Ctrl+b，松开，再按 d     → 回到普通 shell
+tmux ls                   # work: 1 windows (created ...)   无 (attached) = 已 detach
+exit                      # 彻底断开 SSH
+```
+
+重连后：
+
+```bash
+ssh t12ub
+tmux ls                   # work 仍在
+tmux attach -t work       # 回到 pane，sleep 300 仍在跑 → Ctrl+C 结束
+```
+
+结论：pane 里的进程与会话都没有感知到 SSH 断开；`attach` 回来连屏幕历史都还在。
+
+### 11.6 机制：为什么断 SSH 不影响 tmux
+
+实测 `ps` 证据（同一时刻）：
+
+| 对象 | PID | PPID | SID | TTY | STAT | 含义 |
+|---|---|---|---|---|---|---|
+| tmux server | 1390255 | **1** | 1390255 | `?` | `Ss` | 已被 init 收养，没有控制终端 |
+| pane 里的 bash | 1390256 | **1390255** | 1390256 | `pts/4` | `Ss+` | 父进程是 tmux server，不是 sshd；自己是新会话首进程 |
+
+链条与 SSH 登录的对照：
+
+```text
+sshd(1630610) → bash(1630611) → 命令          ← 断线时 HUP 沿这条链传下去
+tmux server(1390255, PPID=1) → bash(1390256)  ← 与 sshd 无关，HUP 传不到
+```
+
+tmux 为每个 pane 分配一个 pty 并 `setsid`，所以 pane 的 shell `SID` 等于自身；
+SSH 断开只销毁 sshd 分配的那个 pty，碰不到 tmux 的 pty。
+这与 §10.7 的结论一致：**只有换会话（`setsid`/tmux）才真正脱离登录会话**。
+
+### 11.7 不进入会话也能排查
+
+```bash
+tmux ls
+tmux list-windows -t work
+tmux list-panes -t work -F '#{window_index}.#{pane_index} pid=#{pane_pid} tty=#{pane_tty} cmd=#{pane_current_command}'
+tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} pid=#{pane_pid} cmd=#{pane_current_command}'
+```
+
+实测输出：
+
+```text
+0: bash* (1 panes) [81x29] [layout c6dd,81x29,0,0,0] @0 (active)
+0:0.0 pane_pid=1390256 tty=/dev/pts/4 cmd=bash
+```
+
+`cmd=bash` 表示 pane 里当前没有前台任务；如果显示 `python3`/`sleep`，说明任务正在里面跑。
+`#{pane_pid}` 是 pane 里 shell 的 PID，可以继续用 `ps` 深挖。
+
+### 11.8 共享服务器上的注意点
+
+`pgrep -a tmux` 会列出**全机所有用户**的 tmux 进程。本次实测混入了别人的会话：
+
+```text
+1390255 tmux new                          # jqw，自己的 server
+1431887 tmux -2 new-session -s wk         # xufumin，别人的 server
+1572539 tmux attach-session -t wk         # 别人的客户端
+```
+
+- 用 `pgrep -u "$USER" -a tmux` 只看自己的；用 `ps -o user= -p <PID>` 核对属主
+- **禁止 `tmux kill-server`**：它杀掉该 server 上所有会话；只用自己的 `kill-session -t <名字>`
+- 自己只有一个 server 时，`tmux new` 与 `tmux attach` 都作用在同一个 server 的不同会话上
+- `tmux ls` 只列**当前 socket** 的会话，看不到别人（用户不同 → socket 不同）
+
+### 11.9 易错点
+
+1. `tmux attach -t work` 报 `can't find session`：会话默认名可能是数字，先 `tmux ls`。
+2. detach 不是 `Ctrl+d` 也不是 `exit`：在提示符下 `exit` 会结束 pane 里的 shell（窗口随之关闭）；任务在跑时应先 `Ctrl+b d` 离开。
+3. `Ctrl+b` 与 `d` 要**先后按**，同时按会被当成普通输入。
+4. `tmux ls` 没写 `(attached)` 就是 detached；别把「没有标记」误判为异常。
+5. `kill-session` 前先 `tmux ls` 确认名字；`kill-server` 会波及同 server 的所有会话。
+6. 在 `~` 里随手跑 `touch result.txt` 会落在 `/home/jqw/`，练习产物统一放 `~/d4-practice/`。
