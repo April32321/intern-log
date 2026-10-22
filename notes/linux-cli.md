@@ -490,8 +490,8 @@ find audit -type f -name '*.dcm' -printf '%f\n' \
 
 ## 10. 进程与资源
 
-> 2026-10-22 在 `t12ub`（Ubuntu，共享机）实测。`ps` / `top` / `free` / `df` 已跑过；
-> 作业控制、`kill`、`nohup`、断 SSH 复现见 §10.7，尚未实测，结论一律留空。
+> 2026-10-22 在 `t12ub`（Ubuntu，共享机，`nproc=12`）实测。§10.1–§10.7 全部为当日实测结果；
+> tmux 那一列与 §11 一起补。
 
 ### 10.1 `ps` 是什么
 
@@ -668,21 +668,36 @@ ps aux --sort=-%cpu | head -5
 - 只 kill 属主是自己的 PID；禁止 `pkill python` 这类按名字批量杀，可能杀掉别人的服务。
 - `TTY=?` + `Ssl` 的守护进程能活过 SSH 断开，正好是 §10.7 断连实验的对照基准。
 
-### 10.7 作业控制与信号（待实测，结论留空）
+### 10.7 作业控制与信号（2026-10-22 实测）
 
-> 命令先写死，结果、报错原文在 `journal/day04.md`「进程状态表」里填，填完再把结论回填到这里。
+#### 作业控制三态
 
 ```bash
-sleep 300                 # 前台：提示符消失，Ctrl+C 中断
-sleep 300 &               # 后台：立刻回提示符，打印 [1] PID
-jobs -l                   # 作业号 %1 只在本 shell 会话有效
-fg %1                     # 拉回前台；再 Ctrl+Z 挂起（STAT 变 T）
+sleep 300                 # 前台：提示符消失
+# Ctrl+C                  → echo $? 得 130
+sleep 300 &               # 后台：[1] 1635730
+jobs -l                   # [1]+ 1635730 Running   sleep 300
+ps -p "$(jobs -p)" -o pid,ppid,pgid,sid,tty,stat,cmd -ww
+fg %1                     # 拉回前台
+# Ctrl+Z                  → [1]+ Stopped
 bg %1                     # 挂起态转后台继续
-kill %1                   # 按作业号；跨终端无效（no such job）
-ps -o pid,ppid,pgid,sid,tty,stat,etime,cmd -p <PID>   # 看它是否与你同会话
+kill %1                   # 按作业号终止
 ```
 
-信号参考（编号可用 `kill -l` 核对）：
+| 动作 | 命令 / 按键 | `jobs` 状态 | 关键输出 |
+|---|---|---|---|
+| 前台中断 | `Ctrl+C` | — | `exit=130`（128 + 2 号 `SIGINT`） |
+| 后台启动 | `sleep 300 &` | `Running` | `[1] 1635730` |
+| 查看归属 | `ps -p ... -ww` | — | `PPID=1630611`、`PGID=1635730`、`SID=1630611`、`TTY=pts/1` |
+| 挂起 | `Ctrl+Z`（`SIGTSTP`） | `Stopped` | `[1]+ Stopped  sleep 300` |
+| 恢复后台 | `bg %1`（`SIGCONT`） | `Running` | 回显 `[1]+ sleep 300 &` |
+| 终止 | `kill %1` | 空 | `[1]+ Terminated`；`ps` 空输出 + `exit=1` |
+
+结论：后台作业的 `PGID` 独立成组，所以前台 `Ctrl+C` 打不到它；但 `SID` 与 shell 相同、`TTY=pts/1`，
+说明 **`&` 只改变作业调度，没有脱离会话**。`jobs` 的状态变化是 `Running → Stopped → Running → Terminated`，
+`[1]+` 的 `+` 表示当前作业（`-` 是上一个作业）。
+
+#### 信号速查（`kill -l` 已核对编号）
 
 | 信号 | 编号 | 默认行为 | 能否捕获 |
 |---|---|---|---|
@@ -690,30 +705,95 @@ ps -o pid,ppid,pgid,sid,tty,stat,etime,cmd -p <PID>   # 看它是否与你同会
 | `SIGINT` | 2 | 终止 | 能（`Ctrl+C`） |
 | `SIGKILL` | 9 | 强制终止 | **不能**，内核直接销毁，不做清理 |
 | `SIGTERM` | 15 | 终止 | 能（`kill` 默认发它） |
-| `SIGSTOP` / `SIGCONT` | 19 / 18 | 暂停 / 继续 | `STOP` 不能捕获 |
+| `SIGSTOP` / `SIGCONT` | 19 / 18 | 暂停 / 继续 | `STOP` 不能捕获；`SIGTSTP` 20 号是 `Ctrl+Z` |
 
-设计对比实验（用 trap 验证「先礼后兵」）：
+#### 先礼后兵：TERM 可捕获，KILL 不可
 
-```bash
-python3 -c 'import signal,time; signal.signal(signal.SIGTERM, lambda *a: print("got SIGTERM", flush=True)); time.sleep(300)' > term.log 2>&1 &
-kill %1        # 日志应出现 got SIGTERM → TERM 可捕获、能收尾
-kill -9 %1     # 重跑一次改用 KILL，日志里不会出现那行 → 不可捕获
+用一个装了 `SIGTERM` 处理器的脚本做对照（文件名 `~/d4-practice/trap_demo.py`）：
+
+```python
+import os, signal, sys, time
+
+def on_term(signum, frame):
+    print("got SIGTERM, cleaning up", flush=True)
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, on_term)
+print("start pid=%d" % os.getpid(), flush=True)
+time.sleep(600)
 ```
 
-断 SSH 复现与保命方式（`~/d4-practice/` 内做，**不写仓库 `logs/`**）：
+| 终止方式 | `jobs` 通知 | 日志内容 | 退出码 |
+|---|---|---|---|
+| `kill %1`（`SIGTERM`） | `Done` | `start pid=...` + **`got SIGTERM, cleaning up`** | `0`（处理器里 `sys.exit(0)`） |
+| `kill -9 <PID>`（`SIGKILL`） | `Killed` | 只有 `start pid=...` | `137`（128 + 9） |
+
+- TERM 显示 `Done` 而不是 `Terminated`，是因为处理器正常退出、退出码为 0；没装处理器的 `sleep` 才显示 `Terminated`。
+- 想拿 KILL 的数字证据：起进程后 `kill -9 "$PID"; wait "$PID"; echo "exit=$?"` → `137`。
+- 结论：`SIGKILL` 由内核直接销毁进程，**不给清理机会**；所以脚本里应「先 TERM，等几秒无响应再 KILL」。
+
+#### 三组对照：手动 `exit` ≠ 断开连接
+
+这台机器 `shopt huponexit` 为 **off**，所以原计划里「`exit` 后任务会死」的验证方式**不成立**，
+必须拆成三组，否则会得出「`&` 也能扛断线」的错误结论。
+
+| 组 | 做法 | 重连后 `ps -p <PID> -o pid=,ppid=,sid=,tty=,stat=,cmd=` | 结论 |
+|---|---|---|---|
+| 3A | `sleep 300 &` 后手动 `exit` | **存活**：`1640524 PPID=1 SID=1630611 TTY=? S` | 手动退出不发 HUP；进程被 systemd 收养 |
+| 3B | 起同样进程后真断线（Mac 端 `pkill -f 'ssh.*t12ub'`）或 `kill -HUP $$` | **空输出 + `exit=1`** | 内核关 pty → 给会话首进程发 HUP → bash 转发给所有作业 |
+| 3C | `shopt -s huponexit` 后 `exit` | **空输出 + `exit=1`** | 3A 的存活是开关造成的，不是 `&` 有保护 |
+
+3A 的细节值得记住：进程 `PPID` 变 1、`TTY` 从 `pts/1` 变成 `?`（pty 已关闭），
+但 `SID` 仍是那个已消失会话的 `1630611` —— **它活着只是因为没收到 HUP，会话归属并没有变**。
+`shopt -s` 只影响当前 shell，新会话自动回到 off。
+
+#### 四组对照：`nohup` / `disown` / `setsid` 谁真能扛 HUP
+
+用不同 `sleep` 时长当标签（`setsid` 会 fork，`$!` 不一定等于 `sleep` 的 PID，所以用 `pgrep -f` 抓）。
+同一次 `kill -HUP $$` 断线后重连检查：
+
+| 方式 | 启动 | 断线前 `SID` / `TTY` | 断线后 | 说明 |
+|---|---|---|---|---|
+| 普通 `&`（对照） | `sleep 311 &` | shell 的 SID / `pts/1` | **DEAD** | 收到转发的 HUP，默认动作终止 |
+| `nohup` | `nohup sleep 313 > long_run.log 2>&1 &` | shell 的 SID / `pts/1` | 存活（SID 不变、`TTY=?`） | 只把 HUP 处置改成忽略，**没脱离会话** |
+| `disown` | `sleep 317 &` 后 `disown` | shell 的 SID / `pts/1` | 存活（SID 不变、`TTY=?`） | 从作业表摘掉，shell 转发 HUP 时找不到它 |
+| `setsid` | `setsid sleep 319 > /dev/null 2>&1 &` | **自身 PID** / `?`，`PPID=1`、`Ss` | 存活（SID 仍为自身） | 新会话，彻底与控制终端无关 |
+
+结论：`nohup` 和 `disown` 是「让进程收不到/忽略 HUP」，`setsid` 是「换一个会话」；
+真正把任务从你的登录会话里独立出去的只有 `setsid`（tmux 内部也是这么做的）。
+
+#### `nohup.out` 的两个细节
 
 ```bash
-ssh -t t12ub
-sleep 300 &            # 记下 PID
-exit                   # 交互式 bash 退出 → 向作业发 SIGHUP
-# 重连：ps -p <PID> 应无输出（已死）
-
-nohup sleep 300 > ~/d4-practice/long_run.log 2>&1 &   # 忽略 HUP + 输出脱离终端
-sleep 300 & disown                                    # 从作业表摘掉
-setsid sleep 300 > /dev/null 2>&1 &                   # 新会话，彻底脱离控制终端
+rm -f nohup.out
+nohup sleep 5 &
+# nohup: ignoring input and appending output to 'nohup.out'
+ls -l nohup.out     # -rw------- 1 jqw jqw 0
 ```
 
-待填对比（断连后是否存活、能否重新接管、输出落点、适用场景 → `nohup` 只能"不死"，`tmux` 才能"回来接着看"，结论待 §11 实测）。
+- 只有**没有重定向 stdout** 时才生成 `nohup.out`；已写 `> file 2>&1` 就不会生成
+- 权限固定 `600`（coreutils 建这个文件用 0600，不是 umask 推出的 664）
+- 那句提示走 **stderr**，所以屏幕看得到、不会进文件
+- `sleep` 没有输出，文件是 0 字节；输出内容要等程序真正打印才写入
+
+#### `nohup` 与 `tmux` 对比
+
+| 维度 | `nohup ... &` | `tmux` |
+|---|---|---|
+| 断 SSH 是否存活 | 是（忽略 HUP，但结果取决于是否重定向/是否 disown） | 是（pane 挂在 tmux server 下，与 sshd 无关） |
+| 能否重新接管/交互 | 不能，只能看日志文件 | 能，`attach` 回来继续操作、向上翻输出 |
+| 输出落点 | `nohup.out` 或你指定的重定向文件 | pane 的 scrollback，可复制、可分屏 |
+| 适用场景 | 一次性脚本、跑完只要结果 | 需要观察进度、中途交互、多任务并行（D17 用） |
+
+tmux 那一列的实现证据（`t12ub` 上已存在的会话，`ps -u jqw` 实测）：
+
+```text
+1390255       1 ... Ss   tmux                                  ← server，PPID=1，无终端
+1390256 1390255 ... Ss+  -bash                                 ← pane 里的 shell，父进程是 tmux
+```
+
+pane 的 shell `PPID` 是 tmux server，不是 sshd，所以断 SSH 碰不到它。
+
 
 ### 10.8 本节易错点
 
@@ -725,3 +805,5 @@ setsid sleep 300 > /dev/null 2>&1 &                   # 新会话，彻底脱离
 6. `load average` 不是 CPU 使用率，要拿核数当分母。
 7. 作业号 `%1` 只属于当前 shell 会话，换终端或断连后失效，只能用 PID。
 8. 后台 `&` 不等于脱离终端；`TTY` 还在 `pts/*` 就说明它仍挂在会话上，SSH 一断照样收 `SIGHUP`。
+9. `cat > 文件 <<'EOF'` 的终止符**不能有尾随空格或缩进**，否则提示符一直停在 `>`，看起来像卡死；`Ctrl+C` 安全退出。粘贴多行代码时优先用 `printf '%s\n' ...` 或 `python3 - <<'PY'`。
+10. `jobs -l` 的 `l` 是字母 L；敲成 `jobs -1` 会报 `invalid option`。`jobs` 只列当前 shell 的作业，`ps` 才是全机视角。
