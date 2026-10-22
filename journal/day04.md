@@ -24,7 +24,7 @@ gate: -
 | 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | 待做 |
-| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10–§11 完成；§12–§14 待做） |
+| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10–§12 完成；§13–§14 待做） |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅（day04 已 5 次，最新 `799f75b`） |
@@ -47,7 +47,7 @@ gate: -
 - [x] 2 例数据两端 SHA-256 一致（232/232），Slicer 能打开 CT 看一眼
 - [ ] `bash code/setup_check.sh` 能跑，输出清晰 PASS/WARN，缺命令显示 `MISSING` 而不崩
 - [x] tmux 跑 5 分钟 `sleep`，detach 后 `tmux ls` 仍可见，attach 回来任务还在
-- [ ] 能解释 `pip install` 后 `command not found`（PATH + venv + shell hash 缓存）
+- [x] 能解释 `pip install` 后 `command not found`（PATH + venv + shell hash 缓存）
 - [ ] 日志含当日报错原文，以及至少 1 条「Kilo 说 X，我核实是 Y」
 - [ ] 当日 commit 完成，`journal/INDEX.md` D4 行已回填
 
@@ -61,7 +61,7 @@ gate: -
 | 2 例数据 scp + 校验 + 打开 CT | ✅ | `data/raw/lung1_smoke/` 2 例 232 个 `.dcm`、150M；两端 SHA-256 232/232 一致；Slicer 5.12.4 打开 CT（94 层） |
 | 进程与资源（ps/top/kill/jobs） | ✅ | `notes/linux-cli.md` §10；`t12ub` 实测：`nproc=12`、load 0.03；`jobs` 三态；TERM 有 `got SIGTERM, cleaning up`、KILL 只有 `start`（退出码 137）；3A/3B/3C 与四组保命对照见「实验记录」 |
 | tmux 长任务（含 5 分钟验收） | ✅ | 默认会话 `0` 改名为 `work`；`sleep 300` 运行中 `Ctrl+b d` detach → `tmux ls` 无 attached → `exit` 断 SSH → 重连 `attach` 仍在；`notes/linux-cli.md` §11 |
-| 环境变量与 PATH 排错 | 待填 | |
+| 环境变量与 PATH 排错 | ✅ | 制造并修复 `demo-cmd` 的 `exit=127`；`.bashrc` 持久化后重连可用；`rm` 后报旧路径 → `hash -r` 恢复；`pip`/`python`/`ensurepip` 缺失均实测；`notes/linux-cli.md` §12 |
 | 写 `code/setup_check.sh` 并两端跑通 | 待填 | |
 | 压缩与归档（tar/unzip） | 待填 | |
 | 笔记与收尾 | 待填 | |
@@ -189,15 +189,41 @@ tail -n 5 ~/d4-practice/long_run.log   # sleep 无输出 → 文件 0 字节
 
 ```bash
 # ——【t12ub】环境变量与 PATH ——
-echo $PATH | tr ':' '\n'
-which python
-type -a python
-export MYVAR=test
-echo $MYVAR
-bash -c 'echo $MYVAR'                # 子进程可见
-tail -n 3 ~/.bashrc                  # 服务器是 bash
-source ~/.bashrc
-# Mac 对应 ~/.zshrc；export 只影响当前会话及子进程
+echo $SHELL                          # /bin/bash
+echo $PATH | tr ':' '\n'             # 首位 ~/.npm-global/bin，共 10 条；不含 ~/.local/bin
+type -a python                       # bash: type: python: not found（只有 python3）
+type -a python3                      # /usr/bin/python3、/bin/python3（/bin 是软链接）
+which pip; which pip3                # not found，提示 apt install python3-pip
+python3 -m pip --version             # No module named pip, exit=1
+python3 -m venv ~/d4-practice/venv-demo  # ensurepip 不可用，需 python3.12-venv，exit=1
+command -v conda mamba docker        # 只有 /usr/bin/docker
+
+# ① 制造「装了但不在 PATH」
+mkdir -p ~/d4-practice/bin
+printf '#!/usr/bin/env bash\necho "demo-cmd from $0"\n' > ~/d4-practice/bin/demo-cmd
+chmod +x ~/d4-practice/bin/demo-cmd
+demo-cmd                             # command not found, exit=127
+~/d4-practice/bin/demo-cmd           # 绝对路径可跑 → 问题在 PATH
+
+# ② 临时修复（仅当前会话）
+export PATH="$HOME/d4-practice/bin:$PATH"
+demo-cmd                             # 可运行；command -v 指向新路径
+
+# ③ 持久化（写 .bashrc，重连验证）
+echo 'export PATH="$HOME/d4-practice/bin:$PATH"  # d4-demo' >> ~/.bashrc
+exit; ssh t12ub; demo-cmd            # 新会话仍可用；PATH 头部 d4-practice/bin
+
+# ④ hash 缓存：删文件后仍指向旧路径
+demo-cmd                             # 先跑一次，hash 记录 bin 路径
+rm ~/d4-practice/bin/demo-cmd
+demo-cmd; echo "exit=$?"             # bash: .../bin/demo-cmd: No such file or directory, 127
+hash -r; demo-cmd                    # shadow 版本
+
+# ⑤ export 语义
+MYVAR=test; bash -c 'echo ${MYVAR:-空}'      # 空
+export MYVAR; bash -c 'echo $MYVAR'          # test
+
+# Mac 对应 ~/.zshrc；演示行已用 sed -i '/# d4-demo/d' ~/.bashrc 清掉
 ```
 
 ```bash
@@ -311,13 +337,30 @@ unzip -l /tmp/x.zip
 
 ### PATH 排错流程（验收第 3 条）
 
-> `pip install` 后 `command not found` 的三步排查，按顺序写实测结果。
+> `pip install` 后 `command not found` 的排查，按实测顺序记录。本机 `pip`、`python` 都不存在，
+> 所以「没装」与「不在 PATH」两类都真实出现了。
 
-1. `type -a <命令>`：待填
-2. `echo $PATH | tr ':' '\n'`：待填
-3. `hash -r` 后重试：待填
+| 步 | 命令 | 实测输出 | 判读 |
+|---|---|---|---|
+| 1 | `command -v <命令>` | `demo-cmd` → 空；`emo-cmd` → 空 | 名字不存在或没进 PATH，先确认拼写 |
+| 2 | `type -a <命令>` | `python: not found`；`python3` → `/usr/bin/python3`、`/bin/python3` | 区分「没装」与「有多个来源」；`/bin` 是 `/usr/bin` 软链接 |
+| 3 | `echo $PATH \| tr ':' '\n'` | 10 条目录，含 `~/.npm-global/bin`，**不含** `~/.local/bin` 与 `~/d4-practice/bin` | `pip install --user` 会装到 `~/.local/bin`，默认找不到 |
+| 4 | 绝对路径直接运行 | `~/d4-practice/bin/demo-cmd` → 正常输出 | 能跑 = 文件/权限没问题，问题在 PATH |
+| 5 | `hash -r` 后重试 | 删除文件后报 `bash: /.../bin/demo-cmd: No such file or directory`（exit=127）；`hash -r` 后变 `shadow 版本` | 报错带完整旧路径 = hash 缓存 |
+| 6 | 确认装进了哪个环境 | `python3 -m pip` → `No module named pip`；`venv` → `ensurepip is not available` | 环境本身缺 pip/venv，与 PATH 无关 |
 
-结论：待填
+四类原因与本次证据：
+
+| 类别 | 本次实例 | 判据 |
+|---|---|---|
+| 没装 | `pip`、`pip3`、`python` | `type -a` 完全没有，apt 提示安装 |
+| 装了不在 PATH | `demo-cmd` | 裸命令 `exit=127`，绝对路径可用 |
+| hash 指向旧路径 | 删除后仍报旧路径 | 报错含完整路径 + `No such file or directory` |
+| 装在别的环境 | `python3 -m pip`、venv | `No module named pip`、装到 venv `bin/` 但 shell 用系统解释器 |
+
+结论：先 `command -v` 排除拼写/没装，再看 PATH 顺序，能绝对路径跑就锁定 PATH，报旧路径就 `hash -r`，
+最后确认 pip 属于哪个解释器/环境。`export PATH=...` 只对当前会话有效，写 `~/.bashrc` 后需
+`source` 或重开会话（本次重连后生效，PATH 头部为 `~/d4-practice/bin`，其后是 `~/.npm-global/bin`）。
 
 ## 预判坑（待实测确认，未验证的不进结论）
 

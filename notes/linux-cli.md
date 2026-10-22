@@ -1,7 +1,7 @@
-# Linux CLI：文件、权限、管道、文本处理、进程与资源、tmux
+# Linux CLI：文件、权限、管道、文本处理、进程与资源、tmux、PATH
 
 > Day 3–4 笔记。§1–§9 来源：`每日计划/Day03.md` + 2026-10-21 在 `t12ub` 的 `~/d3-practice` 实际操作；
-> §10–§11 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
+> §10–§12 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
 > 练习目录与仓库分离：命令在服务器跑，笔记、日志和 commit 在 Mac 仓库完成。
 
 ## 1. 目录结构与导航
@@ -964,3 +964,199 @@ tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} pid=#{pane_
 4. `tmux ls` 没写 `(attached)` 就是 detached；别把「没有标记」误判为异常。
 5. `kill-session` 前先 `tmux ls` 确认名字；`kill-server` 会波及同 server 的所有会话。
 6. 在 `~` 里随手跑 `touch result.txt` 会落在 `/home/jqw/`，练习产物统一放 `~/d4-practice/`。
+
+## 12. 环境变量与 PATH
+
+> 2026-10-22 在 `t12ub` 实测。目标：把「`pip install` 后 `command not found`」拆成可复现的几种原因，
+> 每种都亲手制造一次，再修好。
+
+### 12.1 变量、环境、`export`
+
+- **shell 变量**只属于当前 shell，子进程看不到
+- **环境变量**是「会传给子进程的变量」，`export` 就是给变量打上这个标记
+- `export MYVAR=test` = 赋值 + 导出；`MYVAR=test` 只是赋值
+
+```bash
+MYVAR=test
+bash -c 'echo "子进程: ${MYVAR:-空}"'   # 子进程: 空
+export MYVAR=test
+bash -c 'echo "子进程: $MYVAR"'         # 子进程: test
+env | grep '^MYVAR'                     # 只列环境变量
+```
+
+- `export` 影响的是**当前 shell 及其之后启动的子进程**，改不了父进程
+- 在脚本里 `export PATH=...` 只对脚本自己（及其子命令）有效，脚本结束就没了
+- `set` 列全部变量（含未导出），`env` / `printenv` 只列已导出的
+
+### 12.2 PATH 的搜索规则
+
+`PATH` 是一串用 `:` 分隔的目录，shell 执行裸命令时**从左到右找第一个同名可执行文件**，
+命中就停，后面即使有同名版本也不看。**顺序即优先级。**
+
+本次 `echo $PATH | tr ':' '\n'`（新增演示目录之前）：
+
+```text
+/home/jqw/.npm-global/bin
+/usr/local/sbin
+/usr/local/bin
+/usr/sbin
+/usr/bin
+/sbin
+/bin
+/usr/games
+/usr/local/games
+/snap/bin
+```
+
+| 工具 | 作用 | 局限 |
+|---|---|---|
+| `command -v 名字` | 最标准：打印解析结果，找不到返回非 0 | 不解释来源类型 |
+| `type -a 名字` | 列出**全部**同名来源（别名/函数/内置/多个路径） | 输出更长 |
+| `which 名字` | 打印第一个匹配路径 | 某些系统不认别名/函数 |
+
+`type -a python3` 输出两条：
+
+```text
+python3 is /usr/bin/python3
+python3 is /bin/python3
+```
+
+不是两个文件——`/bin` 是指向 `/usr/bin` 的软链接，PATH 里两条目录都命中同一个文件。
+
+### 12.3 「command not found」的四类原因
+
+| 类别 | 本次实例 | 判据 |
+|---|---|---|
+| ① 没装 | `pip`、`pip3`、`python` | `type -a` 完全没有；Ubuntu 会提示 `apt install python3-pip` |
+| ② 装了但目录不在 PATH | `~/d4-practice/bin/demo-cmd` | 裸命令 `exit=127`，绝对路径能跑 |
+| ③ 装了、PATH 也对，但 hash 指向旧路径 | 删掉文件后仍报旧路径 | 报错是 `bash: /旧/路径: No such file or directory`，不是 `command not found` |
+| ④ 装进了另一个环境却没用那个环境 | `python3 -m pip`、venv | 报 `No module named pip` / 装到 venv 的 `bin/` 但 shell 用系统解释器 |
+
+本次还确认：这台机器 **没有 `python`**（只有 `python3`）、**没有 pip**、
+建 venv 缺 `ensurepip`（需 `apt install python3.12-venv`）、`conda`/`mamba` 不属于当前用户、`docker` 存在。
+
+```text
+$ python3 -m pip --version
+/usr/bin/python3: No module named pip      # exit=1
+$ python3 -m venv ~/d4-practice/venv-demo
+The virtual environment was not created successfully because ensurepip is not available.
+... apt install python3.12-venv            # exit=1
+```
+
+### 12.4 实测四组
+
+#### A. 现状
+
+```bash
+echo $SHELL                       # /bin/bash
+echo $PATH | tr ':' '\n'
+type -a python                    # bash: type: python: not found
+type -a python3                   # /usr/bin/python3、/bin/python3
+which pip; which pip3             # Command 'pip' not found ... apt install python3-pip
+echo "$PATH" | tr ':' '\n' | grep "\.local/bin" || echo "PATH 不含 ~/.local/bin"
+```
+
+结论：`pip install --user` 默认把脚本装进 `~/.local/bin`，而它不在 PATH —— 这是最常见的「装了却找不到」。
+
+#### B. 制造并临时修复
+
+```bash
+mkdir -p ~/d4-practice/bin
+printf '#!/usr/bin/env bash\necho "demo-cmd from $0"\n' > ~/d4-practice/bin/demo-cmd
+chmod +x ~/d4-practice/bin/demo-cmd
+
+demo-cmd; echo "exit=$?"                  # demo-cmd: command not found / exit=127
+command -v demo-cmd || echo "PATH 里找不到"
+~/d4-practice/bin/demo-cmd                # demo-cmd from /home/jqw/d4-practice/bin/demo-cmd
+
+export PATH="$HOME/d4-practice/bin:$PATH" # 前置 = 更高优先级
+demo-cmd                                  # 可直接运行
+command -v demo-cmd                       # /home/jqw/d4-practice/bin/demo-cmd
+```
+
+**判定顺序**：能绝对路径跑 → 文件、权限、解释器都没问题，问题只在 PATH。
+
+#### C. 持久化：写进 `~/.bashrc`
+
+```bash
+echo 'export PATH="$HOME/d4-practice/bin:$PATH"  # d4-demo' >> ~/.bashrc
+tail -n 3 ~/.bashrc
+exit          # 不 source，直接重连
+ssh t12ub
+demo-cmd                              # 仍可用 → 登录时读取了 .bashrc
+```
+
+实测 `~/.bashrc` 末尾两行（注意**书写顺序决定最终优先级**）：
+
+```bash
+export PATH="$HOME/.npm-global/bin:$PATH"
+export PATH="$HOME/d4-practice/bin:$PATH"  # d4-demo
+```
+
+每条都是**前置**，后执行的插到最前，所以新会话 PATH 头部是
+`~/d4-practice/bin` → `~/.npm-global/bin` → … 。这也说明了为什么 npm 全局安装的 `kilo` 能找到（D6 会用到）。
+
+- Ubuntu 登录时：`~/.profile` 会 source `~/.bashrc`（交互式），所以 SSH 新会话也生效
+- `source ~/.bashrc`（等价 `. ~/.bashrc`）在**当前 shell** 重新执行该文件，改完立即生效
+- 不 source 又不开新会话，改动就「看不见」——新手第一大坑
+- macOS 默认是 zsh，对应文件是 `~/.zshrc`
+
+#### D. hash 缓存：删除后仍指向旧路径
+
+```bash
+shopt checkhash                     # 默认 off：不校验缓存路径是否还存在
+mkdir -p ~/d4-practice/shadow
+printf '#!/usr/bin/env bash\necho "shadow 版本"\n' > ~/d4-practice/shadow/demo-cmd
+chmod +x ~/d4-practice/shadow/demo-cmd
+export PATH="$HOME/d4-practice/bin:$HOME/d4-practice/shadow:$PATH"
+
+demo-cmd                            # 先跑 bin 版本，路径被记入 hash
+hash                                # hits 1  /home/jqw/d4-practice/bin/demo-cmd
+rm ~/d4-practice/bin/demo-cmd
+demo-cmd; echo "exit=$?"            # bash: /home/jqw/d4-practice/bin/demo-cmd: No such file or directory / 127
+hash -r
+demo-cmd                            # shadow 版本
+```
+
+- `hash` 显示 shell 的**命令路径缓存**：命中次数 + 路径
+- `checkhash=off` 时 bash 直接用缓存路径执行，所以报的是**旧路径不存在**，而不是重新搜索
+- `hash -r` 清空缓存后按 PATH 重新查找
+- 同理：刚 `pip install` 一个同名新版本，shell 可能还跑着旧路径，重开终端或 `hash -r` 就好
+
+#### 附：拼写错误的干扰项
+
+```bash
+emo-cmd        # emo-cmd: command not found
+```
+
+报错文本和「装了但不在 PATH」几乎一样，所以排错第一步永远是 `command -v 名字`：
+名字拼错 → 任何目录都没有；装了没进 PATH → 目录里有但 PATH 没有。
+
+### 12.5 排错流程（按顺序执行）
+
+```text
+1. command -v 名字            → 空：没装或拼错（type -a 再确认）
+2. 绝对路径能跑吗             → 能：PATH 问题；不能：文件/权限/解释器/shebang
+3. echo $PATH | tr ':' '\n'   → 目录在不在？排第几？有没有被后面的同名版本抢先？
+4. 目录在、文件在，仍报旧路径 → hash -r
+5. pip 装的东西               → 确认装进了哪个环境：~/.local/bin、venv/bin、conda env bin
+6. 改了 .bashrc 不生效        → source ~/.bashrc 或重开会话；确认改的是当前 shell 对应的文件（bash vs zsh）
+```
+
+| 现象 | 最可能原因 | 立即验证 |
+|---|---|---|
+| `xxx: command not found` | 没装 / 拼错 / 不在 PATH | `command -v`、`type -a` |
+| 报错里带一个完整旧路径 | hash 缓存 | `hash -r` |
+| `No module named pip` | 该解释器没装 pip | `python3 -m pip --version` |
+| 装了包但模块/命令都没有 | 装进了别的环境 | `which python`、`which pip`、`pip --version` |
+| `bad interpreter: ^M` | Windows 换行 | `sed -i 's/\r$//' 文件` |
+
+### 12.6 易错点
+
+1. `export PATH=$HOME/bin:$PATH` 末尾的 `:$PATH` 不能省，否则整条 PATH 被覆盖，`ls`、`vim` 都会找不到（当前 shell 用绝对路径 `/bin/ls` 或重开终端恢复）。
+2. PATH 里加 `.`（当前目录）有风险：在别人目录里执行同名脚本会被劫持。
+3. `.bashrc` 改完不 `source` 也不重连，当然不生效；但 `source` 只影响当前会话，其他已开终端不受影响。
+4. 脚本里的 `export` 出了脚本就失效；要持久化必须写进 shell 配置文件。
+5. `which` 看不到别名和函数，排错优先 `type -a`。
+6. 目录存在不代表能执行：`chmod +x` 之外，挂载点若带 `noexec` 也会 `Permission denied`。
+7. `PATH` 里的目录不要带尾随空格或不可见字符，肉眼看不出来但会静默失效。
