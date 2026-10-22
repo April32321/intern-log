@@ -25,7 +25,7 @@ gate: -
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | ✅（60 行；Mac 73GB→WARN/exit=1，t12ub 3533GB→PASS/exit=0；PATH 缩小不崩） |
 | 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | ✅（标题已改，§10–§14 全部完成） |
-| 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
+| 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | ✅（卡点 1–3 + 2 条易错点；Kilo 抓错记录 1；今日结论 7 条） |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅（day04 已 5 次，最新 `799f75b`） |
 | 8 | 服务器练习目录 | `~/d4-practice/`（tmux、nohup、日志都放这里，**不写进仓库 `logs/`**） | `ls ~/d4-practice` | ✅（`trap_demo.py`、`term.log`、`kill9.log`、`nohup.out`、各 `*.pid`） |
@@ -108,6 +108,8 @@ D=/home/jqw/.data/nsclc-radiomics/nsclc_radiomics
 ssh t12ub "ls $D | wc -l"                    # 422 例
 ssh t12ub "du -sh $D/LUNG1-308"              # 64M
 
+上传测试
+
 # ——【Mac】拉 2 例到本地；data/raw/ 已被 .gitignore 忽略——
 mkdir -p data/raw/lung1_smoke
 scp -r t12ub:$D/LUNG1-308 data/raw/lung1_smoke/
@@ -167,10 +169,22 @@ tmux attach -t work
 tmux ls                              # work: 1 windows ...（无 attached = 已 detach）
 exit                                 # 彻底断开 SSH
 
+添加新配置
+cd tools
+git clone --single-branch https://github.com/gpakosz/.tmux.git
+ln -s -f ~/tools/.tmux/.tmux.conf ~/.tmux.conf
+cp .tmux/.tmux.conf.local ~/
+
+vim ~/.tmux.conf.local
+
+tmux -f ~/.tmux.conf
+
 # 重连后
 tmux ls                              # work 仍在
 tmux attach -t work                  # 回到 pane，sleep 仍在跑 → Ctrl+C
 ```
+缩写
+alias tmuxa='tmux attach -t'
 
 ```bash
 # ——【t12ub】tmux 机制证据 ——
@@ -225,6 +239,7 @@ export MYVAR; bash -c 'echo $MYVAR'          # test
 
 # Mac 对应 ~/.zshrc；演示行已用 sed -i '/# d4-demo/d' ~/.bashrc 清掉
 ```
+
 
 ```bash
 # ——【Mac】写脚本，【t12ub】跑 ——
@@ -520,9 +535,13 @@ diff -r code /tmp/d4-unzip/code && echo "zip 还原一致"
 
 > 收尾时补 3–7 条，只写验证过的结论；说不清为什么的结果标 `未验证`。
 
-1. 待填
-2. 待填
-3. 待填
+1. **`&` 只是作业调度，不是脱离会话**：后台 `sleep` 的 `PGID` 独立（`Ctrl+C` 打不到），但 `SID` 仍是 shell、`TTY=pts/1`。判断一个进程是否会跟着终端死，看 `SID`/`TTY`，不看 `&`。
+2. **手动 `exit` ≠ 断开连接**：`huponexit=off` 时 `exit` 不补发 HUP，进程存活且被 systemd 收养（`PPID=1`、`SID` 仍是旧会话、`TTY=?`）；真断线（或 `kill -HUP $$`）才由内核发 HUP、shell 转发给作业；`shopt -s huponexit` 后 `exit` 才会杀。以后验收「长任务抗断线」必须用真断线，不能拿 `exit` 代替。
+3. **先礼后兵有效**：装 `SIGTERM` 处理器的进程收到 TERM 会打印清理行并以 0 退出（`jobs` 显示 `Done`）；`kill -9` 只剩 `start`、`jobs` 显示 `Killed`、`wait` 得 `137`，没有任何清理机会。
+4. **只有换会话才算真正脱离**：`nohup`/`disown` 在断线后存活，但 `SID` 不变、`TTY` 变 `?`——它们只是忽略或绕过了 HUP；`setsid` 的 `SID` 等于自身。tmux 走的是同一机制：pane 的 `PPID` 是 tmux server（其 `PPID=1`、无终端），所以断 SSH 无感且能 `attach` 回来。
+5. **PATH 顺序决定命令版本**：同一个 `python3`，完整 PATH 下是 `3.14.2`（Framework），缩小到 `/usr/bin:/bin` 后是 `3.9.6`；`command not found` 必须按四类排查（没装 / 不在 PATH / hash 指向旧路径 / 装进别的环境），报错里带完整旧路径就是 hash，`hash -r` 即解。
+6. **`set -euo pipefail` 不是「任何失败都退出」**：`if` 条件、`&&`/`||` 左侧都豁免，所以 `if p="$(command -v "$c")"` 能安全输出 `MISSING`；`-u` 的退出码在 macOS Bash 3.2 下实测为 `127`，与文档常写的 `1` 不同，脚本只该判断非 0。
+7. **归档排除是独立机制**：`.gitignore` 不会作用于 `tar`/`zip`，`.DS_Store` 照样进包（33K/13 条 → 排除后 32K/12 条）；解压前先 `tar -tzf` / `unzip -l`，解压后必须 `diff -r` 验证还原一致。`need_gb=150` 对 Mac（73 GB）不适用，阈值是否改为参数待定。
 
 ## 明日 3 件事
 
