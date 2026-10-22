@@ -23,8 +23,8 @@ gate: -
 |---|---|---|---|---|
 | 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
-| 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | 待做 |
-| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10–§12 完成；§13–§14 待做） |
+| 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | ✅（60 行；Mac 73GB→WARN/exit=1，t12ub 3533GB→PASS/exit=0；PATH 缩小不崩） |
+| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10–§13 完成；§14 待做） |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅（day04 已 5 次，最新 `799f75b`） |
@@ -45,7 +45,7 @@ gate: -
 
 - [ ] 4 道路径自测题全对，能解释 `cd ..` 与 `cd -`、`../notes` 与 `notes` 的区别
 - [x] 2 例数据两端 SHA-256 一致（232/232），Slicer 能打开 CT 看一眼
-- [ ] `bash code/setup_check.sh` 能跑，输出清晰 PASS/WARN，缺命令显示 `MISSING` 而不崩
+- [x] `bash code/setup_check.sh` 能跑，输出清晰 PASS/WARN，缺命令显示 `MISSING` 而不崩
 - [x] tmux 跑 5 分钟 `sleep`，detach 后 `tmux ls` 仍可见，attach 回来任务还在
 - [x] 能解释 `pip install` 后 `command not found`（PATH + venv + shell hash 缓存）
 - [ ] 日志含当日报错原文，以及至少 1 条「Kilo 说 X，我核实是 Y」
@@ -62,7 +62,7 @@ gate: -
 | 进程与资源（ps/top/kill/jobs） | ✅ | `notes/linux-cli.md` §10；`t12ub` 实测：`nproc=12`、load 0.03；`jobs` 三态；TERM 有 `got SIGTERM, cleaning up`、KILL 只有 `start`（退出码 137）；3A/3B/3C 与四组保命对照见「实验记录」 |
 | tmux 长任务（含 5 分钟验收） | ✅ | 默认会话 `0` 改名为 `work`；`sleep 300` 运行中 `Ctrl+b d` detach → `tmux ls` 无 attached → `exit` 断 SSH → 重连 `attach` 仍在；`notes/linux-cli.md` §11 |
 | 环境变量与 PATH 排错 | ✅ | 制造并修复 `demo-cmd` 的 `exit=127`；`.bashrc` 持久化后重连可用；`rm` 后报旧路径 → `hash -r` 恢复；`pip`/`python`/`ensurepip` 缺失均实测；`notes/linux-cli.md` §12 |
-| 写 `code/setup_check.sh` 并两端跑通 | 待填 | |
+| 写 `code/setup_check.sh` 并两端跑通 | ✅ | 60 行；Mac 73GB→`WARN`/exit=1；缩小 PATH 仍跑完（`unknown`+`MISSING`）；`need_gb=10`→`PASS`/exit=0；t12ub 3533GB→`PASS`/exit=0 |
 | 压缩与归档（tar/unzip） | 待填 | |
 | 笔记与收尾 | 待填 | |
 
@@ -229,17 +229,33 @@ export MYVAR; bash -c 'echo $MYVAR'          # test
 ```bash
 # ——【Mac】写脚本，【t12ub】跑 ——
 cd ~/Desktop/实习日志
-# 编辑 code/setup_check.sh（set -euo pipefail + 三个平台分支）
+wc -l code/setup_check.sh            # 60 行；首行 #!/usr/bin/env bash
+bash -n code/setup_check.sh          # 语法检查通过
 chmod +x code/setup_check.sh
 bash code/setup_check.sh; echo "exit=$?"
+# macOS 14.6.1 / arm64 / 8 cores / 73GB → WARN（<150GB）
+# python3 指向 Framework 3.14；wget/conda/docker/kilo = MISSING
+# RESULT: WARN，exit=1
 
-# 缺命令场景（Linux）：临时把 PATH 缩小，确认输出 MISSING 而不是崩溃
+# 缩小 PATH：确认 MISSING 不崩，且 python3 解析到系统版本
 PATH=/usr/bin:/bin bash code/setup_check.sh; echo "exit=$?"
+# CPU cores=unknown（sysctl 在 /usr/sbin，不在 PATH）
+# python3=/usr/bin/python3；wget/conda/docker/kilo=MISSING；exit=1
 
-# 服务器上跑同一份脚本（先 scp 过去）
+# 阈值临时改小 → PASS（不改仓库文件）
+sed 's/need_gb=150/need_gb=10/' code/setup_check.sh > /tmp/sc_pass.sh
+bash /tmp/sc_pass.sh; echo "exit=$?"   # RESULT: PASS，exit=0
+
+# macOS 的 df 不支持 GNU 写法 → 走 df -g 兜底
+df -BG --output=avail "$HOME"          # df: invalid option -- B，exit=64
+df -g "$HOME" | head -2                # 第 4 列 Available=73
+
+# 服务器上跑同一份脚本
 scp code/setup_check.sh t12ub:~/d4-practice/
 ssh t12ub 'bash ~/d4-practice/setup_check.sh; echo "exit=$?"'
-# 输出要点：
+# Ubuntu 24.04.4 / x86_64 / 12 cores / 3533GB
+# git/curl/tar/wget/python3/docker 均有路径；conda、kilo=MISSING
+# RESULT: PASS，exit=0
 ```
 
 ```bash
@@ -331,9 +347,23 @@ unzip -l /tmp/x.zip
 
 | 选项 | 作用 | 本地验证方式 |
 |---|---|---|
-| `-e` | | |
-| `-u` | | |
-| `-o pipefail` | | |
+| `-e` | 命令失败立即退出 | `bash -c 'set -e; false; echo x'` → 不打印 `x`，`exit=1` |
+| `-u` | 未定义变量报错退出 | `bash -c 'set -u; echo "$NOPE"'` → `unbound variable`；macOS Bash 3.2 下 `exit=127`（版本相关，只判非 0） |
+| `-o pipefail` | 管道任一环失败即整体失败 | `false \| true` 加 `set -o pipefail` → `1`；不加 → `0` |
+
+条件上下文豁免：`bash -c 'set -e; if v="$(command -v no_such_cmd)"; then echo yes; else echo no; fi; echo survived'`
+打印 `no`、`survived`——`command -v` 失败发生在 `if` 条件里，不触发 `set -e`。
+
+### setup_check.sh 实测矩阵（2026-10-22）
+
+| 场景 | 命令 | 结果 |
+|---|---|---|
+| Mac 正常 | `bash code/setup_check.sh` | 73 GB < 150 → `WARN`，`exit=1` |
+| Mac 缩小 PATH | `PATH=/usr/bin:/bin bash code/setup_check.sh` | 完整跑完；`CPU cores unknown`（`sysctl` 在 `/usr/sbin`）；`python3=/usr/bin/python3`；`exit=1` |
+| 阈值降到 10 GB | `bash /tmp/sc_pass.sh` | `PASS`，`exit=0` |
+| 服务器 | `ssh t12ub 'bash ~/d4-practice/setup_check.sh; echo $?'` | 3533 GB；`conda`/`kilo` MISSING → `PASS`，`exit=0` |
+
+同一命令在不同 PATH 下版本不同：`python3 -V` 完整 PATH 为 `3.14.2`，缩小后为 `3.9.6`。
 
 ### PATH 排错流程（验收第 3 条）
 
