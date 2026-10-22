@@ -309,16 +309,17 @@ unzip -l /tmp/x.zip
 - **判定方法**：`cd -` 会打印目标路径，看它打的是不是你以为的目录。
 - **结论**：回上级用 `cd ..`；`cd -` 只用于两个目录间来回跳。命令成功不代表规则正确。
 
-### 卡点 2：待填
+### 卡点 2：`git add journal/day04.md` 报 pathspec did not match any files
 
 - **现象**：
   ```text
+  fatal: pathspec 'journal/day04.md' did not match any files
   ```
-- **我的猜测**：
-- **验证过程**：
-- **根因**：
-- **解决**：
-- **下次怎么避免**：
+- **我的猜测**：以为 `git add` 的路径以仓库根为基准，与当前目录无关。
+- **验证过程**：提示符为 `tables %`，`pwd` 在 `results/tables`；`git status` 把改动显示为 `../../journal/day04.md`、`../../notes/linux-cli.md`；`cd` 回仓库根后 `git add journal/day04.md notes/linux-cli.md` 成功，`git diff --staged --stat` 显示 2 files changed。
+- **根因**：`git add` 的 pathspec 相对**当前工作目录**解析，不是相对仓库根；`results/tables/journal/day04.md` 不存在。
+- **解决**：先 `cd /Users/wangjiaqi/Desktop/实习日志`，或用 `git add ../../journal/day04.md ../../notes/linux-cli.md`。
+- **下次怎么避免**：提交前先 `pwd`；在子目录里操作时，直接复制 `git status` 输出的相对路径，或先 `cd` 回仓库根。
 
 ### 卡点 3：待填
 

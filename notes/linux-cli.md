@@ -68,6 +68,7 @@
 - **前导 `/` = 绝对路径**：`cd /results/tables` 实测报 `cd: no such file or directory: /results/tables`（用 `zsh -c` 调用时前缀显示为 `zsh:cd:1:`），因为系统根下没有 `results`。仓库里的目录只能写 `results/...` 或 `~/Desktop/实习日志/results/...`。
 - 失败的 `cd` **不改变**当前目录，失败后 `pwd` 仍是原目录。
 - `~` 只在词首由 shell 展开为家目录；`~user` 指某用户的家目录。
+- 命令里的路径参数同样相对**当前目录**解析：在 `results/tables` 下 `git add journal/day04.md` 会报 `fatal: pathspec ... did not match any files`，要 `cd` 回仓库根或写 `../../journal/day04.md`。`git status` 显示的 `../../` 前缀就是当前目录的深度。
 
 ## 2. 文件操作
 
