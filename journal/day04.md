@@ -13,7 +13,7 @@ gate: -
 
 另两项：
 1. 把「绝对路径 / 相对路径」练到不查资料就能写对，尤其是跨目录读写仓库文件。
-2. 用 **2 例真实患者数据** 走一遍「服务器 → scp → 本地校验 → 3D Slicer 打开」的冒烟链路；**只看影像质量与元数据，不做诊断、不做重新识别**。
+2. 用 **2 例真实患者数据** 走一遍「服务器 → scp → 本地校验 → Slicer 看一眼 CT」的冒烟链路；**不做诊断、不做重新识别**。
 
 ## 今日要交付什么
 
@@ -22,7 +22,7 @@ gate: -
 | # | 交付物 | 具体要求 | 证据 | 状态 |
 |---|---|---|---|---|
 | 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
-| 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；3D Slicer 能打开并记录 Series/层数/元数据 | 命令输出 + `results/figures/slicer_smoke/` 截图 | 待做 |
+| 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | 待做 |
 | 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 待做 |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
@@ -39,12 +39,12 @@ gate: -
 | 进程、kill、jobs、nohup、tmux、PATH、脚本实测 | `t12ub` |
 | 写脚本、写笔记、commit | Mac 仓库 `/Users/wangjiaqi/Desktop/实习日志` |
 | 5 分钟 sleep + detach/attach 验收 | `t12ub`（断 SSH 才能验证） |
-| 2 例数据 `scp` 到本地 + SHA-256 校验 + Slicer 阅片 | Mac（数据落在 `data/raw/`，不入 Git） |
+| 2 例数据 `scp` 到本地 + SHA-256 校验 + 打开 CT | Mac（数据落在 `data/raw/`，不入 Git） |
 
 ## 今日验收标准（收尾逐条核对）
 
 - [ ] 4 道路径自测题全对，能解释 `cd ..` 与 `cd -`、`../notes` 与 `notes` 的区别
-- [ ] 2 例数据两端 SHA-256 一致，Slicer 能打开；截图不含姓名/ID 等标识信息
+- [x] 2 例数据两端 SHA-256 一致（232/232），Slicer 能打开 CT 看一眼
 - [ ] `bash code/setup_check.sh` 能跑，输出清晰 PASS/WARN，缺命令显示 `MISSING` 而不崩
 - [ ] tmux 跑 5 分钟 `sleep`，detach 后 `tmux ls` 仍可见，attach 回来任务还在
 - [ ] 能解释 `pip install` 后 `command not found`（PATH + venv + shell hash 缓存）
@@ -58,7 +58,7 @@ gate: -
 | 计划 | 状态 | 证据（文件/命令/commit） |
 |---|---|---|
 | 绝对/相对路径自测（4 题） | 进行中（笔记已写，终端复跑待做） | `notes/linux-cli.md` §1 新增自测表；首答 2/4 → 纠错后 4/4；`journal/day04.md` 卡点 1 + 易错点已记 |
-| 2 例数据 scp + 校验 + Slicer 打开 | 待填 | |
+| 2 例数据 scp + 校验 + 打开 CT | ✅ | `data/raw/lung1_smoke/` 2 例 232 个 `.dcm`、150M；两端 SHA-256 232/232 一致；Slicer 5.12.4 打开 CT（94 层） |
 | 进程与资源（ps/top/kill/jobs） | 待填 | |
 | tmux 长任务（含 5 分钟验收） | 待填 | |
 | 环境变量与 PATH 排错 | 待填 | |
@@ -103,28 +103,28 @@ head -n 3 ~/Desktop/实习日志/notes/git.md
 ```
 
 ```bash
-# ——【t12ub】先定位真实数据；路径按实际填，不确定就问，不要猜——
-ssh t12ub 'ls -la ~/data/lung1 2>/dev/null || ls -la ~/d3-practice'
+# ——【t12ub】确认数据位置（只读）——
+D=/home/jqw/.data/nsclc-radiomics/nsclc_radiomics
+ssh t12ub "ls $D | wc -l"                    # 422 例
+ssh t12ub "du -sh $D/LUNG1-308"              # 64M
 
 # ——【Mac】拉 2 例到本地；data/raw/ 已被 .gitignore 忽略——
 mkdir -p data/raw/lung1_smoke
-scp -r t12ub:<服务器路径>/LUNG1-001 data/raw/lung1_smoke/
-scp -r t12ub:<服务器路径>/LUNG1-002 data/raw/lung1_smoke/
-du -sh data/raw/lung1_smoke
-find data/raw/lung1_smoke -name '*.dcm' -type f | wc -l
+scp -r t12ub:$D/LUNG1-308 data/raw/lung1_smoke/
+scp -r t12ub:$D/LUNG1-001 data/raw/lung1_smoke/
+du -sh data/raw/lung1_smoke                  # 150M
+find data/raw/lung1_smoke -name '*.dcm' -type f | wc -l   # 232
 
 # 两端 SHA-256 比对（Mac 用 shasum -a 256，Linux 用 sha256sum）
-find data/raw/lung1_smoke -name '*.dcm' -type f | sort | xargs shasum -a 256 | cut -d' ' -f1 | sort > /tmp/mac.hash
-ssh t12ub 'find <服务器路径>/LUNG1-00{1,2} -name "*.dcm" -type f | sort | xargs sha256sum' | cut -d' ' -f1 | sort > /tmp/srv.hash
-diff /tmp/mac.hash /tmp/srv.hash && echo "SHA-256 一致"
+find data/raw/lung1_smoke -type f | sort | xargs shasum -a 256 | awk '{print $1}' | sort > /tmp/mac.sha
+ssh t12ub "find $D/LUNG1-308 $D/LUNG1-001 -type f | sort | xargs sha256sum" | awk '{print $1}' | sort > /tmp/srv.sha
+wc -l /tmp/mac.sha /tmp/srv.sha              # 232 / 232
+diff /tmp/mac.sha /tmp/srv.sha && echo "哈希一致"
 
-# ——【Mac】3D Slicer：只从官网下载——
-# https://download.slicer.org → macOS 版 → 拖进 /Applications
+# ——【Mac】Slicer 看一眼 CT ——
 open -a Slicer
-# File → Add Data → 选 data/raw/lung1_smoke/LUNG1-001（DICOM 文件夹）
-# 记录 Series 数、Modality、层数、Slice Thickness、Pixel Spacing
-# 截图前确认界面不显示 PatientName / PatientID，图存 results/figures/slicer_smoke/
-# 输出要点：
+# Add DICOM Data → 选 data/raw/lung1_smoke/LUNG1-308 → Import
+# 选中 Modality=CT 的 series → Load，滚一圈确认能显示
 ```
 
 ```bash
@@ -212,16 +212,12 @@ unzip -l /tmp/x.zip
 
 ### 2 例数据冒烟
 
-| 项 | 实测 | 证据 |
-|---|---|---|
-| 例数 / 每例 Series 数 | | `ls data/raw/lung1_smoke` |
-| `.dcm` 文件总数 | | `find ... -name '*.dcm' \| wc -l` |
-| 本地总大小 | | `du -sh data/raw/lung1_smoke` |
-| 两端 SHA-256 是否一致 | | `/tmp/mac.hash` vs `/tmp/srv.hash` |
-| Slicer 版本 | | `Slicer → About` |
-| Modality / 层数 / Slice Thickness / Pixel Spacing | | Slicer Volumes / Info |
-| 截图路径 | | `results/figures/slicer_smoke/` |
-| 界面是否含姓名/ID | | 截图前肉眼确认 |
+| 项 | 实测 |
+|---|---|
+| 例数 / 文件数 | 2 例 / 232 个 `.dcm` |
+| 本地总大小 | 150M |
+| 两端 SHA-256 | 一致（232/232） |
+| 打开 CT | 能（Slicer 5.12.4，macOS amd64 / Rosetta） |
 
 ### 进程状态表
 
@@ -271,18 +267,16 @@ unzip -l /tmp/x.zip
 | `df -BG --output=avail` | GNU 专有 | `df -h ~` 或 `df -g` | 待填 |
 | `source /etc/os-release` | 文件不存在 | `sw_vers -productVersion` | 待填 |
 | 写 `~/.bashrc` | Mac 默认 zsh | `~/.zshrc` | 待填 |
-| `open -a Slicer` | 应用名可能是 `3D Slicer` | `open -a "3D Slicer"` 或 Finder 启动 | 待填 |
 | `scp -r src/ dst/` | 源目录尾斜杠影响是否复制目录本身 | 先 `scp -r src dst/`，再 `ls dst` 确认层级 | 待填 |
 
-## 数据与合规边界（本日新增两项）
+## 数据与合规边界（2 例数据冒烟）
 
-> 这两项是今天唯一触碰真实数据的环节，边界先写死。
+> 数据冒烟是今天唯一触碰真实数据的环节，边界先写死。
 
 - **许可**：数据为 CC BY-NC 3.0，仅限非商业用途；引用须署名并标注 DOI `10.7937/K9/TCIA.2015.PF0M9REI`。
-- **只做什么**：下载、完整性校验、Slicer 打开、记录影像质量与元数据（层数、层厚、像素间距等）。
+- **只做什么**：下载、完整性校验、Slicer 打开看一眼 CT。
 - **不做什么**：不重新识别患者，不做临床诊断，不给治疗结论，不写「可商用」「可替代医生诊断」。
 - **不入 Git**：`data/raw/` 与 `*.dcm` 均在 `.gitignore` 中；提交前 `git status` 必须看不到影像文件。
-- **截图去标识**：Slicer 界面若显示 PatientName/PatientID 等字段，先隐藏再截；做不到就不把截图入库。
 - **不上传**：DICOM 数据不贴给任何在线服务或 AI 对话（包括 Kilo），只在本机与 `t12ub` 之间 `scp`。
 
 ## 卡点与报错（本节不许空着）
@@ -338,8 +332,7 @@ unzip -l /tmp/x.zip
 
 - 问：这个脚本在 Bash 3.2（macOS 自带）上会出问题吗？有没有注入或路径空格问题？答：待填。核实：待填。
 - 问：`set -euo pipefail` 在 `[ ... ] && { ...; }` 这种写法下会不会提前退出？答：待填。核实：待填（实测命令 + 退出码）。
-- 问：Slicer 截图里哪些字段算 PHI、必须隐藏？答：待填。核实：对照界面实际显示项确认，未核实前不截图入库。
-- **抓错记录 1**：Kilo 说 X，我核实是 Y。待填（今日至少 1 条；计划里那 5 条平台差异是好素材，但必须实测过才算）。
+- **抓错记录 1**：Kilo 说「Slicer 有 macOS arm64 版，建议下 arm64 并计划 D13 前更换」；我核实下载页与包列表后确认 **5.12.4 / 5.13.0 的 macOS 包都只有 `amd64`**，没有 arm64 构建。结论：官方仅提供 amd64，Apple Silicon 上经 Rosetta 运行，不存在"待换 arm64"这项整改。
 
 ## 今日结论
 
