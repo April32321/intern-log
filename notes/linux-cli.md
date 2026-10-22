@@ -1,7 +1,7 @@
 # Linux CLI：文件、权限、管道、文本处理、进程与资源、tmux、PATH
 
 > Day 3–4 笔记。§1–§9 来源：`每日计划/Day03.md` + 2026-10-21 在 `t12ub` 的 `~/d3-practice` 实际操作；
-> §10–§12 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
+> §10–§13 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
 > 练习目录与仓库分离：命令在服务器跑，笔记、日志和 commit 在 Mac 仓库完成。
 
 ## 1. 目录结构与导航
@@ -1160,3 +1160,100 @@ emo-cmd        # emo-cmd: command not found
 5. `which` 看不到别名和函数，排错优先 `type -a`。
 6. 目录存在不代表能执行：`chmod +x` 之外，挂载点若带 `noexec` 也会 `Permission denied`。
 7. `PATH` 里的目录不要带尾随空格或不可见字符，肉眼看不出来但会静默失效。
+
+## 13. Bash 脚本：`setup_check.sh`
+
+> 2026-10-22 实测：Mac（macOS 14.6.1 / arm64 / 8 核 / 73 GB）与 `t12ub`（Ubuntu 24.04.4 / x86_64 / 12 核 / 3533 GB）
+> 跑同一份 `code/setup_check.sh`（60 行）。
+
+### 13.1 骨架与运行方式
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+```
+
+- 首行 shebang 决定 `./script.sh` 用哪个解释器；`bash script.sh` 则忽略 shebang，只靠 bash 读文件
+- 必须 `chmod +x` 才能 `./script.sh`；否则用 `bash script.sh`
+- 提交前先 `bash -n script.sh` 做语法检查（只解析不执行）
+
+### 13.2 `set -euo pipefail` 逐字解释（均实测）
+
+| 选项 | 作用 | 验证命令 | 实测 |
+|---|---|---|---|
+| `-e` | 任一命令返回非 0 立即退出 | `bash -c 'set -e; false; echo x'` | 不打印 `x`，`exit=1` |
+| `-u` | 使用未定义变量即报错退出 | `bash -c 'set -u; echo "$NOPE"'` | `bash: NOPE: unbound variable`，macOS Bash 3.2 下 `exit=127` |
+| `-o pipefail` | 管道任一环失败，整条管道失败 | `false \| true` 加/不加对比 | 加 → `1`；不加 → `0` |
+
+- `set -u` 的退出码观察值是 `127`，与常见文档的 `1` 不同——**不同 bash 版本实现不一致**；脚本里只判断「非 0」，不依赖具体数值。
+- `-e` 有豁免上下文：`if cmd; then` 的条件、`&&`/`||` 左侧、`!` 取反、`while cmd` 条件。
+  脚本里用 `if p="$(command -v "$c")"; then ... else ... fi`，正是利用这一点让「命令不存在」走 `MISSING` 分支而不是退出。
+- 验证：`bash -c 'set -e; if v="$(command -v no_such_cmd)"; then echo yes; else echo no; fi; echo survived'` → `no`、`survived`。
+
+### 13.3 跨平台分支
+
+| 检查项 | Linux | macOS | 本次实测 |
+|---|---|---|---|
+| 系统名 | `. /etc/os-release` 取 `PRETTY_NAME` | `sw_vers -productName/-productVersion` | Ubuntu 24.04.4 LTS / macOS 14.6.1 |
+| CPU 核数 | `nproc` | `sysctl -n hw.ncpu` | 12 / 8 |
+| 磁盘可用 | `df -BG --output=avail` | `df -g` 第 4 列 | Linux 3533G / Mac 73G |
+| 交互 shell 配置 | `~/.bashrc` | `~/.zshrc` | 服务器 `SHELL=/bin/bash` |
+
+- macOS 的 `df` **不支持** GNU 的 `-B`/`--output`：实测 `df: invalid option -- B`、`exit=64`
+- 兜底写法：`if avail="$(df -BG ...)"; then :; else avail="$(df -g "$HOME" | awk 'NR==2 {print $4}')"; fi`
+- APFS 下 `df -g ~` 的挂载点是 `/System/Volumes/Data`，不是 `/`，别拿挂载点做判断
+
+### 13.4 命令存在性检测
+
+```bash
+if p="$(command -v "$c")"; then
+  check "$c" "$p"
+else
+  check "$c" "MISSING"
+fi
+```
+
+- 用 `command -v` 而不是 `which`：前者是 POSIX 内建，退出码可靠，还能识别别名/函数
+- 变量必须加引号：`"$c"`、`"$HOME"`，否则路径含空格会拆词
+- 缺命令只报告、不退出，保证脚本一次跑完给出全貌
+
+### 13.5 退出码设计
+
+```bash
+if [ "$fail" -eq 0 ]; then echo "RESULT: PASS"; exit 0
+else echo "RESULT: WARN"; exit 1; fi
+```
+
+- `0` = 全部满足，`1` = 有告警；不要让业务失败返回 `2`（2 常被 shell 语法错误占用）
+- 具体哪个检查导致失败要单独打印，不能只给一个非 0
+
+### 13.6 实测矩阵
+
+| 场景 | 命令 | 结果 |
+|---|---|---|
+| Mac 正常 | `bash code/setup_check.sh` | 73 GB < 150 → `WARN`，`exit=1` |
+| Mac 缩小 PATH | `PATH=/usr/bin:/bin bash code/setup_check.sh` | 完整跑完；`CPU cores unknown`（`sysctl` 在 `/usr/sbin`）；`python3` 变为 `/usr/bin/python3` |
+| 阈值降到 10 GB | `sed 's/need_gb=150/need_gb=10/' ... > /tmp/sc_pass.sh` | `PASS`，`exit=0` |
+| 服务器 | `ssh t12ub 'bash ~/d4-practice/setup_check.sh; echo $?'` | 3533 GB；`python3`/`docker` 有路径；`conda`/`kilo` MISSING → `PASS`，`exit=0` |
+
+同一份脚本在两个平台结论不同，说明检查项是「按事实报告」而不是硬编码预期。
+
+另外实测到 PATH 优先级：完整 PATH 下 `python3 -V` 是 `3.14.2`（Framework），
+缩小到 `/usr/bin:/bin` 后是 `3.9.6`（系统自带）——同名不同版本，取决于 PATH 顺序。
+
+### 13.7 评审要点（已发现的问题与结论）
+
+1. **阈值应区分角色**：150 GB 是服务器要求；Mac 只放 2 例样本（150 MB），用 150 GB 会永久 `WARN`。改进方向：把阈值改成参数（`$1` 或环境变量），或在 macOS 分支用更小值。
+2. **Bash 3.2 兼容**：脚本未使用 `declare -A`、`mapfile`、`${var,,}`，可在 macOS 自带 bash 运行；但 `set -u` 的退出码与新版不同，不能依赖具体值。
+3. **空格与注入**：所有变量引用都加了双引号；命令名来自白名单 `for c in ...`，不拼接用户输入，无注入面。
+4. **`set -e` 陷阱**：`[ ... ] && { ...; }` 作为最后一条语句时会因条件为假返回 1 而退出；脚本已统一改为 `if`。
+5. **`df` 解析**：`tr -dc '0-9'` 只取数字、丢掉单位；若输出含千分位或本地化字符需再处理。
+
+### 13.8 易错点
+
+1. 忘 shebang 时 `./script.sh` 报 `bad interpreter`，但 `bash script.sh` 仍能跑，容易误判。
+2. 忘 `chmod +x` 报 `Permission denied`。
+3. `df` 的 `-B` 是 GNU 扩展；macOS 用 `-g`/`-h`，BSD 工具链普遍不同。
+4. `set -e` 不是「任何失败都退出」，条件上下文与 `||` 右侧都豁免。
+5. 在脚本里 `export PATH=...` 只影响脚本自身与子进程，不会改登录 shell。
+6. 输出出现 `unknown` 时先查依赖命令是否在当前 PATH（本例 `sysctl` 在 `/usr/sbin`）。
