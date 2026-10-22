@@ -24,7 +24,7 @@ gate: -
 | 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；Slicer 能打开 CT 看一眼 | 命令输出 + `ls data/raw/lung1_smoke` | ✅（232/232 一致，已打开 CT） |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | ✅（60 行；Mac 73GB→WARN/exit=1，t12ub 3533GB→PASS/exit=0；PATH 缩小不崩） |
-| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 进行中（标题已改，§10–§13 完成；§14 待做） |
+| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | ✅（标题已改，§10–§14 全部完成） |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅（day04 已 5 次，最新 `799f75b`） |
@@ -63,7 +63,7 @@ gate: -
 | tmux 长任务（含 5 分钟验收） | ✅ | 默认会话 `0` 改名为 `work`；`sleep 300` 运行中 `Ctrl+b d` detach → `tmux ls` 无 attached → `exit` 断 SSH → 重连 `attach` 仍在；`notes/linux-cli.md` §11 |
 | 环境变量与 PATH 排错 | ✅ | 制造并修复 `demo-cmd` 的 `exit=127`；`.bashrc` 持久化后重连可用；`rm` 后报旧路径 → `hash -r` 恢复；`pip`/`python`/`ensurepip` 缺失均实测；`notes/linux-cli.md` §12 |
 | 写 `code/setup_check.sh` 并两端跑通 | ✅ | 60 行；Mac 73GB→`WARN`/exit=1；缩小 PATH 仍跑完（`unknown`+`MISSING`）；`need_gb=10`→`PASS`/exit=0；t12ub 3533GB→`PASS`/exit=0 |
-| 压缩与归档（tar/unzip） | 待填 | |
+| 压缩与归档（tar/unzip） | ✅ | 12 文件 70,413 字节 → `tar.gz` 33K（含 `.DS_Store`）/ 排除后 32K / `zip` 33K；解压后 `diff -r` 一致；结论见「压缩与归档实测」 |
 | 笔记与收尾 | 待填 | |
 
 ## 关键命令
@@ -260,10 +260,29 @@ ssh t12ub 'bash ~/d4-practice/setup_check.sh; echo "exit=$?"'
 
 ```bash
 # ——压缩与归档——
-tar -czf /tmp/demo.tar.gz code notes
-tar -tzf /tmp/demo.tar.gz | head   # 先看内容再解压
-unzip -l /tmp/x.zip
-# *.tar.gz / *.zip 已被 .gitignore 挡住，不放仓库
+du -sh code notes                    # 4.0K / 100K；共 12 文件 70,413 字节
+tar -czf /tmp/d4-demo.tar.gz code notes
+ls -lh /tmp/d4-demo.tar.gz           # 33K
+tar -tzf /tmp/d4-demo.tar.gz         # 13 条：含 notes/.DS_Store ← 发现问题
+tar -tzf /tmp/d4-demo.tar.gz > /tmp/d4-list.txt
+wc -l /tmp/d4-list.txt               # 13
+
+mkdir -p /tmp/d4-restore
+tar -xzf /tmp/d4-demo.tar.gz -C /tmp/d4-restore
+diff -r code /tmp/d4-restore/code && diff -r notes /tmp/d4-restore/notes && echo "还原一致"
+
+# 干净包：.gitignore 管不住 tar，必须显式排除
+tar -czf /tmp/d4-clean.tar.gz --exclude='.DS_Store' --exclude='data' --exclude='.git' code notes
+tar -tzf /tmp/d4-clean.tar.gz        # 12 条，无 .DS_Store
+ls -lh /tmp/d4-clean.tar.gz          # 32K
+
+# zip / unzip：先列表再解压
+cd /tmp/d4-restore
+zip -r /tmp/d4-demo.zip code notes -x '*.DS_Store'   # linux-cli.md deflated 57%
+unzip -l /tmp/d4-demo.zip
+unzip -q /tmp/d4-demo.zip -d /tmp/d4-unzip
+diff -r code /tmp/d4-unzip/code && echo "zip 还原一致"
+# *.tar.gz / *.zip 已被 .gitignore 挡住，归档放 /tmp，不进仓库
 ```
 
 ## 实验记录
@@ -391,6 +410,17 @@ unzip -l /tmp/x.zip
 结论：先 `command -v` 排除拼写/没装，再看 PATH 顺序，能绝对路径跑就锁定 PATH，报旧路径就 `hash -r`，
 最后确认 pip 属于哪个解释器/环境。`export PATH=...` 只对当前会话有效，写 `~/.bashrc` 后需
 `source` 或重开会话（本次重连后生效，PATH 头部为 `~/d4-practice/bin`，其后是 `~/.npm-global/bin`）。
+
+### 压缩与归档实测（2026-10-22）
+
+| 项 | 实测 |
+|---|---|
+| 原始内容 | `code/` 4.0K + `notes/` 100K，共 12 文件、70,413 字节 |
+| `tar.gz`（默认） | 33K，13 条，**含 `notes/.DS_Store`** |
+| `tar.gz`（排除 `.DS_Store`/`data`/`.git`） | 32K，12 条，无 `.DS_Store` |
+| `zip -x '*.DS_Store'` | 33K；`linux-cli.md`（55,861 字节）deflate **57%** |
+| 还原校验 | `tar -xzf -C` 与 `unzip -d` 后 `diff -r` 均与源目录一致 |
+| 关键结论 | `.gitignore` 不作用于 tar/zip，归档必须自己 `--exclude`/`-x`；解压前先 `-tzf` / `unzip -l` |
 
 ## 预判坑（待实测确认，未验证的不进结论）
 

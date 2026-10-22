@@ -1,7 +1,7 @@
-# Linux CLI：文件、权限、管道、文本处理、进程与资源、tmux、PATH
+# Linux CLI：文件、权限、管道、文本处理、进程与资源、tmux、PATH、脚本、归档
 
 > Day 3–4 笔记。§1–§9 来源：`每日计划/Day03.md` + 2026-10-21 在 `t12ub` 的 `~/d3-practice` 实际操作；
-> §10–§13 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 的 `~/d4-practice` 实测。
+> §10–§14 来源：`每日计划/Day04.md` + 2026-10-22 在 `t12ub` 与 Mac 仓库的实测。
 > 练习目录与仓库分离：命令在服务器跑，笔记、日志和 commit 在 Mac 仓库完成。
 
 ## 1. 目录结构与导航
@@ -1257,3 +1257,131 @@ else echo "RESULT: WARN"; exit 1; fi
 4. `set -e` 不是「任何失败都退出」，条件上下文与 `||` 右侧都豁免。
 5. 在脚本里 `export PATH=...` 只影响脚本自身与子进程，不会改登录 shell。
 6. 输出出现 `unknown` 时先查依赖命令是否在当前 PATH（本例 `sysctl` 在 `/usr/sbin`）。
+
+## 14. 压缩与归档
+
+> 2026-10-22 在 Mac 仓库实测：`code/` 4.0K、`notes/` 100K，共 12 个文件 70,413 字节；
+> 打成 `tar.gz` 33K，排除 `.DS_Store` 后 32K；`zip` 33K。两者解压后 `diff -r` 与源目录一致。
+
+### 14.1 归档 vs 压缩
+
+| 概念 | 干什么 | 工具 |
+|---|---|---|
+| 归档（archive） | 把多个文件/目录装进一个文件，**不减小体积** | `tar` |
+| 压缩（compress） | 用算法减小体积，针对单个数据流 | `gzip` / `bzip2` / `xz` / `zip` 的 deflate |
+
+`tar.gz` = 先用 `tar` 打包，再用 `gzip` 压缩。所以 `tar` 的 `-c/-x/-t`（打包/解包/列表）和 `-z`（压缩算法）是两件事。
+`zip` 是「打包 + 压缩」一体，Windows 原生支持，所以对外交付常用。
+
+### 14.2 `tar` 三个动作与常用参数
+
+| 动作 | 参数 | 说明 |
+|---|---|---|
+| 创建 | `tar -czf 包.tar.gz 路径...` | `c` create |
+| 列表 | `tar -tzf 包.tar.gz` | `t` list，**解压前必做** |
+| 解压 | `tar -xzf 包.tar.gz -C 目标目录` | `x` extract |
+
+| 参数 | 含义 |
+|---|---|
+| `-z` / `-j` / `-J` | gzip / bzip2 / xz |
+| `-f 文件` | 指定归档文件名，**必须紧跟文件名**，否则会把后面的参数当文件名 |
+| `-v` | 显示处理过程（文件多时有用，写日志时可加） |
+| `-C 目录` | 解压到指定目录；也可在创建前切目录 |
+| `--exclude=模式` | 排除匹配**归档内路径**的条目，可多次使用 |
+
+```bash
+tar -czf /tmp/d4-demo.tar.gz code notes
+tar -tzf /tmp/d4-demo.tar.gz
+tar -xzf /tmp/d4-demo.tar.gz -C /tmp/d4-restore
+```
+
+### 14.3 为什么「先列表再解压」
+
+`tar -tzf`（或 `unzip -l`）只读归档目录、不写磁盘，能提前发现：
+
+- 路径穿越：条目里出现 `../`、绝对路径 `/etc/...`，解压会写到目标目录之外
+- 不该带的东西：`.DS_Store`、`.git/`、`data/`、`*.dcm`、模型权重
+- 层级错误：该是 `code/setup_check.sh` 却成了 `./Users/.../code/...`
+
+本次列表暴露了真实问题：**`notes/.DS_Store` 被打进包**。`.gitignore` 里有 `.DS_Store`，但
+**tar 不读 `.gitignore`**，两个机制互不相干——归档的排除规则必须自己写。
+
+### 14.4 实测：打包 → 列表 → 解压 → 比对
+
+```bash
+du -sh code notes                     # 4.0K / 100K
+tar -czf /tmp/d4-demo.tar.gz code notes
+ls -lh /tmp/d4-demo.tar.gz            # 33K
+tar -tzf /tmp/d4-demo.tar.gz          # 13 条，含 notes/.DS_Store
+tar -tzf /tmp/d4-demo.tar.gz > /tmp/d4-list.txt
+wc -l /tmp/d4-list.txt                # 13
+
+mkdir -p /tmp/d4-restore
+tar -xzf /tmp/d4-demo.tar.gz -C /tmp/d4-restore
+diff -r code /tmp/d4-restore/code && diff -r notes /tmp/d4-restore/notes && echo "还原一致"
+```
+
+干净版（排除隐藏垃圾与大目录）：
+
+```bash
+tar -czf /tmp/d4-clean.tar.gz \
+  --exclude='.DS_Store' --exclude='data' --exclude='.git' code notes
+tar -tzf /tmp/d4-clean.tar.gz          # 12 条，无 .DS_Store
+ls -lh /tmp/d4-clean.tar.gz            # 32K
+```
+
+### 14.5 `zip` / `unzip`
+
+```bash
+zip -r /tmp/d4-demo.zip code notes -x '*.DS_Store'
+unzip -l /tmp/d4-demo.zip              # 先列表：大小/日期/文件名
+unzip -q /tmp/d4-demo.zip -d /tmp/d4-unzip
+diff -r code /tmp/d4-unzip/code && echo "zip 还原一致"
+```
+
+| 参数 | 含义 |
+|---|---|
+| `zip -r` | 递归目录 |
+| `-x '模式'` | 排除匹配项，注意要加引号防 shell 展开 |
+| `unzip -l` | 只列表 |
+| `unzip -q` | 静默 |
+| `unzip -d 目录` | 解压到指定目录（不存在会自动建） |
+
+`zip -r` 的输出能看到每个文件的压缩率，本次 `notes/linux-cli.md` deflate **57%**，
+文本类压缩率高、已经是压缩格式的文件（`.jpg`、`.dcm`、`.zip`）几乎压不动。
+
+### 14.6 两种格式怎么选
+
+| 场景 | 选择 | 理由 |
+|---|---|---|
+| Linux 服务器之间传源码/日志 | `tar.gz` | 保留权限、软链接、时间戳；Unix 生态标准 |
+| 给 Windows 同事/网页下载 | `zip` | 系统原生支持，双击即开 |
+| 需要更高压缩率、长期归档 | `tar.xz`（`-J`） | 体积更小，压缩/解压更慢 |
+| 只想要单文件 | `gzip 文件` → `文件.gz` | 不打包，只压缩；用 `gunzip` 还原 |
+
+`tar.gz` 保留权限和软链接，`zip` 在跨平台时可能丢权限位（需要 `-X`/`unzip` 参数配合），
+涉及可执行脚本时优先 `tar.gz`。
+
+### 14.7 压缩率与体积
+
+| 项目 | 值 |
+|---|---|
+| 原始文件数 | 12（`code/` 2 + `notes/` 10） |
+| 原始字节 | 70,413 |
+| `tar.gz` | 33K（含 `.DS_Store`） |
+| 排除后 `tar.gz` | 32K |
+| `zip` | 33K |
+| 最大单文件 | `notes/linux-cli.md` 55,861 字节，deflate 57% |
+
+Markdown/文本压缩率通常在 60–75%；DICOM、JPEG、视频已经是压缩格式，再打包几乎不变小，
+所以**不要把大数据目录打进归档**（`--exclude='data'`），既慢又没收益。
+
+### 14.8 易错点
+
+1. `tar -czf` 把 `-f` 放错位置（如 `tar -cfz 包 目录`）会把它当文件名，报错或生成怪文件；`-f` 后必须紧跟包名。
+2. `tar -xzf` 不加 `-C` 会解压到**当前目录**，可能覆盖同名文件；先 `pwd` 再解压。
+3. 解压未知来源包前必须 `tar -tzf` / `unzip -l`；条目含 `../` 或绝对路径直接拒绝。
+4. `.gitignore` 与 `tar --exclude` 无关；`.DS_Store`、`.git/`、`data/` 都要显式排除。
+5. macOS 的 `zip` 与 Linux 的 `zip` 对权限位、扩展属性处理不同；跨平台交付脚本优先 `tar.gz`。
+6. `unzip -l` 显示的日期是**归档时的时间**，不是原始文件 mtime（`tar` 默认保留 mtime，`zip` 需 `-X`）。
+7. 压缩包不要放进仓库：`*.tar.gz`、`*.zip` 已由 `.gitignore` 挡住，但仍建议放 `/tmp` 或 `~/d4-practice/`。
