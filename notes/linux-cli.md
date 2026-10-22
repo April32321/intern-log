@@ -51,6 +51,24 @@
 - `mkdir -p sub/deep/nested` 只在 `sub/` 下建目录，不会在当前目录再建一个 `deep`
 - `touch` 创建的是 **0 字节空文件**；`ls -lah` 里大小为 0 属正常
 
+### 路径自测与两个坑（2026-10-22 实测）
+
+4 道自测题，先写答案再敲命令；首答 2 对 2 错，纠错后 4/4。
+
+| # | 从哪 | 到哪 | 正确写法 | 说明 |
+|---|---|---|---|---|
+| 1 | `notes/` | 仓库根 | `cd ..` | `cd -` 回的是 `OLDPWD`，取决于来路，不是回上级 |
+| 2 | 仓库根 | `results/tables` | `cd results/tables` | 前导 `/` 会变成绝对路径，从文件系统根找 |
+| 3 | `results/tables` | 读 `notes/git.md` | `head -n 3 ../../notes/git.md` | `..` 逐层上跳，两次才到仓库根 |
+| 4 | `results/tables` | 同一个文件 | `head -n 3 ~/Desktop/实习日志/notes/git.md` | 与相对路径输出逐字一致 |
+
+两个坑与两条补充：
+
+- **`cd -` ≠ `cd ..`**：`cd -` 回 `OLDPWD` 并打印目标路径。从仓库根 `cd notes` 进来时它碰巧回到仓库根；从 `~/Desktop` 直接进来就会回到 `~/Desktop`。命令成功不代表规则正确。
+- **前导 `/` = 绝对路径**：`cd /results/tables` 实测报 `cd: no such file or directory: /results/tables`（用 `zsh -c` 调用时前缀显示为 `zsh:cd:1:`），因为系统根下没有 `results`。仓库里的目录只能写 `results/...` 或 `~/Desktop/实习日志/results/...`。
+- 失败的 `cd` **不改变**当前目录，失败后 `pwd` 仍是原目录。
+- `~` 只在词首由 shell 展开为家目录；`~user` 指某用户的家目录。
+
 ## 2. 文件操作
 
 | 命令 | 说明 |

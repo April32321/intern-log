@@ -21,10 +21,10 @@ gate: -
 
 | # | 交付物 | 具体要求 | 证据 | 状态 |
 |---|---|---|---|---|
-| 1 | 路径自测记录 | `notes/linux-cli.md` §10 补「绝对/相对路径」对照 + 4 道自测题（含跨目录读 `notes/git.md`）全部写对 | 笔记 + 实际命令输出 | 待做 |
+| 1 | 路径自测记录 | `notes/linux-cli.md` §1「绝对路径 vs 相对路径」补 4 题自测表与两个坑（`cd -`、前导 `/`） | 笔记 + 实际命令输出 | 进行中（笔记已写，终端复跑待做） |
 | 2 | 2 例数据冒烟 | 从 `t12ub` `scp` 2 例 `LUNG1-*` 到 `data/raw/lung1_smoke/`，两端 SHA-256 一致；3D Slicer 能打开并记录 Series/层数/元数据 | 命令输出 + `results/figures/slicer_smoke/` 截图 | 待做 |
 | 3 | `code/setup_check.sh` | 检查 OS/架构/CPU/磁盘/命令是否存在，输出 PASS/WARN，能处理 MISSING，退出码有意义 | 文件 + `bash code/setup_check.sh` 输出 | 待做 |
-| 4 | `notes/linux-cli.md` 下半 | §11 进程、§12 tmux、§13 环境变量/PATH、§14 脚本、§15 压缩归档；标题由「（一）」改为通用 | 文件本身 | 待做 |
+| 4 | `notes/linux-cli.md` 下半 | §10 进程、§11 tmux、§12 环境变量/PATH、§13 脚本、§14 压缩归档；标题由「（一）」改为通用 | 文件本身 | 待做 |
 | 5 | `journal/day04.md` | 本文件：卡点须有报错原文/根因/解决，至少 1 条「Kilo 说 X，我核实是 Y」 | 本文件 | 进行中 |
 | 6 | `journal/INDEX.md` D4 行 | 收尾回填日期（2026-10-22）、commit hash、验收结果 | `journal/INDEX.md` | 待做 |
 | 7 | 当日 commit | ≥1 次，格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | 待做 |
@@ -57,7 +57,7 @@ gate: -
 
 | 计划 | 状态 | 证据（文件/命令/commit） |
 |---|---|---|
-| 绝对/相对路径自测（4 题） | 待填 | |
+| 绝对/相对路径自测（4 题） | 进行中（笔记已写，终端复跑待做） | `notes/linux-cli.md` §1 新增自测表；首答 2/4 → 纠错后 4/4；`journal/day04.md` 卡点 1 + 易错点已记 |
 | 2 例数据 scp + 校验 + Slicer 打开 | 待填 | |
 | 进程与资源（ps/top/kill/jobs） | 待填 | |
 | tmux 长任务（含 5 分钟验收） | 待填 | |
@@ -157,7 +157,7 @@ tmux attach -t work
 nohup sleep 300 > ~/d4-practice/long_run.log 2>&1 &
 jobs -l
 tail -n 5 ~/d4-practice/long_run.log
-# 对比结论（nohup vs tmux）写进 notes/linux-cli.md §12
+# 对比结论（nohup vs tmux）写进 notes/linux-cli.md §11
 ```
 
 ```bash
@@ -203,12 +203,12 @@ unzip -l /tmp/x.zip
 
 | # | 题面 | 我的答案 | 实际命令 | 输出 | 对/错 |
 |---|---|---|---|---|---|
-| 1 | 在 `notes/` 下回仓库根 | | `cd ..` | | |
-| 2 | 在仓库根进 `results/tables` | | `cd results/tables` | | |
-| 3 | 在 `results/tables` 下读 `notes/git.md` | | `head -n 3 ../../notes/git.md` | | |
-| 4 | 用绝对路径读同一文件，结果是否一致 | | `head -n 3 ~/Desktop/实习日志/notes/git.md` | | |
+| 1 | 在 `notes/` 下回仓库根 | `cd -`（以为回上级） | `cd ..` | `/Users/wangjiaqi/Desktop/实习日志` | ❌→✅ |
+| 2 | 在仓库根进 `results/tables` | `cd /results/tables`（前导 `/` 变绝对路径） | `cd results/tables` | `.../results/tables` | ❌→✅ |
+| 3 | 在 `results/tables` 下读 `notes/git.md` | `head -n 3 ../../notes/git.md` | 同左 | `# Git` + 说明两行 | ✅ |
+| 4 | 用绝对路径读同一文件，结果是否一致 | 完全一致 | 两条 `head` 各跑一次 | 逐字相同 | ✅ |
 
-结论：待填（绝对路径从 `/` 数起、不随 `pwd` 变化；相对路径从当前目录数起，`..` 每层上跳一次）
+结论：首答 2/4，纠错后 4/4。绝对路径从 `/` 数起、不随 `pwd` 变化；相对路径从当前目录数起，`..` 每层上跳一次。`cd -` 回的是 `OLDPWD` 不是上级，失败的 `cd` 不改变当前目录。
 
 ### 2 例数据冒烟
 
@@ -289,17 +289,25 @@ unzip -l /tmp/x.zip
 
 > 每个卡点必须六件齐全：现象（报错原文）、我的猜测、验证过程、根因、解决、下次怎么避免。收尾时删掉未使用的模板。
 
-### 卡点 1：待填（今日第一个真实报错）
+### 卡点 1：`cd /results/tables` 报 no such file or directory
 
 - **现象**：
   ```text
-  # 报错原文，不要改写
+  cd: no such file or directory: /results/tables
   ```
-- **我的猜测**：
-- **验证过程**：
-- **根因**：
-- **解决**：
-- **下次怎么避免**：
+  （用 `zsh -c` 调用时前缀显示为 `zsh:cd:1:`，交互式终端不带前缀）
+- **我的猜测**：以为前面加 `/` 只是"从仓库根开始找"。
+- **验证过程**：`ls -d /results` 同样报 `No such file or directory`；改 `cd results/tables` 成功，`pwd` 为 `/Users/wangjiaqi/Desktop/实习日志/results/tables`。
+- **根因**：以 `/` 开头即绝对路径，从文件系统根解析，与当前目录无关；系统根下没有 `results`。
+- **解决**：相对路径不加前导 `/`，用 `cd results/tables`。
+- **下次怎么避免**：敲路径前先看开头有没有 `/`；不确定就先 `pwd` + `ls` 确认相对基准。
+
+### 易错点（非报错）：`cd -` 不是"回上级"
+
+- **现象**：`cd -` 在"从仓库根进 `notes`"时确实回到仓库根，看起来和 `cd ..` 一样。
+- **根因**：`cd -` 的目标是环境变量 `OLDPWD`（上一个目录），与目录层级无关；从 `~/Desktop` 直接进 `notes` 时它会回到 `~/Desktop`。
+- **判定方法**：`cd -` 会打印目标路径，看它打的是不是你以为的目录。
+- **结论**：回上级用 `cd ..`；`cd -` 只用于两个目录间来回跳。命令成功不代表规则正确。
 
 ### 卡点 2：待填
 
