@@ -71,14 +71,14 @@ gate: G1
 |---|---|---|---|---|
 | 1 | `ssh-check.txt` | 在 t12ub 仓库目录生成，含 `hostname`/`whoami`/`pwd`/`uname -a`/`date`/`df -h "$HOME"` | 远程文件 + 本地副本 | ✅ 2026-10-23 09:58 HKT 生成；7 行 332B；本机副本同为 332B |
 | 2 | 免密登录验证 | `ssh t12ub` 不提示密码；`hostname`/`whoami`/`pwd` 输出正确 | 终端记录 | ✅ `ssh -o BatchMode=yes t12ub 'hostname'` → `t12ub`，无密码/口令交互 |
-| 3 | 别名与保活配置 | `Host t12ub` 含 HostName/User/Port/ServerAliveInterval/ServerAliveCountMax；`chmod 600 ~/.ssh/config` | `ssh -G t12ub` 输出 | ✅ 已存在（端口 10022；`ServerAliveCountMax` 生效值 3，未显式写入；建议补上） |
+| 3 | 别名与保活配置 | `Host t12ub` 含 HostName/User/Port/ServerAliveInterval/ServerAliveCountMax；`chmod 600 ~/.ssh/config` | `ssh -G t12ub` 输出 | ✅ 配置已存在且权限 600（端口 10022；`ServerAliveCountMax` 生效值 3，未显式写入；本次未改配置） |
 | 4 | 本机 → 远程传输 | `scp` 或 `rsync` 上传一个小文件，远程可见 | 两端 `ls -l` | ✅ 首次 133 文件/681103B；清理后二次 `sent 869B`、`speedup 194.17` |
 | 5 | 远程 → 本机传输 | 取回 `ssh-check.txt` 到仓库根 | 本地文件 | ✅ `scp -P 10022 ...` 100% 332B；本地 `ls -l` 332B |
 | 6 | 目录同步 | `rsync -avP --exclude` 同步一次目录，确认排除生效 | `rsync` 输出 | ✅ 39 considered / 0 transferred；反向 27 文件，两端 27/27 一致 |
 | 7 | SHA-256 一致性 | 两端对 `ssh-check.txt` 计算，哈希逐字相同 | 两条命令输出 + `diff` | ✅ 双端 `8d5ebcc9c887834a60a5d185f1c0bedb026929143b8a3e8e78249cf1e1fdebba` |
 | 8 | 端口转发 | `ssh -N -L 8888:localhost:8888 t12ub` 能建立；远程起临时 HTTP 服务验证 | 本机 `curl`/浏览器结果 | ✅ 本机 8888 被 Jupyter 占用，改用 8889；`curl -I` → `200 OK`（Python 3.12.3） |
 | 9 | `journal/week1-review.md` | 五能力点自评 1–5 + 证据；报错原文 ≥5 条 + 根因；下周改进 2 件 | 文件本身 | 待做（**G1 硬性项**） |
-| 10 | 当日 commit | 格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | 进行中（`d28a1a6` 骨架、`b400b78` 免密+哈希；本次 rsync/端口转发回填待提交） |
+| 10 | 当日 commit | 格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅ `d28a1a6` 骨架、`b400b78` 免密+哈希 |
 | 11 | `journal/INDEX.md` D5 行 | 回填日期、commit、验收结果 | 文件本身 | 待做 |
 
 ## 今日验收标准（G1，收尾逐条核对）
@@ -93,6 +93,7 @@ gate: G1
 
 ## 关键命令
 
+> 其中 `ssh -V`、`ssh -G`、`ls ~/.ssh`、`bash code/setup_check.sh` 属于 Kilo 代跑的只读检查，其余登录、生成证据、传输和隧道命令由本人在终端执行。
 > 本机是 macOS，服务器是 Linux。**`ssh` 用小写 `-p`，`scp` 用大写 `-P`。**
 
 ```bash
@@ -101,14 +102,6 @@ ssh -V                                  # OpenSSH_9.7p1, LibreSSL 3.3.6
 ssh -G t12ub                            # 生效配置：user jqw / hostname 192.168.18.87 / port 10022
 ls -ld ~/.ssh ~/.ssh/config             # 700 / 600
 bash code/setup_check.sh; echo "exit=$?" # RESULT: WARN，exit=1（75GB < 150GB）
-```
-
-```bash
-# ——【Mac】第一次连接（如果还没采信过主机指纹）——
-# 端口以 ssh -G 为准：当前是 10022，不是计划里的 22
-ssh -p 10022 jqw@192.168.18.87
-# 首次会显示 ED25519/ECDSA 指纹 → 先找负责人核对，再输入完整的 yes
-# 密码输入不回显字符，正常
 ```
 
 ```bash
@@ -127,8 +120,6 @@ cat ssh-check.txt
 ```bash
 # ——【Mac】免密验证（现有链路）——
 ssh -o BatchMode=yes t12ub 'hostname'   # 实测输出 t12ub；BatchMode 禁止密码/口令交互
-ssh t12ub 'whoami'                      # 本次未单独跑；ssh-check.txt 中为 jqw
-ssh t12ub 'pwd'                         # 本次未单独跑；ssh-check.txt 中为仓库路径
 
 # 服务器侧权限（StrictModes 的前提）
 ssh t12ub 'ls -ld ~ ~/.ssh; ls -l ~/.ssh/authorized_keys'
@@ -136,35 +127,10 @@ ssh t12ub 'ls -ld ~ ~/.ssh; ls -l ~/.ssh/authorized_keys'
 # drwx------  2 jqw jqw  /home/jqw/.ssh            ← 700
 # -rw-------  1 jqw jqw  /home/jqw/.ssh/authorized_keys  ← 600，736 字节
 
-# 认证路径取证：tail 只截会话尾部，Offering/Accepts 行要靠 grep
-ssh -v t12ub true 2>&1 | grep -E 'Offering public key|Server accepts key|Authenticated to|Authentications that can continue'
-# 实测 tail -n 20 只看到：
-#   debug1: Remote: /home/jqw/.ssh/authorized_keys:1: key options: ...
-#   debug1: Exit status 0
-# 若提示密码：先看服务器 ~/.ssh 700、authorized_keys 600，再看本机私钥是否 600
-```
-
-```bash
-# ——可选：新增一把 ed25519 专用于实习（不覆盖现有 RSA）——
-ssh-keygen -t ed25519 -C "intern@t12ub" -f ~/.ssh/id_ed25519_intern
-ssh-copy-id -i ~/.ssh/id_ed25519_intern.pub -p 10022 jqw@192.168.18.87
-# 然后在 ~/.ssh/config 的 Host t12ub 段【追加】一行，不要删原来的 IdentityFile：
-#     IdentityFile ~/.ssh/id_ed25519_intern
-# 验证：ssh -v t12ub 观察 “Offering public key” 命中的是哪一把
-```
-
-```bash
-# ——【Mac】配置文件核对（已存在，只补字段）——
-cat ~/.ssh/config
-chmod 600 ~/.ssh/config
-# Host t12ub 目标形态：
-#   HostName 192.168.18.87
-#   User jqw
-#   Port 10022
-#   IdentityFile /Users/wangjiaqi/Desktop/jqw/id_rsa
-#   IdentitiesOnly yes
-#   ServerAliveInterval 60
-#   ServerAliveCountMax 3
+# 公钥被接受的证据（本次 ssh -v 的实际输出）
+ssh -v t12ub true 2>&1 | tail -n 20
+# debug1: Remote: /home/jqw/.ssh/authorized_keys:1: key options: ...
+# debug1: Exit status 0
 ```
 
 ```bash
@@ -193,11 +159,6 @@ shasum -a 256 ssh-check.txt                        # macOS / 本机
 ssh t12ub 'sha256sum ~/work/intern-jqw-nsclc-survival/ssh-check.txt'   # Linux / 远程
 # 实测两边都是：
 # 8d5ebcc9c887834a60a5d185f1c0bedb026929143b8a3e8e78249cf1e1fdebba
-
-# 可选：落到文件后 diff（本次是目视两条输出逐字相同，未跑 diff）
-shasum -a 256 ssh-check.txt | awk '{print $1}' > /tmp/mac.sha
-ssh t12ub 'sha256sum ~/work/intern-jqw-nsclc-survival/ssh-check.txt' | awk '{print $1}' > /tmp/srv.sha
-diff /tmp/mac.sha /tmp/srv.sha && echo "哈希一致"
 ```
 
 ```bash
@@ -212,18 +173,6 @@ curl -I http://127.0.0.1:8889
 # 实测：HTTP/1.0 200 OK / Server: SimpleHTTP/0.6 Python/3.12.3
 # 收尾：B、A 各 Ctrl+C；本机 8889 与远程 8888 都应无监听
 # 关键：-L 右侧的 127.0.0.1 是服务器的回环，不是 Mac 的；本机 8888 的 Jupyter 不受影响
-```
-
-```bash
-# ——断线长跑（“可长跑”的验收）——
-ssh t12ub
-tmux new -s d5        # 或复用已有会话
-# 会话内跑一个 5 分钟任务
-sleep 300
-# Ctrl+b 松开后按 d → detach
-exit                  # 断开 SSH
-ssh t12ub 'tmux ls'   # d5 仍在
-ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 ```
 
 ## 实验记录
@@ -252,7 +201,7 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 | 服务器 `~/.ssh` | `ssh t12ub 'ls -ld ~/.ssh'` | `drwx------ 2 jqw jqw 4096 Oct 19 13:58 /home/jqw/.ssh` | ✅ 700 |
 | 服务器 `authorized_keys` | `ssh t12ub 'ls -l ~/.ssh/authorized_keys'` | `-rw------- 1 jqw jqw 736 Oct 15 17:22 /home/jqw/.ssh/authorized_keys` | ✅ 600 |
 | 服务器家目录 | `ssh t12ub 'ls -ld ~'` | `drwxr-x--- 15 jqw jqw 4096 Oct 23 09:57 /home/jqw` | ✅ 750；组可读/进入、不可写，满足 `StrictModes` |
-| `ssh -v` 命中密钥 | `ssh -v t12ub true 2>&1 \| grep 'authorized_keys'` | `Remote: /home/jqw/.ssh/authorized_keys:1: key options: ...`；`Exit status 0` | ✅ 公钥被接受（末 20 行不含 `Offering public key`，取证要按关键词过滤） |
+| `ssh -v` 命中密钥 | `ssh -v t12ub true 2>&1 \| tail -n 20` | `Remote: /home/jqw/.ssh/authorized_keys:1: key options: ...`；`Exit status 0` | ✅ 公钥被接受 |
 
 ### 传输与哈希
 
@@ -275,15 +224,6 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 | 远程临时服务 | `ssh t12ub 'cd /tmp && python3 -m http.server 8888 --bind 127.0.0.1'`；`ss -ltn` → `127.0.0.1:8888 LISTEN` |
 | 访问结果 | `curl -I http://127.0.0.1:8889` → `HTTP/1.0 200 OK`，`Server: SimpleHTTP/0.6 Python/3.12.3` |
 | 结束后是否释放端口 | ✅ 本机 8889 与远程 8888 均无监听 |
-
-### 断线长跑
-
-| 项 | 实测 |
-|---|---|
-| tmux 会话名 | 待做（建议 `d5`） |
-| detach 后 `tmux ls` | 待做 |
-| 断开 SSH 后是否存活 | 待做 |
-| attach 回来任务是否还在 | 待做（D4 已用 `work` 会话验证过同一机制） |
 
 ## `700` / `600` 与免密登录的关系（G1 必答）
 
@@ -311,7 +251,7 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 | 新建 `~/.ssh/id_ed25519` 并 `ssh-copy-id` | 已有 RSA 密钥在 `~/Desktop/jqw/id_rsa`，D4 免密可用 | 不覆盖；需要新密钥时另起文件名并追加 `IdentityFile` |
 | 计划默认 `~/work/intern-<用户名>-nsclc-survival` | 服务器上 `~/work` 不存在；`find` 只命中**空目录** `~/kilo-work/nsclc-radiomics` 和原始数据 `~/.data/nsclc-radiomics` | `mkdir -p ~/work/intern-jqw-nsclc-survival` 后生成；不 `git init`，保留未来 clone 的可能 |
 | `~/kilo-work/nsclc-radiomics` 看起来像工作目录 | `ls -la` 只有 `.` 和 `..`，不是 Git 仓库 | 不写入任何交付物；`~/.data/nsclc-radiomics` 是原始数据，也不碰 |
-| 计划把配置当“今天新建” | `Host t12ub` 已存在且可用 | 改为核对 + 补 `ServerAliveCountMax`，不重写 |
+| 计划把配置当“今天新建” | `Host t12ub` 已存在且可用 | 只读核对，未改配置 |
 | 计划用 `scp ./README.md t12ub:~/work/` | 目标目录已建且可写，但计划路径是 `~/work/` 根，不是约定仓库目录 | 上传统一落到 `~/work/intern-jqw-nsclc-survival/` |
 | 计划默认本机 8888 空闲 | 8888 被本机 Jupyter（Tornado/6.5.5，PID 1083，2026-07-08 启动）长期监听；`curl -I` 对它返回 405（Jupyter 不接受 HEAD） | 隧道左侧改 8889，不杀现有 Jupyter |
 | 计划只排除 `data/raw` | `.kilo/` 与 `plans20.zip` 也被 rsync 传上去（`.gitignore` 不作用于 rsync），远端一度 1.2M | 增加 `--exclude '.kilo' --exclude '*.zip'`，清理后 276K；二次同步 0 传输 |
@@ -379,11 +319,9 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
   `ssh -o BatchMode=yes t12ub 'hostname'` 仍返回 `t12ub`——`BatchMode` 禁用密码交互，能过就排除了密码回退。
 - **根因**：`Offering public key` / `Server accepts key` / `Authenticated to` 打印在**认证阶段**，
   早于 channel 建立；`tail -n 20` 只保留会话尾部，把关键行截掉了。
-- **解决**：
-  ```bash
-  ssh -v t12ub true 2>&1 | grep -E 'Offering public key|Server accepts key|Authenticated to|Authentications that can continue'
-  ```
-- **下次怎么避免**：长日志按关键词过滤，不按固定行数截断；判断认证方式优先看
+- **解决**：用已经拿到的两处输出交叉验证：`Remote: .../authorized_keys:1: key options` 说明服务端读到了公钥；
+  `BatchMode=yes` 仍能登录说明没有回退到密码。没有额外执行新命令。
+- **下次怎么避免**：长日志按关键词定位，不按固定行数截断；判断认证方式优先看
   `Authenticated to ... using "publickey"`，而不是猜。
 
 ### 卡点 3：`-L 8888` 报 `bind: Address already in use`
@@ -435,7 +373,7 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 
 - 问：`~/work` 不存在，能不能直接 `git init` 凑一个仓库？答：不要，放进 `ssh-check.txt` 后目录非空，会阻塞以后 `git clone`；先建目录只放证据。核实：`find` 确认服务器无仓库副本后，只 `mkdir -p`，未 init。
 - 问：怎么证明是「免密」而不是「恰好这次没提示密码」？答：用 `ssh -o BatchMode=yes`，它禁用密码和口令交互。核实：输出 `t12ub`，通过。
-- 问：`ssh -v` 末 20 行看不到 `Offering public key`，是不是没走公钥？答：认证日志在会话建立前，`tail` 会截掉，应按关键词 grep。核实：`authorized_keys:1` 被接受 + `Exit status 0` + `BatchMode` 成功，确认走私钥。
+- 问：`ssh -v` 末 20 行看不到 `Offering public key`，是不是没走公钥？答：认证日志在会话建立前，`tail` 会截掉；本次改用已有输出交叉确认。核实：`authorized_keys:1` 被接受 + `Exit status 0` + `BatchMode` 成功，确认走私钥。
 - 问：dry-run 里出现了 `.kilo/` 和 `plans20.zip`，要不要紧？答：`.gitignore` 对 rsync 无效，必须显式 `--exclude`；已经传上去的要清理。核实：首次 133 文件/681103B；清理后二次 0 传输、`sent 869B`。
 - 问：`-L 8888` 报 `Address already in use` 是服务器端口被占吗？答：是本机 bind 失败，看左侧端口。核实：`lsof` 显示本机 Jupyter（Python 1083）占 8888，换 8889 后 `200 OK`。
 - **抓错记录**：今日无。计划文件写端口 22 / 新建 ed25519，实测是 10022 / 现有 RSA——属于**计划与环境的偏差**，不是 Kilo 回答错误。
@@ -456,35 +394,9 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 10. **`-L` 的左右不是同一台机器**：`-L 8889:127.0.0.1:8888` 中，左边是本机监听端口，右边是**服务器视角**的回环地址。本机 8888 被 Jupyter（Tornado，PID 1083）占用，SSH 在本地 bind 就失败，与服务器无关；换 8889 后 `curl -I` 得到 `200 OK`。
 11. **一个终端只承担一个角色**：服务、隧道、验证分开；前台常驻命令运行时，后续键入会进入该进程的 stdin，而不是 bash。判断“命令没反应”前，先看它是不是本来就该阻塞。
 
-## 第一周复盘入口（另写 `journal/week1-review.md`）
-
-G1 要求单独一份复盘，不在本文件里凑数。五能力点建议按下面五行自评并各附一条证据：
-
-| 能力点 | 自评（1–5） | 证据（文件/命令/commit） |
-|---|---|---|
-| Git 工作流（提交规范、撤销、远程） | 待填 | `journal/day01.md`、`day02.md` |
-| Linux 文件、权限、路径 | 待填 | `journal/day03.md`、`notes/linux-cli.md` §1 |
-| 进程、tmux、长任务 | 待填 | `journal/day04.md`、tmux 实测 |
-| 环境变量、PATH、bash 脚本 | 待填 | `code/setup_check.sh`、`notes/linux-cli.md` §12–§13 |
-| SSH 远程协作（免密/传输/转发） | 待填 | 本文件 |
-
-另外必须包含：本周报错原文 ≥5 条 + 根因、下周改进 2 件事。
-
 ## 明日 3 件事
 
 - [ ] 读 `每日计划/Day06.md`（Kilo 安装、配置、冒烟测试）。
 - [ ] 复核 G1 全部勾选，补齐 `journal/INDEX.md` D5 行。
 - [ ] 把今天验证过的 SSH 结论补进 `notes/SSH.md`（端口 10022、别名、转发、权限）。
 
-## 收尾
-
-```bash
-# 证据已就绪，先落这一笔
-git add ssh-check.txt journal/day05.md
-git commit -m "day05: 回填 ssh 全链路实测 - 免密/rsync/端口转发 + 8888 冲突"
-
-# week1-review 完成后收口（文件不存在时先别跑这条，git add 会整体失败）
-git add journal/week1-review.md journal/INDEX.md notes/SSH.md
-git commit -m "day05: ssh 免密登录与文件传输验证 + w1 复盘"
-git log --oneline -5
-```
