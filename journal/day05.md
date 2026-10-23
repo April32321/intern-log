@@ -57,7 +57,7 @@ gate: G1
 | `~/.ssh` 700、`authorized_keys` 600 | 看权限位 | `StrictModes` 的前提：公钥白名单不能被同组或其他用户篡改 |
 | `scp` / `rsync` | 拷文件 | 数据通道复用同一条加密链路；`-P` 是端口，`-p` 在 scp 里是保留时间戳 |
 | SHA-256 双端比对 | 算哈希 | 完整性：传输中没有截断、编码转换或拷错文件。**哈希相同 ≠ 文件可信**，只证明两端一致 |
-| `ssh -N -L 8888:localhost:8888` | 端口转发 | 把远程 `localhost:8888` 映射到本机，流量仍走 SSH 加密通道；为 D14 的 Jupyter 铺路 |
+| `ssh -N -L 8889:127.0.0.1:8888` | 端口转发 | 把远程 `127.0.0.1:8888` 映射到本机 8889，流量仍走 SSH 加密通道；为 D14 的 Jupyter 铺路 |
 
 一句话：今天不是「学会 `ssh` 命令」，而是能回答四个问题——
 **连的是谁**（host key）、**我是谁**（publickey）、**文件有没有变**（SHA-256）、
@@ -72,13 +72,13 @@ gate: G1
 | 1 | `ssh-check.txt` | 在 t12ub 仓库目录生成，含 `hostname`/`whoami`/`pwd`/`uname -a`/`date`/`df -h "$HOME"` | 远程文件 + 本地副本 | ✅ 2026-10-23 09:58 HKT 生成；7 行 332B；本机副本同为 332B |
 | 2 | 免密登录验证 | `ssh t12ub` 不提示密码；`hostname`/`whoami`/`pwd` 输出正确 | 终端记录 | ✅ `ssh -o BatchMode=yes t12ub 'hostname'` → `t12ub`，无密码/口令交互 |
 | 3 | 别名与保活配置 | `Host t12ub` 含 HostName/User/Port/ServerAliveInterval/ServerAliveCountMax；`chmod 600 ~/.ssh/config` | `ssh -G t12ub` 输出 | ✅ 已存在（端口 10022；`ServerAliveCountMax` 生效值 3，未显式写入；建议补上） |
-| 4 | 本机 → 远程传输 | `scp` 或 `rsync` 上传一个小文件，远程可见 | 两端 `ls -l` | 待做（上传方向尚未执行） |
+| 4 | 本机 → 远程传输 | `scp` 或 `rsync` 上传一个小文件，远程可见 | 两端 `ls -l` | ✅ 首次 133 文件/681103B；清理后二次 `sent 869B`、`speedup 194.17` |
 | 5 | 远程 → 本机传输 | 取回 `ssh-check.txt` 到仓库根 | 本地文件 | ✅ `scp -P 10022 ...` 100% 332B；本地 `ls -l` 332B |
-| 6 | 目录同步 | `rsync -avP --exclude` 同步一次目录，确认排除生效 | `rsync` 输出 | 待做 |
+| 6 | 目录同步 | `rsync -avP --exclude` 同步一次目录，确认排除生效 | `rsync` 输出 | ✅ 39 considered / 0 transferred；反向 27 文件，两端 27/27 一致 |
 | 7 | SHA-256 一致性 | 两端对 `ssh-check.txt` 计算，哈希逐字相同 | 两条命令输出 + `diff` | ✅ 双端 `8d5ebcc9c887834a60a5d185f1c0bedb026929143b8a3e8e78249cf1e1fdebba` |
-| 8 | 端口转发 | `ssh -N -L 8888:localhost:8888 t12ub` 能建立；远程起临时 HTTP 服务验证 | 本机 `curl`/浏览器结果 | 待做（Jupyter 在 D14） |
+| 8 | 端口转发 | `ssh -N -L 8888:localhost:8888 t12ub` 能建立；远程起临时 HTTP 服务验证 | 本机 `curl`/浏览器结果 | ✅ 本机 8888 被 Jupyter 占用，改用 8889；`curl -I` → `200 OK`（Python 3.12.3） |
 | 9 | `journal/week1-review.md` | 五能力点自评 1–5 + 证据；报错原文 ≥5 条 + 根因；下周改进 2 件 | 文件本身 | 待做（**G1 硬性项**） |
-| 10 | 当日 commit | 格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | 进行中（骨架提交 `d28a1a6`；证据待提交） |
+| 10 | 当日 commit | 格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | 进行中（`d28a1a6` 骨架、`b400b78` 免密+哈希；本次 rsync/端口转发回填待提交） |
 | 11 | `journal/INDEX.md` D5 行 | 回填日期、commit、验收结果 | 文件本身 | 待做 |
 
 ## 今日验收标准（G1，收尾逐条核对）
@@ -86,9 +86,9 @@ gate: G1
 - [x] `ssh t12ub` 免密进入，`hostname` / `whoami` / `pwd` 输出正确（`BatchMode=yes` → `t12ub`）
 - [x] `ssh-check.txt` 已生成，本机副本 SHA-256 与远程一致（`8d5ebcc…`）
 - [ ] 能解释 `700` / `600` 权限与免密登录的关系（见下文，需用自己的话复述）
-- [ ] `bash code/setup_check.sh` 能跑，且能解释 `set -euo pipefail`
+- [x] `bash code/setup_check.sh` 能跑（今日 `WARN`/`exit=1`，75GB 阈值告警）；`set -euo pipefail` 解释见 `journal/day04.md`
 - [ ] `journal/` 有 D1–D5 五篇日志 + `week1-review.md`
-- [ ] `git log` 有 5 个以上按规范命名的 commit
+- [x] `git log` 有 5 个以上按规范命名的 commit（`git rev-list --count HEAD` = 56）
 - [ ] `journal/INDEX.md` D5 行回填完成
 
 ## 关键命令
@@ -172,12 +172,17 @@ chmod 600 ~/.ssh/config
 # 远程 → 本机（已做）：100% 332B，本地 ls -l 同为 332B
 scp -P 10022 t12ub:~/work/intern-jqw-nsclc-survival/ssh-check.txt ./
 
-# 本机 → 远程（待做）：用 rsync 同时验证排除规则
-rsync -avP --exclude '.git' --exclude 'data/raw' --exclude '.DS_Store' \
+# 本机 → 远程（已做）：首次 198 considered / 133 transferred / sent 681103B
+# 清理远端 .kilo 与 plans20.zip 后重跑：39 considered / 0 transferred / sent 869B / speedup 194.17
+rsync -avP --exclude '.git' --exclude '.kilo' --exclude 'data/raw' \
+  --exclude '*.zip' --exclude '.DS_Store' \
   ./ t12ub:~/work/intern-jqw-nsclc-survival/
-# 远程 → 本机目录（待做）：落到 /tmp，避免 backup/ 污染仓库
+
+# 远程 → 本机目录（已做）：27 个文件 / 175927B；用 /tmp 避免 backup/ 污染仓库
 rsync -avP t12ub:~/work/intern-jqw-nsclc-survival/ /tmp/d5-backup/
 
+# 第一次只排除了 .git/data/raw/.DS_Store，把 .kilo 和 plans20.zip 也传了
+# 原因：.gitignore 对 rsync 无效，必须显式 --exclude；dry-run 清单已经列出来了
 # 注意：scp 的端口是大写 -P；小写 -p 在 scp 里表示保留时间戳，报 “unknown option” 才是版本差异
 # 源目录结尾的 ./ 与目标目录结尾的 / 都不能少，否则会多套一层目录
 ```
@@ -196,12 +201,17 @@ diff /tmp/mac.sha /tmp/srv.sha && echo "哈希一致"
 ```
 
 ```bash
-# ——端口转发（D14 的 Jupyter 预演）——
-ssh -N -L 8888:localhost:8888 t12ub
-# 另开一个终端，在远程起临时服务验证：
-ssh t12ub 'cd /tmp && python3 -m http.server 8888'
-# 本机浏览器打开 http://localhost:8888，或 curl -I http://localhost:8888
-# 验证完 Ctrl+C 结束两条命令；若 8888 被占用，改 -L 8889:localhost:8888
+# ——端口转发（已做；本机 8888 被 Jupyter 占用，改用 8889）——
+# 终端 A（本机）：左边是本机端口，右边是「服务器视角」的回环地址
+ssh -N -L 8889:127.0.0.1:8888 t12ub
+# 终端 B（服务器）：只监听回环，不暴露给局域网
+ssh t12ub 'cd /tmp && python3 -m http.server 8888 --bind 127.0.0.1'
+# 终端 C（本机）：lsof 看到 ssh 在 8889 LISTEN；curl 返回 200 OK
+lsof -nP -iTCP:8889 -sTCP:LISTEN
+curl -I http://127.0.0.1:8889
+# 实测：HTTP/1.0 200 OK / Server: SimpleHTTP/0.6 Python/3.12.3
+# 收尾：B、A 各 Ctrl+C；本机 8889 与远程 8888 都应无监听
+# 关键：-L 右侧的 127.0.0.1 是服务器的回环，不是 Mac 的；本机 8888 的 Jupyter 不受影响
 ```
 
 ```bash
@@ -248,22 +258,23 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 
 | 项 | 实测 |
 |---|---|
-| 上传命令 / 结果 | 待做（计划用 `rsync --exclude '.git' --exclude 'data/raw'`） |
+| 上传命令 / 结果 | `rsync -avP --exclude '.git' --exclude '.kilo' --exclude 'data/raw' --exclude '*.zip' --exclude '.DS_Store' ./ t12ub:.../`；首次 198 considered / 133 transferred / sent 681103B；清理后 39 considered / **0 transferred** / sent 869B / speedup 194.17 |
 | 下载命令 / 结果 | `scp -P 10022 t12ub:~/work/intern-jqw-nsclc-survival/ssh-check.txt ./` → `100% 332 37.3KB/s`；本地 `ls -l` 332B |
-| 目录同步 / 排除是否生效 | 待做 |
+| 目录同步 / 排除是否生效 | 反向 `rsync -avP t12ub:.../ /tmp/d5-backup/` → 27 文件 / 175927B；两端 `find -type f \| wc -l` 均为 27；`.git`、`.kilo`、`data/raw`、`*.zip` 均未上传 |
 | 本机 SHA-256 | `8d5ebcc9c887834a60a5d185f1c0bedb026929143b8a3e8e78249cf1e1fdebba` |
 | 远程 SHA-256 | `8d5ebcc9c887834a60a5d185f1c0bedb026929143b8a3e8e78249cf1e1fdebba` |
+| README 双端 SHA-256 | `d90e80b298f6ecb6463dce9a967c0ac0ae3f6a0bea1c869af729c97d16c70967`（两端一致） |
 | 是否一致 | ✅ 逐字相同；本次未跑 `diff`，是目视两条输出 |
 
 ### 端口转发
 
 | 项 | 实测 |
 |---|---|
-| 转发命令 | `ssh -N -L 8888:localhost:8888 t12ub` |
-| 本机监听 | 待做（`lsof -nP -iTCP:8888 -sTCP:LISTEN`） |
-| 远程临时服务 | 待做（`python3 -m http.server 8888`） |
-| 访问结果 | 待做（浏览器 / `curl -I`） |
-| 结束后是否释放端口 | 待做 |
+| 转发命令 | `ssh -N -L 8889:127.0.0.1:8888 t12ub`（本机 8888 被 Jupyter 占用，左侧改 8889） |
+| 本机监听 | `lsof -nP -iTCP:8889 -sTCP:LISTEN` → `ssh` PID 51614 在 `127.0.0.1:8889` 与 `[::1]:8889` LISTEN |
+| 远程临时服务 | `ssh t12ub 'cd /tmp && python3 -m http.server 8888 --bind 127.0.0.1'`；`ss -ltn` → `127.0.0.1:8888 LISTEN` |
+| 访问结果 | `curl -I http://127.0.0.1:8889` → `HTTP/1.0 200 OK`，`Server: SimpleHTTP/0.6 Python/3.12.3` |
+| 结束后是否释放端口 | ✅ 本机 8889 与远程 8888 均无监听 |
 
 ### 断线长跑
 
@@ -302,23 +313,27 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 | `~/kilo-work/nsclc-radiomics` 看起来像工作目录 | `ls -la` 只有 `.` 和 `..`，不是 Git 仓库 | 不写入任何交付物；`~/.data/nsclc-radiomics` 是原始数据，也不碰 |
 | 计划把配置当“今天新建” | `Host t12ub` 已存在且可用 | 改为核对 + 补 `ServerAliveCountMax`，不重写 |
 | 计划用 `scp ./README.md t12ub:~/work/` | 目标目录已建且可写，但计划路径是 `~/work/` 根，不是约定仓库目录 | 上传统一落到 `~/work/intern-jqw-nsclc-survival/` |
+| 计划默认本机 8888 空闲 | 8888 被本机 Jupyter（Tornado/6.5.5，PID 1083，2026-07-08 启动）长期监听；`curl -I` 对它返回 405（Jupyter 不接受 HEAD） | 隧道左侧改 8889，不杀现有 Jupyter |
+| 计划只排除 `data/raw` | `.kilo/` 与 `plans20.zip` 也被 rsync 传上去（`.gitignore` 不作用于 rsync），远端一度 1.2M | 增加 `--exclude '.kilo' --exclude '*.zip'`，清理后 276K；二次同步 0 传输 |
 
-> 结论：**计划里的 22 端口、ed25519、`~/work/<repo>` 都是通用假设，不是本环境的现状。**
+> 结论：**计划里的 22 端口、ed25519、`~/work/<repo>`、空闲的 8888 都是通用假设，不是本环境的现状。**
 > 照抄 22 会得到 `Connection timed out`，然后误判为防火墙问题；照抄目录会在第一步就报
-> `No such file or directory`。开工前先用 `ssh -G` 和 `ls`/`find` 核对，比照着计划试错快得多。
+> `No such file or directory`；照抄 8888 会报 `Address already in use`。
+> 开工前先用 `ssh -G`、`ls`/`find`、`lsof` 核对，比照着计划试错快得多。
 
-## 预判坑（待实测确认，未验证的不进结论）
+## 预判坑（含实测结果，未验证的不进结论）
 
 | 计划里的写法 | 在本环境的可能问题 | 替代写法 | 是否实际踩到 |
 |---|---|---|---|
-| `ssh -p 22 ...` | 实际端口 10022，22 无监听 → 超时 | `ssh t12ub` 或 `-p 10022` | 未踩（开工先 `ssh -G` 发现） |
+| `ssh -p 22 ...` | 实际端口 10022，与计划不一致 → 连错端口/超时 | `ssh t12ub` 或 `-p 10022` | 未踩（开工先 `ssh -G` 发现） |
 | `scp -p 22` | `scp` 的 `-p` 是“保留时间戳”，端口要大写 `-P` | `scp -P 10022` | 未踩（一直用 `-P 10022`） |
 | `sha256sum`（Mac） | macOS 无此命令 | `shasum -a 256` | 未踩（本机用 `shasum`） |
 | `ssh-copy-id` 后仍要密码 | 服务器 `~/.ssh`/`authorized_keys` 权限过宽 | `chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys` | 未踩（沿用现有密钥，未执行 copy-id） |
 | 直接覆盖 `~/.ssh/config` | D4 已验证的 RSA 链路会失效 | 只追加字段，改前先 `cp ~/.ssh/config ~/.ssh/config.bak` | 未踩（只读核对，未改配置） |
-| `ssh -N -L 8888:...` | 本机 8888 已被占用（Jupyter 常见） | 换 `8889:localhost:8888` | 待验证 |
-| `rsync` 同步整个仓库 | 会把 `data/raw` 大文件也拉下来 | `--exclude 'data/raw' --exclude '.git'` | 待做 |
-| 会话里直接跑长任务 | 断线收 SIGHUP，任务死 | `tmux` / `nohup`（D4 已验证） | D4 已验证；今天待复验 |
+| `ssh -N -L 8888:...` | 本机 8888 已被 Jupyter（Tornado，PID 1083）占用 | 换 `8889:127.0.0.1:8888` | **实际踩到**：`bind: Address already in use` |
+| `rsync` 同步整个仓库 | 会把 `data/raw` 大文件也拉下来 | `--exclude 'data/raw' --exclude '.git'` | 未踩（已排除）；但漏了 `.kilo`/`*.zip`，见下一行 |
+| 以为 `.gitignore` 能管住 rsync | `.kilo/` 和 `plans20.zip` 照样上传，远端 1.2M | 显式 `--exclude '.kilo' --exclude '*.zip'`，清理后 276K | **实际踩到**：首次 133 文件/681KB |
+| 会话里直接跑长任务 | 断线收 SIGHUP，任务死 | `tmux` / `nohup`（D4 已验证） | D4 已验证；今天未复验 |
 
 ## 卡点与报错（本节不许空着）
 
@@ -371,6 +386,48 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 - **下次怎么避免**：长日志按关键词过滤，不按固定行数截断；判断认证方式优先看
   `Authenticated to ... using "publickey"`，而不是猜。
 
+### 卡点 3：`-L 8888` 报 `bind: Address already in use`
+
+- **现象**：
+  ```text
+  bind [127.0.0.1]:8888: Address already in use
+  channel_setup_fwd_listener_tcpip: cannot listen to port: 8888
+  Could not request local forwarding.
+  ```
+- **我的猜测**：服务器 8888 被别的服务占了，或者 sshd 禁止端口转发。
+- **验证过程**：
+  ```text
+  lsof -nP -iTCP:8888 -sTCP:LISTEN
+  # Python 1083 wangjiaqi ... TCP 127.0.0.1:8888 (LISTEN)
+  # Python 1083 wangjiaqi ... TCP [::1]:8888 (LISTEN)
+
+  ps -p 1083 -o pid,user,lstart,command
+  # 1083 wangjiaqi Wed Jul  8 12:09:48 2026 /opt/homebrew/.../Python
+
+  curl -sI http://127.0.0.1:8888 | head -5
+  # HTTP/1.1 405 Method Not Allowed
+  # Server: TornadoServer/6.5.5
+  ```
+- **根因**：`-L` 左侧的 8888 是**本机**监听端口，本机已有 Jupyter（Tornado）长期占用，
+  SSH 在本地 bind 失败，连接还没走到服务器就被拒绝。与 t12ub 无关。
+- **解决**：只改左侧端口，右侧保持服务器真实监听地址：
+  `ssh -N -L 8889:127.0.0.1:8888 t12ub`，`curl -I http://127.0.0.1:8889` 返回 `200 OK`。
+- **下次怎么避免**：建隧道前先 `lsof -nP -iTCP:<本机端口> -sTCP:LISTEN`；
+  端口冲突只换左边，不要动右边；不要为了腾端口去杀不认识的进程。
+
+### 卡点 4（操作）：前台常驻命令运行时，继续输入的命令没有执行
+
+- **现象**：`ssh t12ub 'cd /tmp && python3 -m http.server 8888 --bind 127.0.0.1'` 运行中，
+  同一终端继续输入 `ssh t12ub 'ss -ltn | grep :8888'`，没有任何输出，也没有新提示符。
+- **我的猜测**：服务器服务没起来，或第二条命令写错了。
+- **验证过程**：另开终端执行 `ss -ltn | grep :8888`，看到 `127.0.0.1:8888 LISTEN`；
+  回到原终端按 `Ctrl+C` 后提示符才恢复，说明第二条命令根本没被本地 shell 执行。
+- **根因**：前台服务占用终端；`ssh` 未分配 tty 时，本地 stdin 直接接到远端 `http.server` 进程，
+  后续键入被当作它的输入（它不读 stdin，于是静默丢弃），不是输入到 bash。
+- **解决**：常驻服务、隧道各占一个终端；验证命令另开标签页。需要同终端时用 `&` 或 `tmux`。
+- **下次怎么避免**：命令不返回时先判断它是不是常驻进程（server、`-N` 隧道、`tail -f`），
+  是就换终端，不要在忙终端里继续敲命令。
+
 ## Kilo 使用记录
 
 > 今日玩法：`ssh -v` 输出很长，只截最后 20 行判断卡在哪一步。
@@ -379,11 +436,13 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 - 问：`~/work` 不存在，能不能直接 `git init` 凑一个仓库？答：不要，放进 `ssh-check.txt` 后目录非空，会阻塞以后 `git clone`；先建目录只放证据。核实：`find` 确认服务器无仓库副本后，只 `mkdir -p`，未 init。
 - 问：怎么证明是「免密」而不是「恰好这次没提示密码」？答：用 `ssh -o BatchMode=yes`，它禁用密码和口令交互。核实：输出 `t12ub`，通过。
 - 问：`ssh -v` 末 20 行看不到 `Offering public key`，是不是没走公钥？答：认证日志在会话建立前，`tail` 会截掉，应按关键词 grep。核实：`authorized_keys:1` 被接受 + `Exit status 0` + `BatchMode` 成功，确认走私钥。
+- 问：dry-run 里出现了 `.kilo/` 和 `plans20.zip`，要不要紧？答：`.gitignore` 对 rsync 无效，必须显式 `--exclude`；已经传上去的要清理。核实：首次 133 文件/681103B；清理后二次 0 传输、`sent 869B`。
+- 问：`-L 8888` 报 `Address already in use` 是服务器端口被占吗？答：是本机 bind 失败，看左侧端口。核实：`lsof` 显示本机 Jupyter（Python 1083）占 8888，换 8889 后 `200 OK`。
 - **抓错记录**：今日无。计划文件写端口 22 / 新建 ed25519，实测是 10022 / 现有 RSA——属于**计划与环境的偏差**，不是 Kilo 回答错误。
 
 ## 今日结论
 
-> 收尾时补 3–7 条，只写验证过的结论；说不清为什么的结果标 `未验证`。
+> 收尾时补到 8–11 条，只写验证过的结论；说不清为什么的结果标 `未验证`。
 
 1. **免密要用 `BatchMode` 证明**：普通 `ssh t12ub` 不提示密码，可能只是 ssh-agent 缓存或本次恰好命中了密钥；`ssh -o BatchMode=yes t12ub 'hostname'` 禁止一切密码/口令交互，仍返回 `t12ub`，才能排除密码回退。
 2. **先 `ssh -G` 再连**：别名把 `HostName/User/Port/IdentityFile` 解析成 `192.168.18.87 / jqw / 10022 / Desktop/jqw/id_rsa`。计划写的 22 与解析结果不一致，照抄会连错端口，再把超时误判成防火墙问题。
@@ -392,6 +451,10 @@ ssh -t t12ub 'tmux attach -t d5'   # 回到 pane，任务还在
 5. **计划里的服务器路径是假设**：`~/work` 原本不存在，`find` 只命中空的 `~/kilo-work/nsclc-radiomics` 和原始数据 `~/.data/nsclc-radiomics`。交付物最终落在新建的 `~/work/intern-jqw-nsclc-survival`；空目录没有 `git init`，避免以后 clone 失败。
 6. **最小可复核证据链**：`ssh-check.txt`（7 行/332B，含 `hostname`/`whoami`/`pwd`）+ 双端同一哈希 `8d5ebcc…` + `BatchMode` 免密输出 + 权限位。四个都能被第三方重跑，才算 G1 的「可复核」。
 7. **`scp` 端口是大写 `-P`**：本次下载用 `scp -P 10022`，一次成功；小写 `-p` 在 `scp` 里是保留时间戳，不是端口。
+8. **rsync 的增量是内容级判断**：首次上传 133 个文件/681103B；清理后用同一命令重跑，`39 files to consider`、`0 transferred`、`sent 869B`、`speedup 194.17`。第二次只交换清单，没重复传数据。
+9. **忽略规则有两层，不能混用**：`.gitignore` 只影响 Git，rsync 完全不读；`.kilo/` 和 `plans20.zip` 因此被传上去。传输层的排除必须显式 `--exclude`。dry-run 已经把这两项列出来，读清单比跑完再清理便宜。
+10. **`-L` 的左右不是同一台机器**：`-L 8889:127.0.0.1:8888` 中，左边是本机监听端口，右边是**服务器视角**的回环地址。本机 8888 被 Jupyter（Tornado，PID 1083）占用，SSH 在本地 bind 就失败，与服务器无关；换 8889 后 `curl -I` 得到 `200 OK`。
+11. **一个终端只承担一个角色**：服务、隧道、验证分开；前台常驻命令运行时，后续键入会进入该进程的 stdin，而不是 bash。判断“命令没反应”前，先看它是不是本来就该阻塞。
 
 ## 第一周复盘入口（另写 `journal/week1-review.md`）
 
@@ -418,7 +481,7 @@ G1 要求单独一份复盘，不在本文件里凑数。五能力点建议按�
 ```bash
 # 证据已就绪，先落这一笔
 git add ssh-check.txt journal/day05.md
-git commit -m "day05: 回填 ssh 验收实测 - BatchMode 免密 + 双端 sha256 一致"
+git commit -m "day05: 回填 ssh 全链路实测 - 免密/rsync/端口转发 + 8888 冲突"
 
 # week1-review 完成后收口（文件不存在时先别跑这条，git add 会整体失败）
 git add journal/week1-review.md journal/INDEX.md notes/SSH.md
