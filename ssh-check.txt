@@ -1,0 +1,7 @@
+t12ub
+jqw
+/home/jqw/work/intern-jqw-nsclc-survival
+Linux t12ub 6.8.0-142-generic #142-Ubuntu SMP PREEMPT_DYNAMIC Wed Sep  2 14:24:27 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+Fri Oct 23 09:58:08 AM HKT 2026
+Filesystem                         Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv  3.9T  202G  3.5T   6% /
