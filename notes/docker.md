@@ -156,8 +156,124 @@ docker run --rm -it --name kilo-yolo \
 - 环境要稳定、要可重建，才放进镜像；它变化慢，适合做层缓存。
 - 两者用 bind mount 连接：镜像提供"能跑"，`/work` 提供"改什么、产出什么"。容器随时可弃，代码和结果都留在宿主。
 
-## D8 待办（今天只立概念）
+## D8 实操：Ubuntu 24.04 容器内装 Kilo + 自建镜像
 
-- 本机拉 Ubuntu 24 基础镜像，在容器内装 Kilo 并配置 YOLO。
-- build `kilo-box:0.1`，照抄上面的安全跑法跑一次。
-- 数据集目录以只读方式挂载（`:ro`）实测一次。
+### 本机与网络
+
+- 宿主：macOS 14（Apple Silicon），Docker Desktop **4.97.0**（Homebrew cask）
+- Docker Hub 直连超时：
+
+  ```text
+  docker: Error response from daemon: failed to resolve reference
+  "docker.io/library/hello-world:latest": ... context deadline exceeded
+  ```
+
+  宿主 `curl https://registry-1.docker.io/v2/` 超时、`nc` 也超时，DNS 能解析，
+  说明是 443 被阻断，不是镜像名或认证问题。
+- 解决：Docker Desktop → Settings → Docker Engine 加 registry mirror：
+
+  ```json
+  {
+    "registry-mirrors": [
+      "https://docker.m.daocloud.io",
+      "https://docker.1ms.run"
+    ]
+  }
+  ```
+
+  Apply & restart 后 `docker info` 能看到 `Registry Mirrors`。
+- 探测镜像站的方法：`curl -sS -m 8 -o /dev/null -w '%{http_code}\n' https://<mirror>/v2/`
+  - `401`：正常可用（要求认证）
+  - `200`：可疑，真 registry 不会这样返回
+  - `302`：跳转，不稳定
+
+### 容器内装 Kilo（实际跑通的顺序）
+
+```bash
+# 宿主
+mkdir -p ~/work/yolo-sandbox/logs && cd ~/work/yolo-sandbox
+docker run -it --name kilo-box -v "$PWD":/work -w /work ubuntu:24.04 bash
+
+# 容器内 root
+apt-get update
+apt-get install -y --no-install-recommends \
+  ca-certificates curl git bzip2 procps less
+useradd -m -s /bin/bash dev
+su - dev
+
+# 容器内 dev
+cd ~
+curl -fSLO https://npmmirror.com/mirrors/node/v22.20.0/node-v22.20.0-linux-arm64.tar.gz
+tar -xzf node-v22.20.0-linux-arm64.tar.gz
+mkdir -p ~/.local && mv node-v22.20.0-linux-arm64 ~/.local/node
+export PATH="$HOME/.local/node/bin:$PATH"
+echo 'export PATH="$HOME/.local/node/bin:$PATH"' >> ~/.bashrc
+node -v && npm -v                      # v22.20.0 / 10.9.3
+
+npm config set registry https://registry.npmmirror.com
+npm install -g @kilocode/cli
+hash -r && which kilo && kilo --version
+
+kilo auth login                        # 选 DeepSeek，粘贴 Key
+kilo run --auto -m deepseek/deepseek-flash "只回复 KILO_OK"
+```
+
+YOLO 配置（容器内 `dev`，**不是** `/root`）：
+
+```bash
+mkdir -p ~/.config/kilo
+cat > ~/.config/kilo/kilo.jsonc <<'EOF'
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "permission": "allow"
+}
+EOF
+```
+
+生效验证（写文件不出现批准提示）：
+
+```bash
+kilo run --auto -m deepseek/deepseek-flash \
+  "执行 bash 命令：echo YOLO_OK > /work/logs/yolo-ok.txt。完成后只回复 DONE"
+```
+
+输出里出现 `$ echo YOLO_OK > /work/logs/yolo-ok.txt`、`(no output)`、`DONE`，宿主
+`cat ~/work/yolo-sandbox/logs/yolo-ok.txt` → `YOLO_OK`。
+
+### 踩过的坑（D8 实测）
+
+| 现象 | 根因 | 处理 |
+|---|---|---|
+| `failed to resolve reference ... context deadline exceeded` | Docker Hub 443 被阻断 | 配 registry mirror，不用改 DNS |
+| `curl raw.githubusercontent.com` 0 字节、20 秒无进展 | GitHub raw 不可达，nvm 装不上 | 改用 npmmirror 的 Node 22 tarball，绕开 nvm |
+| `EOF` 和 `docker run ...` 粘在同一行 | heredoc 结束符必须单独顶格 | `Ctrl-C` 取消，`EOF` 单独一行；文件没写成时 `cat` 会报 No such file |
+| `docker start kilo-box` 后立刻 `Exited (0)` | 主进程是交互式 `bash`，detach 后没有 stdin | `docker start -ai kilo-box` 附着进去 |
+| `docker exec -u dev` 后 Kilo 读不到授权 / YOLO | `-u` 只换 uid，不改 `HOME`，仍是 `/root` | 加 `-e HOME=/home/dev`，用 `echo $HOME` 验证 |
+| 以为 `dev` 是 uid 1000 | ubuntu 镜像自带 `ubuntu` 用户占了 1000 | `id dev` 实测是 **1001**；`--user` 用名字或 1001 |
+| 容器内 `dev` 写的文件，宿主显示 `501:20` | Docker Desktop 的 bind mount 属主映射 | 正常现象，不是 root 污染 |
+| 命令末尾多打中文顿号 | 被 shell 当成文件名的一部分 | 生成了 `logs/day08-kilo-version.txt、`，删掉即可 |
+
+### 镜像 `kilo-box:0.1`
+
+`env/kilo-box.Dockerfile` 的关键点：
+
+- `ARG TARGETARCH` + npmmirror 的 Node tarball，按 `arm64/x64` 选包，避开 NodeSource 和 GitHub
+- npm 也走 npmmirror；装完 `npm cache clean --force` 减体积
+- 最后 `useradd dev` + `USER dev` + `ENV HOME=/home/dev`，镜像默认就是非 root
+- **不放 Key、不放代码、不放数据**；`docker commit` 会把 `auth.json` 封进层里，绝对不用
+
+验证结果：
+
+| 项目 | 证据 |
+|---|---|
+| 容器内版本 | `kilo --version` → `7.8.18`（`logs/day08-kilo-version.txt`） |
+| 镜像大小 | `kilo-box:0.1` → `1.01GB` |
+| 非 root 写挂载 | 容器内 `uid=1001(dev)`，宿主 `501:20` |
+| YOLO | `DONE` + `YOLO_OK` 落盘 |
+| 旧容器清理 | `docker rm -f kilo-box` 后 `docker ps -a` 无残留 |
+
+### 还没做
+
+- 完整安全跑法（`--rm` + `--cap-drop=ALL` + `--pids-limit` + `--memory` + `--network none`）尚未在 `kilo-box:0.1` 上实跑，只在临时容器里验证过 YOLO。
+- 数据集目录 `:ro` 只读挂载没实测。
+- 新镜像**不含** `kilo.jsonc` 和 `auth.json`：每次新容器都要 `kilo auth login` 并重写 YOLO 配置，这是有意的边界。
