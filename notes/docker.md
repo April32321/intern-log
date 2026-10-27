@@ -104,7 +104,7 @@ docker run --rm -it --name kilo-yolo \
 - `--pids-limit / --memory / --cpus` 防它把机器跑死（磁盘和 API 额度另算）
 - `-v "$PWD":/work` **只挂一个目录**
 - `-e` 传 Key，不进镜像；纯离线试验再加 `--network none`
-- 数据集目录可再叠一层只读：`-v "$PWD/../data":/data:ro`（D8 实测）
+- 数据集目录可再叠一层只读：`-v "$PWD/data/raw:/data:ro"`；容器内能读，`touch` 报 `Read-only file system`、`exit=1`（证据 `logs/day08-ro-mount.txt`）
 
 ## Conda vs Docker
 
@@ -251,6 +251,7 @@ kilo run --auto -m deepseek/deepseek-flash \
 | `docker exec -u dev` 后 Kilo 读不到授权 / YOLO | `-u` 只换 uid，不改 `HOME`，仍是 `/root` | 加 `-e HOME=/home/dev`，用 `echo $HOME` 验证 |
 | 以为 `dev` 是 uid 1000 | ubuntu 镜像自带 `ubuntu` 用户占了 1000 | `id dev` 实测是 **1001**；`--user` 用名字或 1001 |
 | 容器内 `dev` 写的文件，宿主显示 `501:20` | Docker Desktop 的 bind mount 属主映射 | 正常现象，不是 root 污染 |
+| 挂载 `~/Desktop` 下的目录时弹 “Docker would like to access files in your Desktop folder” | macOS 隐私授权，Docker 的 Linux VM 需要访问桌面文件夹 | 点 **Allow**；误点后在 `系统设置 → 隐私与安全性 → 文件与文件夹 → Docker` 勾选桌面 |
 | 命令末尾多打中文顿号 | 被 shell 当成文件名的一部分 | 生成了 `logs/day08-kilo-version.txt、`，删掉即可 |
 
 ### 镜像 `kilo-box:0.1`
@@ -270,10 +271,10 @@ kilo run --auto -m deepseek/deepseek-flash \
 | 镜像大小 | `kilo-box:0.1` → `1.01GB` |
 | 非 root 写挂载 | 容器内 `uid=1001(dev)`，宿主 `501:20` |
 | YOLO | `DONE` + `YOLO_OK` 落盘 |
+| 数据集只读挂载 | `/data:ro` 可读 `LUNG1-001/308`，`touch` 报 `Read-only file system`（`logs/day08-ro-mount.txt`） |
 | 旧容器清理 | `docker rm -f kilo-box` 后 `docker ps -a` 无残留 |
 
 ### 还没做
 
 - 完整安全跑法（`--rm` + `--cap-drop=ALL` + `--pids-limit` + `--memory` + `--network none`）尚未在 `kilo-box:0.1` 上实跑，只在临时容器里验证过 YOLO。
-- 数据集目录 `:ro` 只读挂载没实测。
 - 新镜像**不含** `kilo.jsonc` 和 `auth.json`：每次新容器都要 `kilo auth login` 并重写 YOLO 配置，这是有意的边界。

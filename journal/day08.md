@@ -25,6 +25,7 @@ gate: -
 | 授权 + 冒烟 | ✅ | `kilo auth login` 选 DeepSeek；`kilo run --auto ... "只回复 KILO_OK"` |
 | 容器内 YOLO | ✅ | `permission: allow` 后写 `/work/logs/yolo-ok.txt`，无批准提示，输出 `DONE` |
 | 挂载双向 + 属主 | ✅ | 容器 `uid=1001(dev)` 写入，宿主显示 `501:20`；`YOLO_OK` 可读 |
+| 数据集只读挂载 | ✅ | `/data:ro` 可读 `LUNG1-001/308`；`touch` 报 `Read-only file system`，`exit=1`（`logs/day08-ro-mount.txt`） |
 | 固化镜像 | ✅ | `kilo-box:0.1` 1.01GB；`--rm` 运行 `kilo --version` → `7.8.18`（`logs/day08-kilo-version.txt`） |
 | 清理临时容器 | ✅ | `docker rm -f kilo-box`，`docker ps -a` 无残留 |
 | `intern-base:0.1` | ⏳ 未做 | 计划第 6 步，挪到 D9 前补 |
@@ -79,6 +80,24 @@ kilo run --auto -m deepseek/deepseek-flash \
 docker build -t kilo-box:0.1 -f env/kilo-box.Dockerfile .
 docker run --rm -it --user dev -e HOME=/home/dev \
   -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
+```
+
+```bash
+# 数据集只读挂载（data/raw 是 D4 的 2 例冒烟数据）
+docker run --rm -u dev -e HOME=/home/dev \
+  -v "$PWD/data/raw:/data:ro" \
+  kilo-box:0.1 bash -lc \
+  'ls /data/lung1_smoke && touch /data/should-fail.txt; echo "touch exit=$?"'
+# LUNG1-001 / LUNG1-308
+# touch: cannot touch ... Read-only file system
+# touch exit=1
+
+docker run --rm -u dev -e HOME=/home/dev \
+  -v "$PWD":/work -w /work \
+  -v "$PWD/data/raw:/data:ro" \
+  kilo-box:0.1 bash -lc \
+  'touch /work/logs/ro-test.txt && echo WRITE_OK; touch /data/x.txt 2>/dev/null || echo DATA_READONLY'
+# WRITE_OK / DATA_READONLY
 ```
 
 ## 卡点与报错
@@ -140,6 +159,17 @@ docker run --rm -it --user dev -e HOME=/home/dev \
 - **解决**：显式 `-e HOME=/home/dev`；进容器先 `echo $HOME` 验证。
 - **下次怎么避免**：非 root 运行容器时，`--user` 和 `HOME` 必须成对出现。
 
+### 卡点 6：挂载 Desktop 目录弹 macOS 隐私授权
+
+- **现象**：执行 `-v "$PWD/data/raw:/data:ro"` 时，macOS 弹窗
+  “Docker would like to access files in your Desktop folder”，终端命令挂起等待。
+- **根因**：项目在 `~/Desktop/实习日志`，Docker Desktop 的 Linux VM 读取宿主文件
+  需要 macOS 的"文件与文件夹"授权；系统代理或终端权限都不覆盖这一层。
+- **解决**：点 **Allow**；误点 Don't Allow 时去
+  `系统设置 → 隐私与安全性 → 文件与文件夹 → Docker` 勾选"桌面文件夹"。
+- **下次怎么避免**：大数据/仓库尽量放 `~/work` 这类默认共享目录，少碰 Desktop；
+  挂载后先 `ls /data` 确认不是空目录。
+
 ## 今日结论
 
 1. 容器内装 Kilo 的真实依赖链是：apt 基础工具 → Node 22 → npm 全局包 → 交互式授权；
@@ -151,6 +181,8 @@ docker run --rm -it --user dev -e HOME=/home/dev \
 5. 交互式容器不是服务：`start` 会因没有 stdin 退出，要用 `start -ai` 或让主进程常驻。
 6. 镜像是可复现的边界：`kilo-box:0.1` 只含工具，不含 Key、配置和代码；
    新容器重新授权是设计，不是缺陷。
+7. `:ro` 只挡"写"，不挡"读"：容器仍能读数据、能联网外发；要防外发必须配合
+   `--network none`，只读挂载解决的是"误删/误改"，不是"泄密"。
 
 ## 明日 3 件事
 
@@ -162,6 +194,7 @@ docker run --rm -it --user dev -e HOME=/home/dev \
 
 - [x] `docker run --rm hello-world` 成功
 - [x] 容器内写文件、宿主能读到（`yolo-ok.txt` / `from-image.txt`）
+- [x] 数据集 `:ro` 只读挂载：可读、不可写（`logs/day08-ro-mount.txt`）
 - [x] 容器内 `kilo --version` → `7.8.18`，冒烟返回 `KILO_OK`
 - [x] `env/kilo-box.Dockerfile` build 成功，镜像内 `kilo --version` 正常
 - [ ] `docker build -t intern-base:0.1`（未做，挪到 D9 前）

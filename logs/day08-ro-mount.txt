@@ -1,0 +1,20 @@
+# Day08 数据集只读挂载验证（2026-10-27）
+
+# 1) 只读可读、不可写
+$ docker run --rm -u dev -e HOME=/home/dev \
+    -v "$PWD/data/raw:/data:ro" \
+    kilo-box:0.1 bash -lc \
+    'ls /data/lung1_smoke && touch /data/should-fail.txt; echo "touch exit=$?"'
+LUNG1-001
+LUNG1-308
+touch: cannot touch '/data/should-fail.txt': Read-only file system
+touch exit=1
+
+# 2) /work 可写、/data 只读
+$ docker run --rm -u dev -e HOME=/home/dev \
+    -v "$PWD":/work -w /work \
+    -v "$PWD/data/raw:/data:ro" \
+    kilo-box:0.1 bash -lc \
+    'touch /work/logs/ro-test.txt && echo WRITE_OK; touch /data/x.txt 2>/dev/null || echo DATA_READONLY'
+WRITE_OK
+DATA_READONLY
