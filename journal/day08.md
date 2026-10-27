@@ -100,6 +100,30 @@ docker run --rm -u dev -e HOME=/home/dev \
 # WRITE_OK / DATA_READONLY
 ```
 
+## 知识点：只读挂载（`:ro`）
+
+`-v 宿主路径:容器路径:ro` = 把宿主目录挂进容器，但**容器只能读，不能写**。
+
+| 挂载方式 | 容器能读 | 容器能写 | 对宿主的影响 |
+|---|---|---|---|
+| `-v "$PWD/data/raw:/data"` | ✅ | ✅ | 容器里的删改会真的落到宿主 |
+| `-v "$PWD/data/raw:/data:ro"` | ✅ | ❌ `Read-only file system` | 容器改不动；宿主自己仍可改 |
+
+实测（`logs/day08-ro-mount.txt`）：
+
+- `ls /data/lung1_smoke` 正常列出 `LUNG1-001`、`LUNG1-308`
+- `touch /data/should-fail.txt` → `Read-only file system`，`touch exit=1`
+- 同一容器内 `/work` 可写 → `WRITE_OK`，`/data` 不可写 → `DATA_READONLY`
+
+要点：
+
+1. **只约束容器，不约束宿主**：Mac 上照常能改 `data/raw`；只读是容器这一侧的视图。
+2. **保护不可再生的原始数据**：数据挂 `:ro`，代码和输出挂可写。YOLO 误删时 `/work` 会中招，`/data` 不会。
+3. **只挡写，不挡读**：容器仍能读取全部数据并联网外发；防外发要靠 `--network none`。
+4. **按挂载点生效**：别把同一个宿主目录再用可写方式挂到另一个路径，否则只读形同虚设。
+
+一句话：`:ro` 是给容器的只读光盘——数据留在宿主，容器只能看、不能动。
+
 ## 卡点与报错
 
 ### 卡点 1：Docker Hub 连不上，`context deadline exceeded`
