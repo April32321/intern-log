@@ -42,6 +42,13 @@ gate: -
 ## 关键命令
 
 ```bash
+nano ~/.zshrc
+
+export PATH="$HOME/.local/bin:$PATH"
+export SX="$HOME/Desktop/实习日志"
+```
+
+```bash
 mkdir -p journal notes env data/clinical code results/tables results/figures results/repro logs
 hostname
 uname -a
