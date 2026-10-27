@@ -20,8 +20,4 @@ RUN npm config set registry https://registry.npmmirror.com \
  && npm install -g @kilocode/cli \
  && npm cache clean --force
 
-RUN useradd -m -s /bin/bash dev
-USER dev
-ENV HOME=/home/dev
-WORKDIR /work
 CMD ["bash"]

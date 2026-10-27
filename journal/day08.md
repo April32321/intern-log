@@ -100,6 +100,29 @@ docker run --rm -u dev -e HOME=/home/dev \
 # WRITE_OK / DATA_READONLY
 ```
 
+```bash
+docker stop kilo
+docker ps -a
+docker rm kilo
+docker ps -a
+
+docker images
+docker rmi kilo-box:0.1
+```
+
+```bash
+docker run --rm -it --user dev -e HOME=/home/dev \
+  -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
+
+docker run -itd --init \
+  -v ~/work/input:/input:ro \
+  -v ~/work/output:/output:rw \
+  --name kilo \
+  --hostname kilo \
+  kilo-box:0.1 \
+  sleep infinity
+```
+
 ## 知识点：只读挂载（`:ro`）
 
 `-v 宿主路径:容器路径:ro` = 把宿主目录挂进容器，但**容器只能读，不能写**。
