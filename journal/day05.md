@@ -77,19 +77,19 @@ gate: G1
 | 6 | 目录同步 | `rsync -avP --exclude` 同步一次目录，确认排除生效 | `rsync` 输出 | ✅ 39 considered / 0 transferred；反向 27 文件，两端 27/27 一致 |
 | 7 | SHA-256 一致性 | 两端对 `ssh-check.txt` 计算，哈希逐字相同 | 两条命令输出 + `diff` | ✅ 双端 `8d5ebcc9c887834a60a5d185f1c0bedb026929143b8a3e8e78249cf1e1fdebba` |
 | 8 | 端口转发 | `ssh -N -L 8888:localhost:8888 t12ub` 能建立；远程起临时 HTTP 服务验证 | 本机 `curl`/浏览器结果 | ✅ 本机 8888 被 Jupyter 占用，改用 8889；`curl -I` → `200 OK`（Python 3.12.3） |
-| 9 | `journal/week1-review.md` | 五能力点自评 1–5 + 证据；报错原文 ≥5 条 + 根因；下周改进 2 件 | 文件本身 | 待做（**G1 硬性项**） |
+| 9 | `journal/week1-review.md` | 五能力点自评 1–5 + 证据；报错原文 ≥5 条 + 根因；下周改进 2 件 | 文件本身 | ✅ |
 | 10 | 当日 commit | 格式 `<scope>: <做了什么> - <一句话结论>` | `git log --oneline` | ✅ `d28a1a6` 骨架、`b400b78` 免密+哈希 |
-| 11 | `journal/INDEX.md` D5 行 | 回填日期、commit、验收结果 | 文件本身 | 待做 |
+| 11 | `journal/INDEX.md` D5 行 | 回填日期、commit、验收结果 | 文件本身 | ✅ |
 
 ## 今日验收标准（G1，收尾逐条核对）
 
 - [x] `ssh t12ub` 免密进入，`hostname` / `whoami` / `pwd` 输出正确（`BatchMode=yes` → `t12ub`）
 - [x] `ssh-check.txt` 已生成，本机副本 SHA-256 与远程一致（`8d5ebcc…`）
-- [ ] 能解释 `700` / `600` 权限与免密登录的关系（见下文，需用自己的话复述）
+- [x] 能解释 `700` / `600` 权限与免密登录的关系（见下文，需用自己的话复述）
 - [x] `bash code/setup_check.sh` 能跑（今日 `WARN`/`exit=1`，75GB 阈值告警）；`set -euo pipefail` 解释见 `journal/day04.md`
-- [ ] `journal/` 有 D1–D5 五篇日志 + `week1-review.md`
+- [x] `journal/` 有 D1–D5 五篇日志 + `week1-review.md`
 - [x] `git log` 有 5 个以上按规范命名的 commit（`git rev-list --count HEAD` = 56）
-- [ ] `journal/INDEX.md` D5 行回填完成
+- [x] `journal/INDEX.md` D5 行回填完成
 
 ## 关键命令
 
