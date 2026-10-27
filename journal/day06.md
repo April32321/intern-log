@@ -17,20 +17,23 @@ gate: -
 
 | 计划 | 状态 | 证据 |
 |---|---|---|
-| 安装 Kilo | ✅ | 安装目录 `/home/jqw/.npm-global/lib/node_modules/@kilocode`；启动日志 `version=7.8.17` |
+| 安装 Kilo | ✅ | 安装目录 `/home/jqw/.npm-global/lib/node_modules/@kilocode`；`kilo --version` → `7.8.18`（`kilo-version.txt`） |
 | 配置 API | ✅ | `kilo auth list` → Kilo Gateway (oauth) + DeepSeek (api)，共 2 条凭据 |
 | 选择模型 | ✅ | `kilo models deepseek` → 选用 `deepseek/deepseek-flash` |
 | 冒烟测试 | ✅ | t12ub `smoke-test.txt` 输出 `KILO_OK` |
 | tool calling | ✅ | 让 Kilo 执行 `echo TOOL_OK`，命令实际执行并返回 `TOOL_OK` |
 | 凭据自查 | ✅ | Key 在 `~/.local/share/kilo/auth.json`（600）；`history` 的 `sk-` 命中均为检查命令自身 |
+| agents 权限 | ✅ | `kilo agent list`：`code` 可写；`plan` 仅能写 plans 文件；`ask` 全 deny |
 
 ## 关键命令
 
 ```bash
+kilo --version
 kilo models deepseek
 kilo run --auto -m deepseek/deepseek-flash "只回复 KILO_OK" | tee smoke-test.txt
 kilo run --auto -m deepseek/deepseek-flash "用 bash 执行 echo TOOL_OK，然后只回复 TOOL_OK"
 kilo auth list
+kilo agent list
 jq 'keys' ~/.local/share/kilo/auth.json
 grep -oE 'sk-[A-Za-z0-9_-]{8,}' ~/.local/share/kilo/auth.json | wc -l
 ```
@@ -62,12 +65,21 @@ grep -oE 'sk-[A-Za-z0-9_-]{8,}' ~/.local/share/kilo/auth.json | wc -l
   全程不打印 Key 内容。
 - **下次怎么避免**：先确认工具把凭据存在哪，再做检查，不按计划里的路径硬猜。
 
+### 卡点 3：版本从 7.8.17 变成 7.8.18
+
+- **现象**：10:30 生成的 `kilo-version.txt` 是 `7.8.17`；10:52 再执行 `kilo --version`
+  变成 `7.8.18`。
+- **根因**：两次取证之间 CLI 版本发生变化（自动升级/重装），旧证据与当前环境不一致。
+- **解决**：用 7.8.18 重跑冒烟，重新生成 `kilo-version.txt` 与 `smoke-test.txt`。
+- **下次怎么避免**：冒烟和版本号在同一次会话生成；收尾前再跑一次 `kilo --version` 核对。
+
 ## 今日结论
 
-1. `deepseek/deepseek-flash` 能返回 `KILO_OK`，也能真正调用 bash（`TOOL_OK`）。
+1. `deepseek/deepseek-flash` 在 Kilo 7.8.18 下能返回 `KILO_OK`，也能真正调用 bash（`TOOL_OK`）。
 2. Key 只在 `~/.local/share/kilo/auth.json`（600），仓库与命令历史都没有。
 3. `kilo/` 前缀走托管 Gateway，`deepseek/` 才走自己的 API Key；模型 ID 必须从
    `kilo models <provider>` 复制。
+4. 写文件必须用可写 agent（`code`）；Plan/Ask 的 deny 由权限层执行，不是提示词提醒。
 
 ## 明日 3 件事
 
