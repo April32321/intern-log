@@ -24,6 +24,8 @@ gate: -
 | tool calling | ✅ | 让 Kilo 执行 `echo TOOL_OK`，命令实际执行并返回 `TOOL_OK` |
 | 凭据自查 | ✅ | Key 在 `~/.local/share/kilo/auth.json`（600）；`history` 的 `sk-` 命中均为检查命令自身 |
 | agents 权限 | ✅ | `kilo agent list`：`code` 可写；`plan` 仅能写 plans 文件；`ask` 全 deny |
+| tmux 包裹 | ✅ | `logs/day06-tmux-ls.txt`：`kilo: 1 windows (created Tue Oct 27 11:05:39 2026) (attached)` |
+| TUI 目录/模型证据 | ✅ | `logs/day06-tmux-status.txt`：`~/work/intern-jqw-nsclc-survival`、`Code · DeepSeek V4.1 Flash 1017`、`7.8.18` |
 
 ## 关键命令
 
@@ -65,13 +67,20 @@ grep -oE 'sk-[A-Za-z0-9_-]{8,}' ~/.local/share/kilo/auth.json | wc -l
   全程不打印 Key 内容。
 - **下次怎么避免**：先确认工具把凭据存在哪，再做检查，不按计划里的路径硬猜。
 
-### 卡点 3：版本从 7.8.17 变成 7.8.18
+### 卡点 3：TUI 显示 7.8.17，`kilo --version` 却是 7.8.18
 
-- **现象**：10:30 生成的 `kilo-version.txt` 是 `7.8.17`；10:52 再执行 `kilo --version`
-  变成 `7.8.18`。
-- **根因**：两次取证之间 CLI 版本发生变化（自动升级/重装），旧证据与当前环境不一致。
-- **解决**：用 7.8.18 重跑冒烟，重新生成 `kilo-version.txt` 与 `smoke-test.txt`。
-- **下次怎么避免**：冒烟和版本号在同一次会话生成；收尾前再跑一次 `kilo --version` 核对。
+- **现象**：`kilo --version` 返回 `7.8.18`，但 tmux 里运行中的 TUI 状态栏显示
+  `~/work/intern-jqw-nsclc-survival 7.8.17`；`tmux capture-pane` 抓到的也是 7.8.17。
+- **我的猜测**：装了两份 Kilo，或者升级没有生效。
+- **验证过程**：`which -a kilo` 只有 `/home/jqw/.npm-global/bin/kilo` 一个；
+  `ls -l $(which kilo)` 显示符号链接更新于 10:28；
+  `ps -eo pid,lstart,args | grep '[k]ilo'` 显示 TUI 进程启动于 10:27。
+  重启 TUI 后状态栏变为 7.8.18。
+- **根因**：TUI 在升级前启动，进程加载的是旧版 7.8.17；二进制在 10:28 被替换，
+  已运行的进程不会热更新。
+- **解决**：`tmux kill-session -t kilo` 后重新 `tmux new -s kilo` 启动，
+  状态栏与 `kilo --version` 一致为 7.8.18。
+- **下次怎么避免**：升级后重启正在运行的 TUI；版本号与冒烟证据在同一次会话生成。
 
 ## 今日结论
 

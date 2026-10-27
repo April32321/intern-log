@@ -60,4 +60,9 @@ AI 编程助手 CLI 工具，帮助完成软件开发任务。
 - 切换：`/agents`、`<leader>a` 或 Tab/Shift+Tab；本项目 `.kilo/agent/` 不存在，走内置权限。
 - 实测命令：`kilo agent list`。
 
-> 待补：`/status` 的目录截图与 tmux 会话证据（见 `journal/day06.md` 后续记录）。
+### TUI 证据（D6）
+
+- `logs/day06-tmux-status.txt`：状态栏 `~/work/intern-jqw-nsclc-survival 7.8.18`，
+  当前 agent `Code`，模型显示名 `DeepSeek V4.1 Flash 1017`（ID `deepseek/deepseek-flash`）
+- `logs/day06-tmux-ls.txt`：`kilo` 会话创建于 2026-10-27 11:05，`attached`
+- 未单独截 `/status` 面板；目录、模型、版本由 TUI 状态栏与输入行证明
