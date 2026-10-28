@@ -77,9 +77,9 @@ kilo run --auto -m deepseek/deepseek-flash \
 
 ```bash
 # 镜像
-docker build -t kilo-box:0.1 -f env/kilo-box.Dockerfile .
-docker run --rm -it --user dev -e HOME=/home/dev \
-  -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
+#docker build -t kilo-box:0.1 -f env/kilo-box.Dockerfile .
+#docker run --rm -it --user dev -e HOME=/home/dev \
+#  -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
 ```
 
 ```bash
@@ -101,19 +101,23 @@ docker run --rm -u dev -e HOME=/home/dev \
 ```
 
 ```bash
+# 停止容器
 docker stop kilo
 docker ps -a
+# 删除容器
 docker rm kilo
 docker ps -a
-
+# 列出本机镜像
 docker images
+#删除该镜像
 docker rmi kilo-box:0.1
 ```
 
 ```bash
-docker run --rm -it --user dev -e HOME=/home/dev \
-  -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
+# docker run --rm -it --user dev -e HOME=/home/dev \
+#   -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
 
+#镜像
 docker run -itd --init \
   -v ~/work/input:/input:ro \
   -v ~/work/output:/output:rw \
