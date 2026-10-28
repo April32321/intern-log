@@ -30,6 +30,7 @@ gate: -
 | 清理临时容器 | ✅ | `docker rm -f kilo-box`，`docker ps -a` 无残留 |
 | `intern-base:0.1` | ✅ | `docker build -t intern-base:0.1 -f env/Dockerfile .` 成功（8/8）；默认 `uid=1001(dev)`、`HOME=/home/dev`、`User=dev`；git 2.43.0 / Python 3.12.3（`logs/day08-intern-base.txt`） |
 | 项目 `env/Dockerfile` v0 | ✅ | Ubuntu 24.04 + 常用 CLI + 非 root `dev`；D16 再升 v1 |
+| `intern-base` 加固 v0.1 | ✅ | 基础镜像钉 digest（`ubuntu@sha256:24737cef…`）；`DEBIAN_FRONTEND` 由 `ENV` 改 `ARG`，运行时 `Config.Env` 无该项；`git config --system --add safe.directory=*`（容器内输出 `*`）；`.dockerignore` 补 `.env`；重建后 `Created=2026-10-28T07:01:18Z` |
 
 ## 关键命令
 
@@ -256,5 +257,6 @@ docker run -itd --init \
 - [x] 容器内 `kilo --version` → `7.8.18`，冒烟返回 `KILO_OK`
 - [x] `env/kilo-box.Dockerfile` build 成功，镜像内 `kilo --version` 正常
 - [x] `docker build -t intern-base:0.1`（`env/Dockerfile` v0，非 root `dev`）
+- [x] 镜像可复现：基础镜像钉 digest，运行时无 `DEBIAN_FRONTEND`，`safe.directory` 生效
 - [x] 能解释 `-v`、`-w`、`--user`、`--rm`、`-e` 的作用
 - [x] 能说清 Key 用 `-e` / `auth login` 传、不写进 Dockerfile
