@@ -1,6 +1,6 @@
 ---
 day: 08
-date: 2026-10-27
+date: 2026-10-28
 theme: Docker 实操（Ubuntu 容器内装 Kilo + 自建镜像）
 gate: -
 ---
@@ -158,6 +158,80 @@ docker run -itd --init \
 4. **按挂载点生效**：别把同一个宿主目录再用可写方式挂到另一个路径，否则只读形同虚设。
 
 一句话：`:ro` 是给容器的只读光盘——数据留在宿主，容器只能看、不能动。
+
+## 知识点：`docker commit`
+
+一句话：`docker commit` 把**容器当前的可写层**打包成一个新镜像，相当于给"正在跑的环境"拍快照。
+
+```bash
+docker commit [选项] <容器名或ID> <仓库:标签>
+```
+
+| 选项 | 作用 |
+|---|---|
+| `-m "说明"` | 提交信息，类似 git commit message，会写进 `docker history` 的 COMMENT |
+| `-a "作者"` | 记录作者 |
+| `-p` | 提交前暂停容器，避免文件写到一半（默认 `true`） |
+| `-c 'CMD ["bash"]'` | 追加 Dockerfile 式指令修正配置（CMD / ENV / EXPOSE / USER / WORKDIR） |
+
+### 实测（2026-10-28）
+
+```bash
+docker run --name ct -e FOO=bar ubuntu:24.04 bash -lc \
+  'echo hi > /tmp/added.txt; mkdir -p /tmp/d; rm /etc/hostname'
+docker diff ct
+# C /tmp
+# A /tmp/added.txt
+# A /tmp/d
+
+docker commit -m "commit 测试" ct commit-test:tmp
+docker image inspect commit-test:tmp --format \
+  'Cmd={{json .Config.Cmd}} Env={{json .Config.Env}} WorkingDir={{.Config.WorkingDir}}'
+# Cmd=["bash","-lc","echo hi > /tmp/added.txt; mkdir -p /tmp/d; rm /etc/hostname"]
+# Env=["FOO=bar","PATH=/usr/local/sbin:..."]
+# WorkingDir=
+
+docker run --rm commit-test:tmp bash -lc 'cat /tmp/added.txt'
+# hi
+```
+
+### 它记录了什么
+
+1. **只记录可写层的文件变化**：`docker diff` 里的 `A`（新增）/ `C`（修改）/ `D`（删除）。基础镜像层不变，新镜像 = 原层 + 一层 commit（本次 16.4kB）。
+2. **容器的运行配置会一起写进镜像 `Config`**：启动命令 `Cmd`、`Entrypoint`、`docker run -e` 注入的环境变量、`WorkingDir`。
+   - 实测 `Cmd` 变成了 `["bash","-lc", ...]`，`Env` 里多出 `FOO=bar`
+   - 所以用交互式 `bash` 起的容器，commit 出来的镜像默认命令就是 `bash`，`docker run 新镜像` 会直接进 shell
+3. **`--name`、`-p`、`-v`、`--rm` 不会进镜像**：它们属于宿主的容器运行配置。
+
+### 它不记录什么 / 坑
+
+| 坑 | 说明 |
+|---|---|
+| 挂载卷内容 | `-v` 挂进来的目录不在可写层，`/work`、`/data` 的改动**不会**进镜像；镜像里不含代码和数据 |
+| 运行时伪文件 | `/etc/hostname`、`/etc/hosts`、`/etc/resolv.conf` 是运行时 bind mount，不在层里。实测容器内 `rm /etc/hostname` 后 `docker diff` 没有 `D` 记录 |
+| 层只增不减 | `apt-get update` 的 lists、npm 缓存、后来删掉的文件都留在旧层里，镜像只会变大 |
+| 历史不可见 | `docker history` 只有一条 commit + COMMENT，看不出中间装了什么 |
+| 不可复现 | 没有配方，别人无法重建；基础镜像版本、步骤、顺序全部丢失 |
+| 配置错位 | 容器的 `Cmd`/`Env` 会被继承，需要 `-c` 手工纠正，容易和预期不符 |
+
+### 与 Dockerfile 的对比
+
+| | `docker commit` | `docker build -f Dockerfile` |
+|---|---|---|
+| 来源 | 命令式，手工操作的历史 | 声明式文本配方 |
+| 可复现 | ❌ 取决于你是否记得做过什么 | ✅ 可钉 digest（本项目 `env/Dockerfile:3`） |
+| 可审计 | ❌ 只有一条 commit | ✅ 每层一条指令，`docker history` 一目了然 |
+| 体积 | ❌ 易留垃圾，无法合并层 | ✅ 可用 `&& rm -rf` 合并层 |
+| 改一行 | 重新手工操作再 commit | 改 Dockerfile 重建，缓存自动复用 |
+| 适合 | 临时快照、调试取证 | 项目环境、交付、CI |
+
+### 什么时候可以用
+
+- 调试/取证：容器崩了、环境装到一半，先 `docker commit` 存现场。
+- 临时抢救：手工调好的环境急着复用，先快照，事后补成 Dockerfile。
+- 教学演示：直观展示"镜像分层 + 容器可写层"。
+
+**对本项目的结论**：`intern-base`、`kilo-box` 这类环境一律走 `docker build`；`commit` 只当应急快照。手工步骤跑通后要抄回 `env/Dockerfile` 再重建，才能保住 README 要求的"可重建、可追溯"。
 
 ## 卡点与报错
 
