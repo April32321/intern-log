@@ -117,10 +117,10 @@ docker rmi kilo-box:0.1
 # docker run --rm -it --user dev -e HOME=/home/dev \
 #   -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
 
-#镜像
+#镜像起一个常驻容器
 docker run -itd --init \
-  -v ~/work/input:/input:ro \
-  -v ~/work/output:/output:rw \
+  -v $PWD/work/input:/input:ro \
+  -v $PWD/work/output:/output:rw \
   --name kilo \
   --hostname kilo \
   kilo-box:0.1 \
