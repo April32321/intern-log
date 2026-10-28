@@ -9,6 +9,10 @@ work
 results
 logs
 
+# 密钥与本地配置：绝不进构建上下文
+.env
+.env.*
+
 # 归档与缓存
 plans20.zip
 __pycache__
