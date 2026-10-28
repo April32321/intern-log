@@ -28,8 +28,8 @@ gate: -
 | 数据集只读挂载 | ✅ | `/data:ro` 可读 `LUNG1-001/308`；`touch` 报 `Read-only file system`，`exit=1`（`logs/day08-ro-mount.txt`） |
 | 固化镜像 | ✅ | `kilo-box:0.1` 1.01GB；`--rm` 运行 `kilo --version` → `7.8.18`（`logs/day08-kilo-version.txt`） |
 | 清理临时容器 | ✅ | `docker rm -f kilo-box`，`docker ps -a` 无残留 |
-| `intern-base:0.1` | ⏳ 未做 | 计划第 6 步，挪到 D9 前补 |
-| 项目 `env/Dockerfile` v0 | ⏳ 未做 | D16 还会重写 v1 |
+| `intern-base:0.1` | ✅ | `docker build -t intern-base:0.1 -f env/Dockerfile .` 成功（8/8）；默认 `uid=1001(dev)`、`HOME=/home/dev`、`User=dev`；git 2.43.0 / Python 3.12.3（`logs/day08-intern-base.txt`） |
+| 项目 `env/Dockerfile` v0 | ✅ | Ubuntu 24.04 + 常用 CLI + 非 root `dev`；D16 再升 v1 |
 
 ## 关键命令
 
@@ -80,6 +80,13 @@ kilo run --auto -m deepseek/deepseek-flash \
 #docker build -t kilo-box:0.1 -f env/kilo-box.Dockerfile .
 #docker run --rm -it --user dev -e HOME=/home/dev \
 #  -v ~/work/yolo-sandbox:/work -w /work kilo-box:0.1 kilo --version
+```
+
+```bash
+# intern-base:0.1（D8 补做）
+docker build -t intern-base:0.1 -f env/Dockerfile .
+docker run --rm intern-base:0.1 id
+# uid=1001(dev) gid=1001(dev) groups=1001(dev)
 ```
 
 ```bash
@@ -237,7 +244,7 @@ docker run -itd --init \
 
 ## 明日 3 件事
 
-- [ ] 补 D8 剩余：`intern-base:0.1` 与 `env/Dockerfile` v0
+- [x] 补 D8 剩余：`intern-base:0.1` 与 `env/Dockerfile` v0
 - [ ] 读 `每日计划/Day09.md`，装 Miniconda、建 `radiomics`（Python 3.10）环境
 - [ ] 导出 `environment.yml` / `conda-explicit.txt` / `pip-freeze.txt`，并做一次重建验证
 
@@ -248,6 +255,6 @@ docker run -itd --init \
 - [x] 数据集 `:ro` 只读挂载：可读、不可写（`logs/day08-ro-mount.txt`）
 - [x] 容器内 `kilo --version` → `7.8.18`，冒烟返回 `KILO_OK`
 - [x] `env/kilo-box.Dockerfile` build 成功，镜像内 `kilo --version` 正常
-- [ ] `docker build -t intern-base:0.1`（未做，挪到 D9 前）
+- [x] `docker build -t intern-base:0.1`（`env/Dockerfile` v0，非 root `dev`）
 - [x] 能解释 `-v`、`-w`、`--user`、`--rm`、`-e` 的作用
 - [x] 能说清 Key 用 `-e` / `auth login` 传、不写进 Dockerfile

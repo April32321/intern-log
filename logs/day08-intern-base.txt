@@ -1,0 +1,14 @@
+== docker images ==
+IMAGE             ID             DISK USAGE   CONTENT SIZE   EXTRA
+intern-base:0.1   f22d06d05752        310MB         66.9MB        
+== id (默认用户) ==
+uid=1001(dev) gid=1001(dev) groups=1001(dev)
+== HOME / pwd / tools ==
+HOME=/home/dev
+/work
+git version 2.43.0
+Python 3.12.3
+== write test ==
+WRITE_OK
+== image config ==
+User=dev
