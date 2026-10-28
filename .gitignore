@@ -29,3 +29,4 @@ id_ed25519*
 # Python
 __pycache__/
 .ipynb_checkpoints/
+work/
