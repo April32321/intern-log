@@ -11,7 +11,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl wget git \
       bzip2 xz-utils unzip zip \
-      procps less nano python3 \
+      procps less nano python3 sudo \
  && rm -rf /var/lib/apt/lists/* \
  && git config --system --add safe.directory '*'
 
@@ -22,7 +22,10 @@ ARG USER_GID=1001
 RUN groupadd --gid "${USER_GID}" "${USERNAME}" \
  && useradd --uid "${USER_UID}" --gid "${USER_GID}" \
       --create-home --shell /bin/bash "${USERNAME}" \
- && mkdir -p /work \
+  && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/90-${USERNAME}" \
+  && chmod 0440 "/etc/sudoers.d/90-${USERNAME}" \
+  && visudo -cf "/etc/sudoers.d/90-${USERNAME}" \
+  && mkdir -p /work \
  && chown "${USERNAME}:${USERNAME}" /work
 
 USER ${USERNAME}
