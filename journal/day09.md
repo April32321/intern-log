@@ -459,3 +459,28 @@ conda pack -n radiomics -o radiomics.tar.gz                            # 打包�
 - [x] 能解释 conda 与 pip 的边界（见知识点，本次以 `pyradiomics` 为实例）
 - [x] 能解释"为什么要锁版本"（numpy 2.x 编译失败、`--from-history` 丢 pip 包、重建后传递依赖漂移三个实证）
 - [x] 能解释"重建 ≠ 恢复"（见知识点，含 `pkgs/` 缓存与 `diff` 漂移证据）
+
+### 三个问题的口头回答（自述稿）
+
+**1. conda 与 pip 的边界在哪？**
+
+conda 管"环境 + 二进制包 + 全局依赖求解"，连 C 库、编译器这类非 Python 依赖也能一起给；pip 只在**当前已激活的环境里**装 Python 包，既不建环境，也不保证多个包之间的依赖一致。
+判据是 `conda list` 里的 `<pip>` / `pypi_0` 标记——带这个标记说明包是 pip 装的，conda 不认识它的来源，导出和重建时都拿不到。
+本次实践：12 个包全部走 conda-forge，只有 `pyradiomics` 走 pip，因为 conda-forge 没有它、官方 `radiomics` 渠道只构建到 py39。顺序必须是**先 conda 装齐，再 pip 补缺**，反过来会被 conda 求解重装或降级。
+
+**2. 为什么要锁版本？**
+
+因为不锁的话，"重建"结果是不确定的，而且失败往往发生在删掉原环境之后。本次有三个实证：
+
+1. `pyradiomics 3.0.1` 在 numpy 2.2.6 下编译不过，必须 `numpy=1.26`——一个版本函数就决定了装不装得上。
+2. `conda env export --from-history` 只记录手装的 conda 顶层包，pip 装的 `pyradiomics` 会**整段消失**；拿那份 yml 重建，`import radiomics` 必然失败。
+3. 顶层钉死后重建，仍有 4 个**传递依赖**漂移（brotli、urllib3、`zstandard→backports.zstd`），说明锁的粒度决定复现的精度：锁顶层只能保证"功能等价"。
+
+所以三层锁各司其职：`environment.yml` 保证能重建，`conda-explicit.txt` 保证 conda 包逐一致，`pip-freeze.txt` 保证 pip 侧一致。
+
+**3. 重建和恢复有什么区别？**
+
+**恢复**是把旧环境的文件副本拷回来（`cp -a`、`conda pack`），逐字节一致，但前提是事先备份；**重建**是照着 `environment.yml` 这个配方重新求解、下载、解压、编译，产出的是"功能等价"的新环境，旧数据一点都没被还原。
+本次 `rm -rf` 删掉 2.2G 后无法找回，回来的环境里每个文件都是重新解压或编译出来的。
+它之所以"看起来一模一样"，是因为 `~/miniconda3/pkgs/` 缓存被硬链接复用、且顶层包钉了版本；但 `diff` 显示 4 处传递依赖不同，证明它是当场求解出来的，而不是被还原的。
+一句话：`environment.yml` 保证"删掉能长出来"，`conda-explicit.txt` 才保证"长出来和原来一样"。
