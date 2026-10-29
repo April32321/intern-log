@@ -36,7 +36,8 @@ gate: -
 | **删环境重建一次通过** | ✅ | 第一次 `PIP_NO_BUILD_ISOLATION=1 conda env create` 在 pip 段失败（见卡点 11）；改为「`conda env create` + 单独 `pip install --no-build-isolation pyradiomics`」后成功，`import radiomics, lifelines, sksurv, pydicom` → `OK`，日志 `logs/day09-rebuild.log` |
 | 重建一致性对照 | ✅ | `diff` 发现 4 处**传递依赖**漂移（brotli 1.0.9→1.2.1、urllib3 2.5.0→2.7.0、zstandard 0.25.0→backports.zstd 1.7.0）；15 个顶层包版本与 build 号完全一致 |
 | `env/README.md` | ⬜ 未开始 | 内容已拟好，待落盘 |
-| `env/rebuild.sh` | ⬜ 未开始 | 用于把「建环境 + 编译 pyradiomics」固化成一条命令 |
+| `env/rebuild.sh` | ✅ | 封装「`conda env create` + 单独编译 pyradiomics」，`bash -n` 通过；`env/README.md` 同步落盘 |
+| 跨平台重建（macOS arm64） | ✅ | 同一份 `environment.yml` 在 Mac 重建成功：python 3.10.22 / numpy 1.26.4，版本号与 Linux 一致、build 串不同；`defaults` 包 0；`featureextractor OK` |
 
 ## 环境现状
 
@@ -291,6 +292,30 @@ conda pack -n radiomics -o radiomics.tar.gz                            # 打包�
 
 本次**故意不做备份**：留着旧环境作对照，验证的就不是配方，而是备份。真正的可复现性，必须建立在"删掉也能长出来"之上。
 
+## 知识点：跨平台重建实测
+
+同一份 `environment.yml` 在两台不同架构的机器上从零重建，结果对照如下：
+
+| 项 | t12ub（linux-64） | MacBook Pro（osx-arm64） |
+|---|---|---|
+| 系统 | Ubuntu 24.04.4 LTS | macOS 14.6.1 |
+| python | 3.10.22 `h267e890_0_cpython` | 3.10.22 `hac0b6dc_0_cpython` |
+| numpy | 1.26.4 `py310hb13e2d6_0` | 1.26.4 `py310hd45542a_0` |
+| scikit-survival | 0.25.0 `np2py310h99cdc5b_1` | 0.25.0 `np2py310hfb72389_1` |
+| pyradiomics | 3.0.1 `pypi_0` | 3.0.1 `pypi_0` |
+| 编译器 | 系统 gcc | Xcode CLT（clang） |
+| `defaults` 渠道包数 | 0 | 0 |
+| 验证 | `import ...` → `OK`；`featureextractor OK` | 同左，`OK` / `featureextractor OK` |
+
+结论：
+
+1. **版本号完全一致**（python 3.10.22、numpy 1.26.4、scikit-survival 0.25.0、pyradiomics 3.0.1），说明 `environment.yml` 的版本约束是有效的。
+2. **build 串不同**（如 `py310hb13e2d6_0` vs `py310hd45542a_0`），说明构建产物与平台绑定，`conda-explicit.txt` 只对生成它的平台精确。
+3. 两台机器 `defaults` 渠道包数都是 0，渠道单一性（只写 conda-forge）得到双重验证。
+4. 编译工具链不同（gcc vs clang），但 `pip install --no-build-isolation pyradiomics==3.0.1` 在两个平台都能编过——前提都是 numpy 1.26。
+
+一句话：**配方可跨平台复用，构建产物不可跨平台搬运**。
+
 ## 卡点与报错
 
 ### 卡点 1：Mac 侧 GitHub 22 端口握手即断
@@ -429,6 +454,23 @@ conda pack -n radiomics -o radiomics.tar.gz                            # 打包�
   再用 `env/rebuild.sh` 把两步固化成一条命令。
 - **下次怎么避免**：凡是需要编译 C 扩展、且必须带 `--no-build-isolation` 的包，**不要**放进 `environment.yml` 的 `pip:` 段；yml 只放纯 Python、有 wheel 的包。
 
+### 卡点 12：ToS 状态是机器级的
+
+- **现象**：Mac 上首次 `conda env create -f env/environment.yml` 报出与 t12ub **完全相同**的 `CondaToSNonInteractiveError`，而 yml 里没有任何 `defaults` 渠道。
+- **根因**：条款接受记录保存在用户目录（`~/.conda/` 一带），按**机器/用户**隔离，不随仓库走。conda 在每次执行前都会校验配置渠道的条款状态。
+- **解决**：Mac 上重新执行两条 `conda tos accept` 命令，再 `conda env create` 即通过。
+- **结论**：这不影响"配方可重建"，但说明**可重建 ≠ 零配置**。`env/README.md` 必须把这两条前置命令写清楚，否则换台机器复现时第一步就卡住。
+- **下次怎么避免**：把前置条件当作配方的一部分交付，而不是口头说明。
+
+### 卡点 13：Mac 上 PyPI 拉 sdist 长时间无输出
+
+- **现象**：`pip install --no-build-isolation pyradiomics==3.0.1` 停在 `Downloading pyradiomics-3.0.1.tar.gz (34.5 MB)`，几分钟没有任何新输出，看起来像死锁。
+- **我的猜测**：以为 pip 挂死，想直接 `Ctrl+C`。
+- **验证过程**：`ps -ef | grep "[p]ip install"` 显示进程仍在、CPU 时间在增长；判断为**下载慢 / 进度条不刷新**而非崩溃。
+- **根因**：Mac 到 `files.pythonhosted.org` 的链路慢；`tee` 之后进度条的 `\r` 刷新在日志里也不可见，进一步放大了"卡死"的错觉。
+- **解决**：不中断，等待完成；若长时间停滞，两个备选是换国内镜像（`-i https://pypi.tuna.tsinghua.edu.cn/simple`）或在一台能正常下载的机器上 `pip download` 后 scp 传包本地安装。
+- **下次怎么避免**：pip 无输出时先 `ps` 确认进程存活，不要凭"没打印"就中断；日志配合 `--progress-bar` 或直接看终端更直观。
+
 ## 今日结论
 
 1. **conda 环境的边界是 `CONDA_PREFIX`**：`base` 是 conda 自己的运行环境（本次 Python 3.14.9），项目环境 `radiomics` 是完全独立的 3.10.22，两者共用的只有 `pkgs/` 缓存（硬链接），不是运行环境。
@@ -441,12 +483,16 @@ conda pack -n radiomics -o radiomics.tar.gz                            # 打包�
 8. **fake-IP 环境下 `nc` 的成功没有意义**：`198.18.0.0/15` 的地址说明流量被网关透明代理接管，可达性要看应用层握手。
 9. **长任务必须进 tmux**：`conda env create` 在裸 SSH 会话里被 `Broken pipe` 打断会留半个环境；tmux 会话在服务器端，断线不影响进程，重连 `tmux attach -t d9` 即可。
 10. **渠道干净是可以验证的**：`conda list | awk '{print $4}' | sort | uniq -c` 得到 `311 conda-forge + 6 pypi + 0 defaults`，说明"yml 只写 conda-forge"不是纸面声明，而是真实结果。
+11. **可重建性有两个边界**：一是**工具链边界**——ToS 条款状态、编译器（gcc/clang）、依赖获取通道（PyPI 是否可达）都按机器不同，换机器要重新满足；二是**平台边界**——同一份 yml 在 linux-64 与 osx-arm64 上都能建出来，版本号一致但 build 串必然不同。所以"逐字节一致"只对同平台、同渠道成立，跨平台追求的是"功能等价"。
+12. **一次真实的跨平台验证胜过十次自述**：本次同一份配方在 Ubuntu x86_64 与 macOS arm64 上都跑通，验证了 `environment.yml` 的可移植性，也暴露出 `conda-explicit.txt` 的平台局限性。
 
 ## 待完成（今日收尾）
 
-- [ ] 写 `env/rebuild.sh`（封装「`conda env create` + 编译 pyradiomics」两步，含前置 ToS 提示）
-- [ ] 写 `env/README.md`（重建命令、为什么不能一条 conda 命令、Python 3.10 / numpy 1.26 依据、两层锁分工、ToS 前置条件）
-- [ ] t12ub 上 `git add env/ logs/day09-rebuild.log` → `git commit -m "day09: conda 环境与可重建 environment.yml"` → `git push`；Mac 侧 `git pull --ff-only`
+- [x] 写 `env/rebuild.sh`（封装「`conda env create` + 编译 pyradiomics」两步）
+- [x] 写 `env/README.md`（重建命令、为什么不能一条 conda 命令、Python 3.10 / numpy 1.26 依据、两层锁分工、ToS 前置条件）
+- [x] t12ub 上提交并 `git push`（`e76ca54..3aa0d5a`，27 个提交）；Mac 侧 `git pull --ff-only` 同步至 `3aa0d5a`
+- [x] 跨平台重建验证（macOS arm64），结果见「知识点：跨平台重建实测」
+- [ ] 本文件更新后提交并推送（保持 Mac / t12ub 两侧一致）
 
 > D10 是 G2 门禁，届时需用本文件 + `env/`（yml + 两个锁文件 + README + rebuild.sh）+ `logs/day09-rebuild.log` 证明"删掉能重建"。
 
@@ -455,7 +501,7 @@ conda pack -n radiomics -o radiomics.tar.gz                            # 打包�
 - [x] 删环境后能一次重建：实际路径为 `conda env create -f env/environment.yml` + 单独 `pip install --no-build-isolation pyradiomics==3.0.1`（由 `env/rebuild.sh` 固化）；单纯 `conda env create` 无法带上编译参数，见卡点 11
 - [x] `python -c "import radiomics"` 无报错（重建后已复验）
 - [x] `from radiomics import featureextractor` 正常加载
-- [x] `env/` 下 3 个锁定文件齐全（`environment.yml` / `conda-explicit.txt` / `pip-freeze.txt`）；`env/README.md` 与 `env/rebuild.sh` 仍待补
+- [x] `env/` 下 3 个锁定文件齐全（`environment.yml` / `conda-explicit.txt` / `pip-freeze.txt`），并附 `env/README.md`（写清重建命令与前置条件）与 `env/rebuild.sh`（一条命令重建）
 - [x] 能解释 conda 与 pip 的边界（见知识点，本次以 `pyradiomics` 为实例）
 - [x] 能解释"为什么要锁版本"（numpy 2.x 编译失败、`--from-history` 丢 pip 包、重建后传递依赖漂移三个实证）
 - [x] 能解释"重建 ≠ 恢复"（见知识点，含 `pkgs/` 缓存与 `diff` 漂移证据）
