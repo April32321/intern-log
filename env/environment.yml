@@ -1,0 +1,18 @@
+name: radiomics
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy=1.26          # PyRadiomics 3.0.1 使用 numpy 2.x 已移除的 np.float，须 <2
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - jupyter
+  - tqdm
+  - pydicom
+  - simpleitk
+  - lifelines
+  - scikit-survival
+  - pip
