@@ -464,12 +464,17 @@ conda pack -n radiomics -o radiomics.tar.gz                            # 打包�
 
 ### 卡点 13：Mac 上 PyPI 拉 sdist 长时间无输出
 
-- **现象**：`pip install --no-build-isolation pyradiomics==3.0.1` 停在 `Downloading pyradiomics-3.0.1.tar.gz (34.5 MB)`，几分钟没有任何新输出，看起来像死锁。
-- **我的猜测**：以为 pip 挂死，想直接 `Ctrl+C`。
-- **验证过程**：`ps -ef | grep "[p]ip install"` 显示进程仍在、CPU 时间在增长；判断为**下载慢 / 进度条不刷新**而非崩溃。
-- **根因**：Mac 到 `files.pythonhosted.org` 的链路慢；`tee` 之后进度条的 `\r` 刷新在日志里也不可见，进一步放大了"卡死"的错觉。
-- **解决**：不中断，等待完成；若长时间停滞，两个备选是换国内镜像（`-i https://pypi.tuna.tsinghua.edu.cn/simple`）或在一台能正常下载的机器上 `pip download` 后 scp 传包本地安装。
-- **下次怎么避免**：pip 无输出时先 `ps` 确认进程存活，不要凭"没打印"就中断；日志配合 `--progress-bar` 或直接看终端更直观。
+- **现象**：`pip install --no-build-isolation pyradiomics==3.0.1` 停在 `Downloading pyradiomics-3.0.1.tar.gz (34.5 MB)`，数分钟没有任何新输出，看起来像死锁。
+- **我的猜测**：以为是编译卡住，或者包本身有问题。
+- **验证过程**：`ps -ef | grep "[p]ip install"` 显示进程仍在（CPU 时间在增长），说明没崩；`lsof` 看到连接则是在等下载。由此判断卡在**下载**而不是编译——同一个包在 t12ub 上几十秒就下完，说明是 Mac 到 `files.pythonhosted.org` 的链路问题。
+- **根因**：Mac 直连 PyPI 的 CDN 极慢；`tee` 之后进度条的 `\r` 刷新在日志里也看不见，进一步放大了"卡死"的错觉。
+- **解决**：`Ctrl+C` 中断，改用国内镜像重装，一次成功：
+  ```bash
+  pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    --no-build-isolation --no-cache-dir pyradiomics==3.0.1
+  ```
+  中途还试过"在 t12ub 上 `pip download` 再 scp 传包"，但命令写错（漏了 `conda run -n radiomics`、且在对 t12ub 的 shell 里又 `ssh t12ub` 连自己），没走通就放弃了。
+- **下次怎么避免**：国内网络装 pip 包直接加镜像参数，不要先赌官方源；排查"无输出"时先 `ps` 看进程存活，再 `lsof -p <pid> | grep TCP` 看是否在等网络，最后才决定中断。
 
 ## 今日结论
 
