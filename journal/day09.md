@@ -29,11 +29,14 @@ gate: -
 | `lifelines` / `scikit-survival` | ✅ | conda-forge：lifelines 0.30.0；scikit-survival 0.25.0（`np2py310h99cdc5b_1`） |
 | `pyradiomics` | ✅ | conda-forge 无此包 → pip 源码编译：3.0.1（`Channel=pypi`），附带 PyWavelets 1.8.0 / pykwalify 1.8.0 / docopt 0.6.2 / ruamel.yaml 0.19.1 |
 | 功能验证 | ✅ | `import radiomics, lifelines, sksurv, pydicom` → `OK`；`from radiomics import featureextractor` → `featureextractor OK` |
-| 编写 `env/environment.yml` | ✅ | 手工编写 21 行；`yaml.safe_load` 通过；`pip:` 嵌套解析为 `{'pip': ['versioneer', 'pyradiomics==3.0.1']}`；无 Tab |
-| `jupyter` 是否装上 | ⬜ 待确认 | 环境里有 ipython 8.37.0 / python-fastjsonschema / python-json-logger，但未执行 `jupyter --version` |
-| 导出 `conda-explicit.txt` / `pip-freeze.txt` | ⬜ 未开始 | 需在重建成功后导出，保证三份文件描述同一环境 |
+| 编写 `env/environment.yml` | ✅ | 手工编写（未用 `--from-history`，避免 `prefix:` 与 `defaults`）；`yaml.safe_load` 通过、无 Tab。初版含 `pip:` 段（`versioneer` + `pyradiomics==3.0.1`），卡点 11 之后**整段删除**，只保留 `- pip` |
+| `jupyter` | ✅ | `jupyter --version`：jupyterlab 4.6.3 / notebook 7.6.2 / ipykernel 7.3.0 / jupyter_core 5.9.1 |
+| 导出 `conda-explicit.txt` / `pip-freeze.txt` | ✅ | 重建后导出；渠道分布 `311 conda-forge + 6 pypi`，`defaults` 零条 |
+| 重建前快照 | ✅ | `/tmp/before-rebuild-conda.txt`、`/tmp/before-rebuild-pip.txt`（首次误在 `(base)` 下导出，已重做，见卡点 9） |
+| **删环境重建一次通过** | ✅ | 第一次 `PIP_NO_BUILD_ISOLATION=1 conda env create` 在 pip 段失败（见卡点 11）；改为「`conda env create` + 单独 `pip install --no-build-isolation pyradiomics`」后成功，`import radiomics, lifelines, sksurv, pydicom` → `OK`，日志 `logs/day09-rebuild.log` |
+| 重建一致性对照 | ✅ | `diff` 发现 4 处**传递依赖**漂移（brotli 1.0.9→1.2.1、urllib3 2.5.0→2.7.0、zstandard 0.25.0→backports.zstd 1.7.0）；15 个顶层包版本与 build 号完全一致 |
 | `env/README.md` | ⬜ 未开始 | 内容已拟好，待落盘 |
-| **删环境重建一次通过** | 🔄 进行中 | 尚未执行 `conda env remove` + `PIP_NO_BUILD_ISOLATION=1 conda env create -f` |
+| `env/rebuild.sh` | ⬜ 未开始 | 用于把「建环境 + 编译 pyradiomics」固化成一条命令 |
 
 ## 环境现状
 
@@ -112,12 +115,28 @@ pip freeze > env/pip-freeze.txt
 ```
 
 ```bash
-# 重建验证（待执行）
+# 重建验证（实际做法：两段式）
+
+# 1) 环境本体
 conda deactivate
-conda env remove -n radiomics -y
-PIP_NO_BUILD_ISOLATION=1 conda env create -f env/environment.yml 2>&1 | tee logs/day09-rebuild.log
+rm -rf "$HOME/miniconda3/envs/radiomics"          # env remove 会被 ToS 检查拦住，见卡点 10
+conda env create -f env/environment.yml 2>&1 | tee logs/day09-rebuild.log
+
+# 2) pyradiomics 单独编译（yml 的 pip 段做不到，见卡点 11）
 conda activate radiomics
-python -c "import radiomics, lifelines, sksurv, pydicom; print('OK')" | tee -a logs/day09-rebuild.log
+pip install versioneer
+pip install --no-build-isolation --no-cache-dir pyradiomics==3.0.1 2>&1 | tee -a logs/day09-rebuild.log
+python -c "import radiomics, lifelines, sksurv, pydicom; print('OK')" 2>&1 | tee -a logs/day09-rebuild.log
+```
+
+> 因此 `environment.yml` 里**不写 `pip:` 段**，只保留 `- pip`；pyradiomics 由 `env/rebuild.sh` 负责补装。
+
+```bash
+# 重建后重新导出锁文件（必须在重建之后）
+conda list --export > env/conda-explicit.txt
+pip freeze > env/pip-freeze.txt
+diff /tmp/before-rebuild-conda.txt env/conda-explicit.txt
+conda list | awk '{print $4}' | sort | uniq -c | sort -rn    # 渠道分布
 ```
 
 ## 知识点：conda 与 pip 的边界
@@ -158,7 +177,7 @@ PyRadiomics 3.0.1 发布于 2021 年，代码里用了 `np.float`、`np.int` 这
 
 1. **`prefix:` 行会绑死机器**。`conda env export` 默认会写入 `prefix: /home/jqw/miniconda3/envs/radiomics`，别人拿到后重建会试图往这个路径装，或者直接报错。必须手工删掉。
 2. **`channels` 里出现 `defaults` 会触发 ToS**。新版 conda 对 `repo.anaconda.com/pkgs/main`、`/pkgs/r` 要求先 `conda tos accept`，非交互的 `conda env create` 会直接失败。本环境创建时用 `--override-channels` 只走 conda-forge，导出的 yml 也保持单一渠道。
-3. **`pip:` 段不会自动带上构建参数**。`--no-build-isolation` 是 CLI flag，yml 里无处可写。重建时必须用环境变量 `PIP_NO_BUILD_ISOLATION=1` 包住 `conda env create`，否则 pyradiomics 会在 pip 的隔离构建环境里找不到 `versioneer` 而失败。
+3. **`pip:` 段不会自动带上构建参数，也传不进去**。`--no-build-isolation` 是 CLI flag，yml 里无处可写；实测用 `PIP_NO_BUILD_ISOLATION=1 conda env create` 同样无效（日志里仍出现 `Installing build dependencies`，见卡点 11）。结论是**需要编译的包不能交给 yml 的 `pip:` 段**，必须建好环境后单独安装。本轮最终把 `pip:` 段整段删掉，只保留 `- pip`。
 
 ## 知识点：如何确认当前在哪个环境
 
@@ -207,6 +226,70 @@ grep -E "^(python|numpy|pyradiomics)=" /tmp/before-rebuild-conda.txt
 1. **`conda activate` 只切换、不创建**。环境不存在时报 `EnvironmentNameNotFound`，需要 `conda create` 先建。
 2. **切换后 `python` 仍指向旧路径**，多为 shell 的命令哈希缓存。`hash -r` 清缓存，或 `conda deactivate` 再 `conda activate`。
 3. **base 自动激活是 `conda init` 的默认行为**。想关掉：`conda config --set auto_activate_base false`，之后新终端不带 `(base)`，需要时手动激活。
+
+## 知识点：重建 ≠ 恢复
+
+`rm -rf envs/radiomics` 之后再 `conda env create`，环境"回来了"，但**不是把删掉的东西还原**，而是照配方重新装了一份。这两件事的结果常常看起来一样，机制完全不同。
+
+### 两者在做什么
+
+| | 恢复（restore） | 重建（rebuild） |
+|---|---|---|
+| 输入 | 旧环境的**文件副本**（`cp -a`、`conda pack` 的 tar.gz） | `environment.yml` 这份**文本配方** |
+| 过程 | 解压/拷回，逐字节还原本地文件 | 重新求解依赖 → 下载 → 解压 → 编译 |
+| 结果 | 与原来**完全一致** | 与原来**功能等价**，细节可能不同 |
+| 前提 | 事先必须备份 | 只要有配方，任何时候都能做 |
+
+### 本次的实际时间线
+
+| 步骤 | 动作 | 结果 |
+|---|---|---|
+| 1 | `conda list --export > /tmp/before-rebuild-*.txt` | 只留下一张"名字=版本=build"的清单，不含任何文件 |
+| 2 | `rm -rf ~/miniconda3/envs/radiomics` | 2.2G 删除，**不可恢复**（无回收站） |
+| 3 | 第一次 `conda env create` | conda 包到位，pip 段失败（卡点 11） |
+| 4 | `rm -rf` 再删一次 | 清掉半个环境 |
+| 5 | 改 yml（删 `pip:` 段）后 `conda env create` | 新环境长出 |
+| 6 | `pip install --no-build-isolation pyradiomics` | **本地重新编译**出 `pyradiomics-3.0.1` |
+| 7 | 验证 | `import radiomics,...` → `OK` |
+
+### 为什么"看起来一模一样"
+
+两个错觉来源：
+
+1. **`~/miniconda3/pkgs/` 缓存被复用**。下载过的包以压缩文件留在缓存里，重建时硬链接过去，既快又像"原来那份"。但它是**安装包缓存**，不是环境备份。
+2. **顶层包被钉了版本**。`python=3.10`、`numpy=1.26` 让求解器只能给出同一批顶层包。
+
+### 差异就是证据
+
+重建后的 `diff` 与重建前快照不一致：
+
+```text
++ backports.zstd=1.7.0
+~ brotli-python 1.0.9 → 1.2.1
+~ urllib3      2.5.0 → 2.7.0
+- zstandard     0.25.0
+```
+
+四处全部是**传递依赖**，且都挂在 jupyter 那条链上。若是"恢复"，这四处不可能变化；它们变了，说明新环境是**当场求解**出来的。`environment.yml` 只约束顶层，求解器对传递依赖取当时可用的最新版本。
+
+### 由此得到的三层锁分工
+
+| 层次 | 文件 | 保证什么 |
+|---|---|---|
+| 顶层声明 | `environment.yml` | 能装出**功能等价**的环境 |
+| conda 精确快照 | `conda-explicit.txt` | 每个 conda 包的 build 号一致（含 `pypi_0` 行，不能直接用于重建） |
+| pip 精确快照 | `pip-freeze.txt` | pip 侧版本一致 |
+
+一句话：**`environment.yml` 保证"能重建"，`conda-explicit.txt` 才保证"一模一样"**，两者本来就不是同一个目标。
+
+### 什么才算真恢复
+
+```bash
+cp -a ~/miniconda3/envs/radiomics ~/env-backup/radiomics-$(date +%F)   # 备份
+conda pack -n radiomics -o radiomics.tar.gz                            # 打包，可跨机
+```
+
+本次**故意不做备份**：留着旧环境作对照，验证的就不是配方，而是备份。真正的可复现性，必须建立在"删掉也能长出来"之上。
 
 ## 卡点与报错
 
@@ -303,29 +386,76 @@ grep -E "^(python|numpy|pyradiomics)=" /tmp/before-rebuild-conda.txt
 - **解决**：先 `conda activate radiomics`，再 `python -c "import sys; print(sys.prefix)"` 确认落在 `envs/radiomics`，然后重新导出。
 - **下次怎么避免**：凡是要"导出/安装/建环境"的操作，前面固定加一条 `which python` 或 `echo $CONDA_DEFAULT_ENV` 的自查，不要依赖记忆中的激活状态。
 
+### 卡点 10：`conda env remove` / `conda env create` 被 ToS 拦截
+
+- **报错原文**：
+  ```text
+  CondaToSNonInteractiveError: Terms of Service have not been accepted for the following channels:
+      - https://repo.anaconda.com/pkgs/main
+      - https://repo.anaconda.com/pkgs/r
+  ```
+- **我的猜测**：以为只有"装包"才会触发条款检查。
+- **验证过程**：`conda env remove -n radiomics -y` 也报同样的错；给 `conda env create` 加 `--override-channels` 直接报 `conda: error: unrecognized arguments: --override-channels`（该参数只属于 `conda create`/`install`，`env create` 子命令没有）。
+- **根因**：conda 25+ 在执行前校验 **`~/.condarc` 里配置的渠道**（默认含 `defaults`），与 `environment.yml` 声明了什么渠道无关；`-y` 非交互模式下无法弹确认，只能抛异常。
+- **解决**：
+  1. `conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main`
+  2. `conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r`
+  3. 删环境改用 `rm -rf "$HOME/miniconda3/envs/radiomics"`（环境就是一个目录），绕开 `env remove` 的检查
+- **下次怎么避免**：`env/README.md` 里写明这两个前置命令；换台机器重建时会再撞一次，这不是 yml 的问题。
+
+### 卡点 11：`PIP_NO_BUILD_ISOLATION=1` 对 `conda env create` 无效
+
+- **报错原文**（`logs/day09-rebuild.log`）：
+  ```text
+  Ran pip subprocess with arguments:
+  ['/home/jqw/miniconda3/envs/radiomics/bin/python', '-m', 'pip', 'install', '-U',
+   '-r', '/home/jqw/intern-log/env/condaenv.imzyzhxd.requirements.txt', '--exists-action=b']
+  Pip subprocess output:
+  Collecting pyradiomics==3.0.1 ... Installing build dependencies: started
+  ... Getting requirements to build wheel: finished with status 'error'
+  ERROR: Failed to build 'pyradiomics' when getting requirements to build wheel
+  CondaEnvException: Pip failed
+  ```
+- **我的猜测**：`PIP_NO_BUILD_ISOLATION=1` 会像 `--no-build-isolation` 一样传入 conda 内部那次 pip 调用。
+- **验证过程**：日志里出现 `Installing build dependencies: started / finished`——**这就是构建隔离仍然开启的证据**（该步骤只在隔离模式下存在）。而同样的包在 shell 里手动 `pip install --no-build-isolation` 一次就成功，说明问题在"变量没传到子进程"，不是包本身。
+- **根因**：`conda env create` 内部另起 pip 子进程执行 `-r requirements.txt`，yml 的 `pip:` 段没有任何位置能传 flag；实测该环境变量也未能生效。
+- **解决**：把 `pip:` 段从 `environment.yml` 里删除（只保留 `- pip`），改为两段式：
+  ```bash
+  conda env create -f env/environment.yml
+  conda activate radiomics
+  pip install versioneer
+  pip install --no-build-isolation --no-cache-dir pyradiomics==3.0.1
+  ```
+  再用 `env/rebuild.sh` 把两步固化成一条命令。
+- **下次怎么避免**：凡是需要编译 C 扩展、且必须带 `--no-build-isolation` 的包，**不要**放进 `environment.yml` 的 `pip:` 段；yml 只放纯 Python、有 wheel 的包。
+
 ## 今日结论
 
 1. **conda 环境的边界是 `CONDA_PREFIX`**：`base` 是 conda 自己的运行环境（本次 Python 3.14.9），项目环境 `radiomics` 是完全独立的 3.10.22，两者共用的只有 `pkgs/` 缓存（硬链接），不是运行环境。
 2. **`conda activate` 只切换、不创建**，`conda create` 才创建；切换后 `which python` 必须落在 `envs/<name>/bin/python`，否则没生效（必要时 `hash -r`）。
 3. **混用 conda 与 pip 的判据是 `<pip>` 标记**：`pyradiomics 3.0.1 pypi_0 pypi` 说明 conda 不认识它，`--from-history` 导出时必然丢——这是"导出文件不等于可重建"的根源。
 4. **锁版本不是形式要求**：numpy 2.2.6 → 1.26.4 这一个决定，直接决定了 pyradiomics 能不能装上。
-5. **"一次重建成功"没有捷径**：`--no-build-isolation` 是 CLI flag，yml 里写不进去，必须靠 `PIP_NO_BUILD_ISOLATION=1` 环境变量在重建命令上补齐。这条限制要在 README 里写明，否则 D10 评审时复现不出来。
-6. **网络问题与密钥问题要分开判断**：`kex_exchange_identification` 是链路被干预，`Permission denied (publickey)` 才是密钥；本次两台机器各缺一半，agent 转发正好补齐。
-7. **fake-IP 环境下 `nc` 的成功没有意义**：`198.18.0.0/15` 的地址说明流量被网关透明代理接管，可达性要看应用层握手。
+5. **"一次重建成功"没有捷径，但"一条命令"可以有**：`--no-build-isolation` 是 CLI flag，yml 里写不进去，`PIP_NO_BUILD_ISOLATION=1` 环境变量对 `conda env create` 也无效（实测日志里隔离仍开启）。所以 yml 里不放需要编译的包，改用 `env/rebuild.sh` 封装「建环境 + 编译 pyradiomics」两步。
+6. **重建 ≠ 恢复**：`conda env create` 是照配方重新装，不是还原文件；`pkgs/` 缓存复用让它看起来"一模一样"，但传递依赖 4 处漂移证明它是当场求解出来的。`environment.yml` 保证"能重建"，`conda-explicit.txt` 才保证"逐包一致"。
+7. **网络问题与密钥问题要分开判断**：`kex_exchange_identification` 是链路被干预，`Permission denied (publickey)` 才是密钥；本次两台机器各缺一半，agent 转发正好补齐。
+8. **fake-IP 环境下 `nc` 的成功没有意义**：`198.18.0.0/15` 的地址说明流量被网关透明代理接管，可达性要看应用层握手。
+9. **长任务必须进 tmux**：`conda env create` 在裸 SSH 会话里被 `Broken pipe` 打断会留半个环境；tmux 会话在服务器端，断线不影响进程，重连 `tmux attach -t d9` 即可。
+10. **渠道干净是可以验证的**：`conda list | awk '{print $4}' | sort | uniq -c` 得到 `311 conda-forge + 6 pypi + 0 defaults`，说明"yml 只写 conda-forge"不是纸面声明，而是真实结果。
 
-## 待完成（今日收尾，写于 2026-10-29 重建执行前）
+## 待完成（今日收尾）
 
-- [ ] 完成 `conda env remove` → `PIP_NO_BUILD_ISOLATION=1 conda env create -f env/environment.yml` 的一次性重建，日志落 `logs/day09-rebuild.log`
-- [ ] 重建成功后导出 `env/conda-explicit.txt`、`env/pip-freeze.txt`，并写 `env/README.md`（含 `PIP_NO_BUILD_ISOLATION=1` 的说明）
-- [ ] 补齐 `jupyter --version` 证据、完成 `day09` commit 并 push，Mac 侧 `git pull` 同步
+- [ ] 写 `env/rebuild.sh`（封装「`conda env create` + 编译 pyradiomics」两步，含前置 ToS 提示）
+- [ ] 写 `env/README.md`（重建命令、为什么不能一条 conda 命令、Python 3.10 / numpy 1.26 依据、两层锁分工、ToS 前置条件）
+- [ ] t12ub 上 `git add env/ logs/day09-rebuild.log` → `git commit -m "day09: conda 环境与可重建 environment.yml"` → `git push`；Mac 侧 `git pull --ff-only`
 
-> D10 是 G2 门禁，届时需用本文件 + `env/` 三件套 + `logs/day09-rebuild.log` 证明"删掉能重建"。
+> D10 是 G2 门禁，届时需用本文件 + `env/`（yml + 两个锁文件 + README + rebuild.sh）+ `logs/day09-rebuild.log` 证明"删掉能重建"。
 
 ## 验收对照（Day09）
 
-- [ ] 删环境后 `conda env create -f env/environment.yml` 一次成功（**待执行**，需带 `PIP_NO_BUILD_ISOLATION=1`）
-- [x] `python -c "import radiomics"` 无报错（重建前环境已验证；重建后需复验）
+- [x] 删环境后能一次重建：实际路径为 `conda env create -f env/environment.yml` + 单独 `pip install --no-build-isolation pyradiomics==3.0.1`（由 `env/rebuild.sh` 固化）；单纯 `conda env create` 无法带上编译参数，见卡点 11
+- [x] `python -c "import radiomics"` 无报错（重建后已复验）
 - [x] `from radiomics import featureextractor` 正常加载
-- [ ] `env/` 下有 3 个锁定文件 + `env/README.md`（当前只有 `environment.yml`）
+- [x] `env/` 下 3 个锁定文件齐全（`environment.yml` / `conda-explicit.txt` / `pip-freeze.txt`）；`env/README.md` 与 `env/rebuild.sh` 仍待补
 - [x] 能解释 conda 与 pip 的边界（见知识点，本次以 `pyradiomics` 为实例）
-- [x] 能解释"为什么要锁版本"（numpy 2.x 与 `--from-history` 丢包两个实证）
+- [x] 能解释"为什么要锁版本"（numpy 2.x 编译失败、`--from-history` 丢 pip 包、重建后传递依赖漂移三个实证）
+- [x] 能解释"重建 ≠ 恢复"（见知识点，含 `pkgs/` 缓存与 `diff` 漂移证据）
