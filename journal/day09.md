@@ -160,6 +160,54 @@ PyRadiomics 3.0.1 发布于 2021 年，代码里用了 `np.float`、`np.int` 这
 2. **`channels` 里出现 `defaults` 会触发 ToS**。新版 conda 对 `repo.anaconda.com/pkgs/main`、`/pkgs/r` 要求先 `conda tos accept`，非交互的 `conda env create` 会直接失败。本环境创建时用 `--override-channels` 只走 conda-forge，导出的 yml 也保持单一渠道。
 3. **`pip:` 段不会自动带上构建参数**。`--no-build-isolation` 是 CLI flag，yml 里无处可写。重建时必须用环境变量 `PIP_NO_BUILD_ISOLATION=1` 包住 `conda env create`，否则 pyradiomics 会在 pip 的隔离构建环境里找不到 `versioneer` 而失败。
 
+## 知识点：如何确认当前在哪个环境
+
+`conda activate` 是**静默**的：切换到不存在的环境会报错，但切换成功时只有提示符前面多一行括号，没有任何其他输出。所以"我以为在 radiomics 里"是本次最容易被坑的地方。
+
+### 三个判据，从快到准
+
+| 判据 | 命令 | 看什么 |
+|---|---|---|
+| 提示符前缀 | 看终端 | `(base)` / `(radiomics)` / 无括号 |
+| 解释器路径 | `which python` | 必须落到 `.../envs/<name>/bin/python` |
+| 解释器自报 prefix | `python -c "import sys; print(sys.prefix)"` | 输出就是当前环境根目录 |
+| 环境变量 | `echo $CONDA_DEFAULT_ENV` | 当前激活的环境名 |
+
+一条命令全查：
+
+```bash
+echo "env=$CONDA_DEFAULT_ENV"; which python; python -c "import sys; print(sys.prefix)"
+```
+
+### 三种提示符的含义
+
+| 提示符 | 含义 | 能做什么 |
+|---|---|---|
+| `(base)` | conda 自己的运行环境（本次 Python 3.14.9） | 只能运行 conda 命令；**不要**往里装项目包，可能把 conda 弄坏 |
+| `(radiomics)` | 项目环境（本次 Python 3.10.22） | 所有项目命令都在这里执行 |
+| 无括号 | 没有激活任何环境 | `python` 可能是系统自带的 `/usr/bin/python3`，与项目无关 |
+
+### 本次踩到的实例
+
+执行"重建前快照"时，提示符是 `(base)`，于是 `conda list --export` 和 `pip freeze` 导出的都是 **base（Python 3.14）** 的内容，而不是项目环境。这种错误不会报错，只会安静地产生一份错误的记录——如果没检查就写进 `env/`，等于给了一份假快照。
+
+正确的做法是先切换、再自查、最后导出：
+
+```bash
+conda activate radiomics
+python -c "import sys; print(sys.prefix)"        # 必须含 envs/radiomics
+conda list --export > /tmp/before-rebuild-conda.txt
+pip freeze > /tmp/before-rebuild-pip.txt
+grep -E "^(python|numpy|pyradiomics)=" /tmp/before-rebuild-conda.txt
+# build 串里应出现 py310；pyradiomics 那行应为 pypi_0
+```
+
+### 三个易混淆点
+
+1. **`conda activate` 只切换、不创建**。环境不存在时报 `EnvironmentNameNotFound`，需要 `conda create` 先建。
+2. **切换后 `python` 仍指向旧路径**，多为 shell 的命令哈希缓存。`hash -r` 清缓存，或 `conda deactivate` 再 `conda activate`。
+3. **base 自动激活是 `conda init` 的默认行为**。想关掉：`conda config --set auto_activate_base false`，之后新终端不带 `(base)`，需要时手动激活。
+
 ## 卡点与报错
 
 ### 卡点 1：Mac 侧 GitHub 22 端口握手即断
@@ -245,6 +293,15 @@ PyRadiomics 3.0.1 发布于 2021 年，代码里用了 `np.float`、`np.int` 这
 - **根因**：`-s` 是 silent，故意不打印进度；文件 211MB，实测约 0.8MB/s。
 - **解决**：开另一个窗口 `ls -lh /tmp/miniconda.sh` 两次对比大小，字节在增长就是在下载。要进度条就把 `-s` 换 `--progress-bar`。
 - **下次怎么避免**：大文件下载不要用 `-s`，或者配 `-w`、`--progress-bar` 观察。
+
+### 卡点 9：在 `(base)` 里导出了"重建前快照"
+
+- **现象**：执行 `conda list --export > /tmp/before-rebuild-conda.txt` 与 `pip freeze > /tmp/before-rebuild-pip.txt` 时，提示符是 `(base)` 而不是 `(radiomics)`，两份文件记的都是 Python 3.14 的 base 环境。
+- **我的猜测**：以为上一步 `conda activate radiomics` 仍然有效（同一次会话里执行过）。
+- **验证过程**：`grep -E "^(python|numpy)=" /tmp/before-rebuild-conda.txt` 没有 `py310` 字样，也没有 `numpy`；重建后被 `tee` 的日志里 Python 是 3.10，两者对不上。
+- **根因**：中途 `conda deactivate` 过，回到 base；`conda activate` 成功时除提示符外没有任何输出，不主动检查就会误判。
+- **解决**：先 `conda activate radiomics`，再 `python -c "import sys; print(sys.prefix)"` 确认落在 `envs/radiomics`，然后重新导出。
+- **下次怎么避免**：凡是要"导出/安装/建环境"的操作，前面固定加一条 `which python` 或 `echo $CONDA_DEFAULT_ENV` 的自查，不要依赖记忆中的激活状态。
 
 ## 今日结论
 
