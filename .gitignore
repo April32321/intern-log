@@ -3,7 +3,11 @@
 .kilo/
 
 # 数据
+data/clinical/*
+!data/clinical/.gitkeep
+data/manifests/
 data/raw/
+*.tcia
 *.dcm
 *.nii
 *.nii.gz
