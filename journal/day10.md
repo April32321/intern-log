@@ -26,6 +26,7 @@ gate: G2
 | DICOM 头部核验 | ✅ | CT/SEG/RTSTRUCT 的 SOPClassUID 正确；`RTSTRUCT -> CT`、`SEG -> CT` 均为 `True`；SEG 536 frames = 4 × 134 |
 | 下载脚本 `--full/--resume/--retry` | ✅ | `code/00_download.py`；`--limit 1` 首跑 `ok=1`，重跑 `--resume` 输出 `[skip]`，`ok=0 skip=1` |
 | 60 秒 `--full --resume` 断点验收 | ✅ | 60 秒完成 2 个 series；重跑同命令输出 `[skip]` ×2，未从 0 开始 |
+| 磁盘与人日估算 | ✅ | 单例 89,922,837 B；×422 = 37.95 GB / 35.34 GiB，与官方 35.78 GB 同量级 |
 | `data/README.md` | ✅ | 数据身份、路线、路径、校验、已知缺陷、不入 Git |
 | `environment.yml` 删环境重建 | ⬜ 待复查 | D9 已有 `logs/day09-rebuild.log`，今日未重跑 |
 | 容器内 `kilo --version` / `KILO_OK` | ⬜ 待复查 | D8 已有 `kilo-version.txt`、`smoke-test.txt`、`logs/day08-*` |
@@ -189,6 +190,38 @@ python3 code/00_download.py --full --resume --retry 3 \
 
 说明 `--resume` 认的是完成标记，不是从 0 重下。
 
+### 磁盘与人日估算
+
+以 LUNG1-001 单例外推：
+
+```text
+单例 bytes: 89,922,837
+× 422:      37,947,437,214 bytes
+            = 37.95 GB (10^9)
+            = 35.34 GiB (2^30)
+官方:       35.78 GB
+```
+
+- 十进制口径高约 6.1%；若官方按 GiB 理解，则低约 1.2%；
+- 两种口径都在 10% 以内，属于同一量级；
+- LUNG1-001 是 3 个 series，全量平均 1,265 ÷ 422 ≈ 3.0 series/例，
+  单例有代表性。
+
+空间规划：
+
+```text
+原始 DICOM      约 38 GB
+掩膜/裁剪影像   ≤15 GB
+特征与结果       ≤1 GB
+合计            约 54 GB
+建议预留         150 GB（更安心）
+```
+
+190 家目录可用约 132 GB，放全量够用；`/data` 有 933 GB，但需要写权限。
+
+人日估算：60 秒完成 2 个 series（约 145–200 MB），全量下载约 **3–4 小时**；
+加校验与审计，D11 按 **0.5–1 人日** 规划。
+
 ## 卡点与报错
 
 ### 卡点 1：190 到 TCIA 的 TLS 握手超时
@@ -311,9 +344,11 @@ python3 code/00_download.py --full --resume --retry 3 \
 4. **下载脚本已落盘**：`code/00_download.py` 支持 `--full` / `--resume` / `--retry`；
    用 `--limit 1` 实测首跑 `ok=1`、重跑 `skip=1`；60 秒全量中断测试完成 2 个 series，
    重跑输出 `[skip]` ×2，断点逻辑成立。
-5. **CSV 是 423 条记录、422 个唯一 PatientID**；`wc -l` 的 422 是换行符计数问题。
-6. **manifest 是 1,265 个唯一 series UID**，与官方 v4 规模一致。
-7. **D11 的全量下载必须先解决 190 出网**，否则 35.78 GB 只能走 mac 中转或 IDC/GCS。
+5. **磁盘估算与官方一致**：单例 89,922,837 B × 422 = 37.95 GB / 35.34 GiB，
+   与官方 35.78 GB 同量级（偏差 <10%）；全量约需 3–4 小时。
+6. **CSV 是 423 条记录、422 个唯一 PatientID**；`wc -l` 的 422 是换行符计数问题。
+7. **manifest 是 1,265 个唯一 series UID**，与官方 v4 规模一致。
+8. **D11 的全量下载必须先解决 190 出网**，否则 35.78 GB 只能走 mac 中转或 IDC/GCS。
 
 ## 明日 3 件事
 
