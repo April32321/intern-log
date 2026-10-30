@@ -16,6 +16,10 @@ data/raw/
 *.zip
 *.tar.gz
 
+# 下载器状态（不提交）
+logs/done/
+logs/download_failed.txt
+
 # 模型与中间产物
 *.pkl
 *.joblib
