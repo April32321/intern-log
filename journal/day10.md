@@ -23,6 +23,7 @@ gate: G2
 | 全量 manifest | ✅ | 1,265 个唯一 series UID，1,271 行 |
 | 下载路线选择 | ✅ | 路线 B：TCIA REST API；理由见 `data/README.md` |
 | 小样本 LUNG1-001 | ✅ | 3 series，136 个 DICOM + 3 个 LICENSE，约 87 MB |
+| DICOM 头部核验 | ✅ | CT/SEG/RTSTRUCT 的 SOPClassUID 正确；`RTSTRUCT -> CT`、`SEG -> CT` 均为 `True`；SEG 536 frames = 4 × 134 |
 | `data/README.md` | ✅ | 数据身份、路线、路径、校验、已知缺陷、不入 Git |
 | `environment.yml` 删环境重建 | ⬜ 待复查 | D9 已有 `logs/day09-rebuild.log`，今日未重跑 |
 | 容器内 `kilo --version` / `KILO_OK` | ⬜ 待复查 | D8 已有 `kilo-version.txt`、`smoke-test.txt`、`logs/day08-*` |
@@ -95,6 +96,36 @@ du -sh ~/tcia/raw/dicom/LUNG1-001
 ~/tcia/raw/dicom/LUNG1-001/SEG/<SeriesUID>/*.dcm + LICENSE
 ~/tcia/raw/dicom/LUNG1-001/RTSTRUCT/<SeriesUID>/*.dcm + LICENSE
 ```
+
+### DICOM 头部核验
+
+190 的系统 Python 没有 pydicom，改在 `~/venvs/tcia` 里安装，不使用 sudo、不改系统环境：
+
+```bash
+python3 -m venv ~/venvs/tcia
+~/venvs/tcia/bin/pip install pydicom
+~/venvs/tcia/bin/python -c "import pydicom; print(pydicom.__version__)"
+```
+
+用 pydicom 读三个 series 的头部，结果：
+
+| 对象 | SOPClassUID | 数量 | 关键信息 |
+|---|---|---|---|
+| CT | `1.2.840.10008.5.1.4.1.1.2` | 134 files | CT Image Storage |
+| SEG | `1.2.840.10008.5.1.4.1.1.66.4` | 1 file / 536 frames | 4 segments × 134 slices |
+| RTSTRUCT | `1.2.840.10008.5.1.4.1.1.481.3` | 1 file | GTV-1、Spinal-Cord、Lung-Left、Lung-Right |
+
+```text
+RTSTRUCT -> CT: True
+SEG -> CT: True
+```
+
+两个细节：
+
+- SEG 的 536 frames 是 **4 个 segment × 134 层**，不是 536 层 CT；
+- SEG 的 `SegmentLabel` 里有两个 `Lung` 同名，左右需用 `SegmentNumber` /
+  `SegmentIdentificationSequence` 区分，或直接用 RTSTRUCT 的 `ROIName`
+  （`Lung-Left` / `Lung-Right`）。
 
 ## 卡点与报错
 
@@ -179,6 +210,7 @@ du -sh ~/tcia/raw/dicom/LUNG1-001
 - [x] 临床 CSV 是 422 行数据 + 表头，字段能解释
 - [x] `data/README.md` 含路线选择理由与校验方案
 - [x] 3 个 series 已落地，`du -sh` 数字合理（87 MB）
+- [x] DICOM 头部可读，CT/SEG/RTSTRUCT 类型正确，掩膜引用 CT
 - [ ] `environment.yml` 删环境后可重建（D9 已有 `logs/day09-rebuild.log`，待复查）
 - [ ] Ubuntu 容器内 `kilo --version` 与 `KILO_OK` 有记录（D8 已有证据，待复查）
 - [x] `tmux` 内能跑下载脚本（TDR 续传循环；小样本走 HTTP 中转）
@@ -190,9 +222,13 @@ du -sh ~/tcia/raw/dicom/LUNG1-001
    mac 下载 + 局域网 HTTP 是当前可靠路径。
 2. **小样本 3 个 series 已落地**，G2 的数据入口验证完成：
    CT 134 张、SEG 1 个、RTSTRUCT 1 个，共 136 DICOM + 3 LICENSE，87 MB。
-3. **CSV 是 423 条记录、422 个唯一 PatientID**；`wc -l` 的 422 是换行符计数问题。
-4. **manifest 是 1,265 个唯一 series UID**，与官方 v4 规模一致。
-5. **D11 的全量下载必须先解决 190 出网**，否则 35.78 GB 只能走 mac 中转或 IDC/GCS。
+3. **DICOM 对象类型与引用关系正确**：CT/SEG/RTSTRUCT 的 SOPClassUID 分别为
+   `...1.1.2`、`...1.1.66.4`、`...1.1.481.3`；`RTSTRUCT -> CT`、`SEG -> CT` 均为 `True`。
+   SEG 536 frames = 4 segments × 134 slices，两个 `Lung` 标签需用
+   `SegmentNumber` 或 RTSTRUCT 的 `ROIName` 区分左右。
+4. **CSV 是 423 条记录、422 个唯一 PatientID**；`wc -l` 的 422 是换行符计数问题。
+5. **manifest 是 1,265 个唯一 series UID**，与官方 v4 规模一致。
+6. **D11 的全量下载必须先解决 190 出网**，否则 35.78 GB 只能走 mac 中转或 IDC/GCS。
 
 ## 明日 3 件事
 
