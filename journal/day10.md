@@ -28,9 +28,9 @@ gate: G2
 | 60 秒 `--full --resume` 断点验收 | ✅ | 60 秒完成 2 个 series；重跑同命令输出 `[skip]` ×2，未从 0 开始 |
 | 磁盘与人日估算 | ✅ | 单例 89,922,837 B；×422 = 37.95 GB / 35.34 GiB，与官方 35.78 GB 同量级 |
 | `data/README.md` | ✅ | 数据身份、路线、路径、校验、已知缺陷、不入 Git |
-| `environment.yml` 删环境重建 | ⬜ 待复查 | D9 已有 `logs/day09-rebuild.log`，今日未重跑 |
-| 容器内 `kilo --version` / `KILO_OK` | ⬜ 待复查 | D8 已有 `kilo-version.txt`、`smoke-test.txt`、`logs/day08-*` |
-| `docker build` 成功 | ⬜ 待复查 | D8 已有记录，今日未重构建 |
+| `environment.yml` 删环境重建 | ✅ | D9 已完成：`logs/day09-rebuild.log` + `journal/day09.md` 验收对照 |
+| 容器内 `kilo --version` / `KILO_OK` | ✅ | D8：`kilo-version.txt` 7.8.18、`smoke-test.txt` KILO_OK、`logs/day08-kilo-version.txt` |
+| `docker build` 成功 | ✅ | D8：`journal/day08.md:31` + `logs/day08-intern-base.txt`（`intern-base:0.1`） |
 | tmux 内运行下载 | ✅ | TDR 续传循环在 `tmux` 会话 `dl` 中运行；小样本另走 HTTP 中转 |
 | 当日 commit | ⬜ 待提交 | `code/00_download.py` 与本次文档更新 |
 
@@ -326,10 +326,10 @@ python3 code/00_download.py --full --resume --retry 3 \
 - [x] 3 个 series 已落地，`du -sh` 数字合理（87 MB）
 - [x] DICOM 头部可读，CT/SEG/RTSTRUCT 类型正确，掩膜引用 CT
 - [x] 下载脚本支持 `--full` / `--resume` / `--retry`，断点逻辑已实测
-- [ ] `environment.yml` 删环境后可重建（D9 已有 `logs/day09-rebuild.log`，待复查）
-- [ ] Ubuntu 容器内 `kilo --version` 与 `KILO_OK` 有记录（D8 已有证据，待复查）
+- [x] `environment.yml` 删环境后可重建（D9：`logs/day09-rebuild.log`）
+- [x] Ubuntu 容器内 `kilo --version` 与 `KILO_OK` 有记录（D8：`kilo-version.txt`、`smoke-test.txt`）
 - [x] `tmux` 内能跑下载脚本（TDR 续传循环；小样本走 HTTP 中转）
-- [ ] `docker build` 成功（D8 已有记录，待复查）
+- [x] `docker build` 成功（D8：`journal/day08.md:31`、`logs/day08-intern-base.txt`）
 
 ## 今日结论
 
