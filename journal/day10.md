@@ -24,12 +24,14 @@ gate: G2
 | 下载路线选择 | ✅ | 路线 B：TCIA REST API；理由见 `data/README.md` |
 | 小样本 LUNG1-001 | ✅ | 3 series，136 个 DICOM + 3 个 LICENSE，约 87 MB |
 | DICOM 头部核验 | ✅ | CT/SEG/RTSTRUCT 的 SOPClassUID 正确；`RTSTRUCT -> CT`、`SEG -> CT` 均为 `True`；SEG 536 frames = 4 × 134 |
+| 下载脚本 `--full/--resume/--retry` | ✅ | `code/00_download.py`；`--limit 1` 首跑 `ok=1`，重跑 `--resume` 输出 `[skip]`，`ok=0 skip=1` |
+| 60 秒 `--full --resume` 断点验收 | ✅ | 60 秒完成 2 个 series；重跑同命令输出 `[skip]` ×2，未从 0 开始 |
 | `data/README.md` | ✅ | 数据身份、路线、路径、校验、已知缺陷、不入 Git |
 | `environment.yml` 删环境重建 | ⬜ 待复查 | D9 已有 `logs/day09-rebuild.log`，今日未重跑 |
 | 容器内 `kilo --version` / `KILO_OK` | ⬜ 待复查 | D8 已有 `kilo-version.txt`、`smoke-test.txt`、`logs/day08-*` |
 | `docker build` 成功 | ⬜ 待复查 | D8 已有记录，今日未重构建 |
 | tmux 内运行下载 | ✅ | TDR 续传循环在 `tmux` 会话 `dl` 中运行；小样本另走 HTTP 中转 |
-| 当日 commit | ⬜ 待提交 | 本文与 `data/README.md` 写完后提交 |
+| 当日 commit | ⬜ 待提交 | `code/00_download.py` 与本次文档更新 |
 
 ## 数据身份
 
@@ -127,6 +129,66 @@ SEG -> CT: True
   `SegmentIdentificationSequence` 区分，或直接用 RTSTRUCT 的 `ROIName`
   （`Lung-Left` / `Lung-Right`）。
 
+### 下载脚本
+
+`code/00_download.py` 使用 TCIA REST API，仅依赖 Python 标准库：
+
+```bash
+# 只下 LUNG1-001
+python3 code/00_download.py
+
+# 全量 + 断点续传 + 每 series 重试 3 次
+python3 code/00_download.py --full --resume --retry 3
+
+# 只列清单，不下载
+python3 code/00_download.py --full --dry-run
+```
+
+- 默认输出到仓库 `data/raw/`，日志/标记在 `logs/`；
+- 在 190 上复现现有路径时显式指定：
+  ```bash
+  python3 code/00_download.py --full --resume --retry 3 \
+    --out ~/tcia/full --log-dir ~/tcia/logs
+  ```
+- 每个 series 成功后写 `logs/done/<SeriesUID>`，标记里记录 `image_count`；
+  `--resume` 会复核标记与目录内实际文件数，不一致就重新下载；
+- 每个 series 失败重试 N 次，最终失败写入 `logs/download_failed.txt`；
+- `logs/done/` 和 `logs/download_failed.txt` 已加入 `.gitignore`，不随代码提交。
+
+断点逻辑实测（用 `--limit 1` 快速验证）：
+
+```bash
+python3 code/00_download.py --limit 1 \
+  --out /tmp/tcia-smoke --log-dir /tmp/tcia-smoke-logs --retry 1
+# ok=1 skip=0 fail=0
+
+python3 code/00_download.py --limit 1 --resume \
+  --out /tmp/tcia-smoke --log-dir /tmp/tcia-smoke-logs --retry 1
+# [skip] LUNG1-001 CT ... ; ok=0 skip=1 fail=0
+```
+
+60 秒全量中断验收（mac 上执行）：
+
+```bash
+python3 code/00_download.py --full --resume --retry 3 \
+  --out /tmp/tcia-60 --log-dir /tmp/tcia-60-logs
+# 跑 60 秒后停止进程
+
+# 用同一命令重跑
+python3 code/00_download.py --full --resume --retry 3 \
+  --out /tmp/tcia-60 --log-dir /tmp/tcia-60-logs
+```
+
+实测结果：第一次 60 秒完成 2 个 series（LUNG1-135、LUNG1-189），
+第二次启动直接输出：
+
+```text
+[skip] LUNG1-135 CT ...
+[skip] LUNG1-189 CT ...
+```
+
+说明 `--resume` 认的是完成标记，不是从 0 重下。
+
 ## 卡点与报错
 
 ### 卡点 1：190 到 TCIA 的 TLS 握手超时
@@ -196,6 +258,25 @@ SEG -> CT: True
 - **处理**：直接看已知目录 `~/tcia/clinical`、`~/tcia/manifests`，不要全盘扫。
 - **下次怎么避免**：找文件先限定到项目目录，再扩大范围。
 
+### 卡点 8：mac Python 3.14 的 SSL 证书
+
+- **报错原文**：
+
+  ```text
+  ERROR: getSeries failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED]
+  certificate verify failed: unable to get local issuer certificate>
+  ```
+
+- **根因**：Python.org 的 mac 安装包不会自动把系统 CA 装进 Python 的信任库，
+  `urllib` 默认找不到签发链。
+- **验证**：`python3 -c "import certifi; print(certifi.where())"` 能看到 `cacert.pem`；
+  `ssl.get_default_verify_paths()` 的默认 cafile 为空。
+- **解决**：脚本里优先使用 `certifi.where()` 建 SSLContext，
+  没有 certifi 时回退到 `/etc/ssl/certs/ca-certificates.crt`（Linux）
+  或 `/etc/ssl/cert.pem`（macOS）。
+- **下次怎么避免**：在新 Python 环境里先跑一次 HTTPS 请求；
+  不要第一时间用 `verify=False` 绕过证书校验。
+
 ## Kilo 使用记录
 
 - 让 Kilo 对比 A/B/C 三条下载路线的官方文档差异，并给出链接；
@@ -211,6 +292,7 @@ SEG -> CT: True
 - [x] `data/README.md` 含路线选择理由与校验方案
 - [x] 3 个 series 已落地，`du -sh` 数字合理（87 MB）
 - [x] DICOM 头部可读，CT/SEG/RTSTRUCT 类型正确，掩膜引用 CT
+- [x] 下载脚本支持 `--full` / `--resume` / `--retry`，断点逻辑已实测
 - [ ] `environment.yml` 删环境后可重建（D9 已有 `logs/day09-rebuild.log`，待复查）
 - [ ] Ubuntu 容器内 `kilo --version` 与 `KILO_OK` 有记录（D8 已有证据，待复查）
 - [x] `tmux` 内能跑下载脚本（TDR 续传循环；小样本走 HTTP 中转）
@@ -226,9 +308,12 @@ SEG -> CT: True
    `...1.1.2`、`...1.1.66.4`、`...1.1.481.3`；`RTSTRUCT -> CT`、`SEG -> CT` 均为 `True`。
    SEG 536 frames = 4 segments × 134 slices，两个 `Lung` 标签需用
    `SegmentNumber` 或 RTSTRUCT 的 `ROIName` 区分左右。
-4. **CSV 是 423 条记录、422 个唯一 PatientID**；`wc -l` 的 422 是换行符计数问题。
-5. **manifest 是 1,265 个唯一 series UID**，与官方 v4 规模一致。
-6. **D11 的全量下载必须先解决 190 出网**，否则 35.78 GB 只能走 mac 中转或 IDC/GCS。
+4. **下载脚本已落盘**：`code/00_download.py` 支持 `--full` / `--resume` / `--retry`；
+   用 `--limit 1` 实测首跑 `ok=1`、重跑 `skip=1`；60 秒全量中断测试完成 2 个 series，
+   重跑输出 `[skip]` ×2，断点逻辑成立。
+5. **CSV 是 423 条记录、422 个唯一 PatientID**；`wc -l` 的 422 是换行符计数问题。
+6. **manifest 是 1,265 个唯一 series UID**，与官方 v4 规模一致。
+7. **D11 的全量下载必须先解决 190 出网**，否则 35.78 GB 只能走 mac 中转或 IDC/GCS。
 
 ## 明日 3 件事
 

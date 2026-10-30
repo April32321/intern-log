@@ -36,6 +36,30 @@
 
 备选路线 C（IDC / GCS）未采用。如果后续改用 IDC，必须记录来源、版本以及与 TCIA v4 的差异。
 
+### 下载脚本
+
+`code/00_download.py` 默认按 D11 的仓库布局写入 `data/raw/`，日志/完成标记写入 `logs/`。
+
+在 190 上复现当前实际路径时，显式指定：
+
+```bash
+python3 code/00_download.py --full --resume --retry 3 \
+  --out /home/jiaqiwang/tcia/full \
+  --log-dir /home/jiaqiwang/tcia/logs
+```
+
+小样本同理：
+
+```bash
+python3 code/00_download.py --resume \
+  --out /home/jiaqiwang/tcia/raw/dicom \
+  --log-dir /home/jiaqiwang/tcia/logs
+```
+
+- 完成标记写在 `logs/done/<SeriesUID>`，记录 `image_count`；
+  `--resume` 会复核标记与目录内实际文件数，不一致就重新下载；
+- `logs/done/` 和 `logs/download_failed.txt` 已在 `.gitignore` 中排除。
+
 ## 实际位置（190）
 
 | 内容 | 路径 |
