@@ -99,11 +99,11 @@ grep '^1\.' /home/jiaqiwang/tcia/manifests/NSCLC-Radiomics-v4.tcia | sort -u | w
 
 ### 小样本 LUNG1-001
 
-| Modality | ImageCount | 说明 |
+| Modality | 文件数 | 说明 |
 |---|---:|---|
 | CT | 134 | 术前 CT |
-| SEG | 1 | GTV-1 分割对象 |
-| RTSTRUCT | 1 | 放疗结构 |
+| SEG | 1（536 frames） | 4 个 segment：Neoplasm, Primary；Lung；Lung；Spinal cord |
+| RTSTRUCT | 1 | GTV-1、Spinal-Cord、Lung-Left、Lung-Right |
 
 - 共 3 个 series；
 - 136 个 DICOM 文件（`.dcm`）+ 3 个 `LICENSE` 文件；
@@ -122,6 +122,32 @@ find ~/tcia/raw/dicom/LUNG1-001 -type f -name 'LICENSE' | wc -l
 du -sh ~/tcia/raw/dicom/LUNG1-001
 # 约 87M
 ```
+
+### DICOM 头部核验（pydicom）
+
+190 的系统 Python 没有 pydicom；已在 `~/venvs/tcia` 建独立 venv 并安装 pydicom，
+不改系统环境。
+
+| 对象 | SOPClassUID | 数量 | 关键信息 |
+|---|---|---|---|
+| CT | `1.2.840.10008.5.1.4.1.1.2` | 134 files | CT Image Storage |
+| SEG | `1.2.840.10008.5.1.4.1.1.66.4` | 1 file / 536 frames | 4 segments × 134 slices |
+| RTSTRUCT | `1.2.840.10008.5.1.4.1.1.481.3` | 1 file | GTV-1、Spinal-Cord、Lung-Left、Lung-Right |
+
+引用关系：
+
+```text
+RTSTRUCT -> CT: True
+SEG -> CT: True
+```
+
+说明：
+
+- SEG 的 536 frames 不是 536 层 CT，而是 **4 个 segment × 134 层**；
+- SEG 的 `SegmentLabel` 中有两个 `Lung`，无法只靠标签区分左右；
+  D12/D13 解析时用 `SegmentNumber` / `SegmentIdentificationSequence`，
+  或直接用 RTSTRUCT 的 `ROIName`（`Lung-Left` / `Lung-Right`）；
+- `GTV-1` 在 RTSTRUCT 和 SEG 中都能找到，D12 的掩膜解析可行。
 
 ## 传输方式
 
