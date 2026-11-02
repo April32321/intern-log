@@ -226,6 +226,19 @@ du -sh ~/tcia/raw/dicom/LUNG1-001
 - `find ... -name A -o -name B` 与 `-print` / `-delete` 等动作组合时必须加括号
   `\( ... \)`，否则动作只作用于最后一个条件。
 
+### 校验和（D11）
+
+- 算法：SHA-256；
+- 抽样规则：对 `full/` 下 52,073 个 DICOM 按路径排序后每 2,600 个取 1 个，共 21 个；
+- 生成位置：190 生成，保留相对路径 `full/...`，见 `logs/raw_dicom.sha256`；
+- 双机对拍：t12ub 上 `cd ~/tcia && sha256sum -c logs/raw_dicom.sha256`，
+  21/21 全部 OK，说明传输后的文件与源端逐字节一致；
+- 临床表与系列索引：见 `logs/clinical.sha256`；临床 CSV 两机哈希一致
+  （`132f72b58b9660bf5e6b24b9817b335f1896360bc253e1f2034a3ffee593e6fd`），
+  metadata.csv 为 `f8c5459b8b103e713e2d9b53a86ba7bea31b008457e6fefbc14331d5d0b2d0db`；
+- 未做全量逐文件哈希：52,073 个小文件随机读远慢于抽样；完整性由
+  「计数 + DICOM 字节数 + 抽样哈希」三者共同支撑。
+
 ### DICOM 头部核验（pydicom）
 
 190 的系统 Python 没有 pydicom；已在 `~/venvs/tcia` 建独立 venv 并安装 pydicom，
