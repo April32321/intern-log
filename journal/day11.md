@@ -242,6 +242,8 @@ du -sh ~/tcia/full                                           # 34G
 | DICOM 字节 | 35,775,589,886 | 35,775,589,886 |
 | `du -sh` | 34G | 34G |
 
+原始输出：`logs/day11-verify-190.txt`（190 上采集，含主机名与时间）。
+
 DICOM 头抽查（190，pydicom venv）：
 
 ```text
@@ -321,7 +323,7 @@ no GTV-like ROI: []
 结论：D12 匹配 GTV 必须归一化（小写 + 去掉 `-`、`_`、空格），
 主靶区优先 `gtv1`、LUNG1-128 退回 `gtvpreop`，并对近似重复的 ROI 去重。
 
-证据：`~/tcia/logs/day11-visual-check.txt`（190）。
+证据：`logs/day11-visual-check.txt`（190 采集）。
 
 ## 卡点与报错
 
