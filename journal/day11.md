@@ -21,8 +21,8 @@ gate: D11
    DICOM 字节数 **35,775,589,886**（约 35.78 GB），与官方 v4 完全一致。
 3. 原始数据是 IDC 风格布局，已用 `pydicom` + 硬链接重排为
    `PatientID/Modality/SeriesInstanceUID/`，不额外占空间。
-4. t12ub → 190 的 SSH 公钥已配置，rsync 传输进行中
-   （11:02 CST 已传 2.9 GB / 4,293 个文件）。
+4. t12ub → 190 的 SSH 公钥已配置，rsync 已传完 35.79 GB（`speedup is 1.00`）；
+   190 端验收 **52,073 / 422 / 1,265 / 35,775,589,886 B**，与 t12ub 完全一致。
 
 ## 数据核验（t12ub）
 
@@ -209,34 +209,63 @@ rsync -avhP -e 'ssh -p 3225' ~/tcia/full/ jiaqiwang@192.168.1.190:~/tcia/full/
 - 52,073 个小文件，rsync 先扫描再传输，启动后短暂停顿属正常；
 - 中断后重跑同一条命令即可按文件续传；不要加 `--delete`。
 
-进度快照（2026-11-02 11:02 CST，传输中）：
+最终输出：
 
 ```text
-190: du -sh ~/tcia/full  → 2.9G
-190: find ~/tcia/full -name '*.dcm' | wc -l → 4293
+sent 35.79G bytes  received 1.01M bytes  3.63M bytes/sec
+total size is 35.78G  speedup is 1.00
 ```
 
-### 传输完成后必须做的验收
+- 实测约 3.5 MB/s，全程约 2 小时 45 分（10:50 前后开始，13:34 完成）；
+- `speedup is 1.00`：没有重复传输，目标端文件集合与源一致；
+- 传输是 t12ub → 190 直连，不经过 mac，mac 睡眠或断网不影响任务。
+
+### 190 端验收（已通过）
 
 ```bash
-# 190
 find ~/tcia/full -name '*.dcm' | wc -l                       # 52073
 find ~/tcia/full -mindepth 1 -maxdepth 1 -type d | wc -l     # 422
 find ~/tcia/full -mindepth 3 -maxdepth 3 -type d | wc -l     # 1265
 find ~/tcia/full -name '*.dcm' -printf '%s\n' \
   | awk '{s+=$1} END {print s}'                              # 35775589886
-
-# 抽查 DICOM 头
-~/venvs/tcia/bin/python -c "
-import pydicom, glob
-f = glob.glob('/home/jiaqiwang/tcia/full/*/*/*/*.dcm')[0]
-ds = pydicom.dcmread(f, stop_before_pixels=True)
-print(f); print(ds.PatientID, ds.Modality, ds.SeriesInstanceUID)
-"
+du -sh ~/tcia/full                                           # 34G
 ```
+
+| 项 | 190 实测 | t12ub / 期望 |
+|---|---:|---:|
+| DICOM | 52,073 | 52,073 |
+| 患者目录 | 422 | 422 |
+| series 目录 | 1,265 | 1,265 |
+| DICOM 字节 | 35,775,589,886 | 35,775,589,886 |
+| `du -sh` | 34G | 34G |
+
+DICOM 头抽查（190，pydicom venv）：
+
+```text
+/home/jiaqiwang/tcia/full/LUNG1-001/CT/1.3.6.1.4.1.32722.99.99.29899.../<uid>.dcm
+LUNG1-001 CT 1.3.6.1.4.1.32722.99.99.29899...
+```
+
+metadata.csv 同步后 190 上为 `1266` 行（1 表头 + 1,265 数据），与 t12ub 一致。
 
 注意：比对用 **DICOM 字节数 35,775,589,886**，不要用 `du -sb ~/tcia/full` 和
 源根目录的 `du -sb` 直接比——源根目录还包含 metadata.csv 等 4 个非 DICOM 文件。
+
+### 系列级索引同步
+
+```bash
+ssh -p 3225 jiaqiwang@192.168.1.190 'mkdir -p ~/tcia/metadata'
+
+rsync -avhP -e 'ssh -p 3225' \
+  ~/.data/nsclc-radiomics/metadata/metadata.csv \
+  jiaqiwang@192.168.1.190:~/tcia/metadata/
+```
+
+结果：`metadata.csv` 684.08K，`sent 684.34K bytes`，`speedup is 1.00`；
+190 上为 `/home/jiaqiwang/tcia/metadata/metadata.csv`（1,266 行：1 表头 + 1,265 数据）。
+
+注意：rsync 默认走 SSH 22 端口，必须显式带 `-e 'ssh -p 3225'`；
+漏掉会报 `ssh: connect to host 192.168.1.190 port 22: Connection refused`。
 
 ## 卡点与报错
 
@@ -292,13 +321,16 @@ print(f); print(ds.PatientID, ds.Modality, ds.SeriesInstanceUID)
    52,073 个 DICOM、1,265 个 series、422 个患者，DICOM 字节 35,775,589,886。
 2. IDC 布局与 190 约定不一致，已用 pydicom + 硬链接重排，源数据保持原样，
    磁盘占用不增加。
-3. t12ub → 190 的免密已打通；传输采用 rsync + tmux，支持断点续传。
-4. 验收口径已修正：用 DICOM 数量和 DICOM 字节数比对，不用包含 metadata 的目录总量。
-5. 传输完成后，先做四项计数和 DICOM 头抽查，再更新 `data/README.md` 的实际路径，
-   最后才考虑清理 t12ub 的源目录。
+3. t12ub → 190 的免密已打通；rsync 传输完成，耗时约 2 小时 45 分，
+   平均 3.63 MB/s，`sent 35.79G bytes`、`speedup is 1.00`。
+4. 190 端验收通过：52,073 DICOM、422 患者、1,265 series、35,775,589,886 B，
+   与 t12ub 完全一致。
+5. 验收口径已修正：用 DICOM 数量和 DICOM 字节数比对，不用包含 metadata 的目录总量。
+6. `metadata.csv` 已同步到 190 的 `~/tcia/metadata/`，作为系列级索引；
+   t12ub 源目录暂不清理，等 D12 在 190 上跑通后再决定。
 
 ## 明日 3 件事
 
-1. 完成传输并在 190 上跑完验收，记录最终 `ok` 数字；
-2. D12：用 pydicom 解析 CT/SEG/RTSTRUCT 元数据，与临床表按 PatientID 合并；
-3. 把 `metadata.csv` 同步到 190，作为系列级索引保留。
+1. D12：用 pydicom 解析 CT/SEG/RTSTRUCT 元数据，与临床表按 PatientID 合并；
+2. 用 `metadata.csv` 做 series 级索引，确认 SEG 421 例中缺哪一例；
+3. 从 190 拉取 1–2 个患者到 mac，验证 Slicer + SlicerRT 的 CT/RTSTRUCT/SEG 显示。

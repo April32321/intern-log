@@ -90,6 +90,7 @@ python3 code/00_download.py --resume \
 | 全量 manifest | `/home/jiaqiwang/tcia/manifests/NSCLC-Radiomics-v4.tcia` |
 | 小样本 DICOM | `/home/jiaqiwang/tcia/raw/dicom/LUNG1-001/{CT,SEG,RTSTRUCT}/<SeriesUID>/` |
 | 全量数据（D11） | `/home/jiaqiwang/tcia/full/<PatientID>/<Modality>/<SeriesInstanceUID>/` |
+| 系列级 metadata | `/home/jiaqiwang/tcia/metadata/metadata.csv` |
 | 日志 | `/home/jiaqiwang/tcia/logs/` |
 
 这些路径在 t12ub / 190 上，不在 git 仓库内；仓库只保留本说明文件。
@@ -198,9 +199,11 @@ du -sh ~/tcia/raw/dicom/LUNG1-001
 | 模态 | CT 422 / RTSTRUCT 422 / SEG 421 |
 | DICOM 字节 | 35,775,589,886（约 35.78 GB） |
 | `du -sh`（t12ub 重排后） | 34G（硬链接，不额外占盘） |
+| 190 端验收 | 52,073 / 422 / 1,265 / 35,775,589,886，与 t12ub 完全一致 |
+| rsync 汇总 | `sent 35.79G bytes  received 1.01M bytes  3.63M bytes/sec` |
+| 系列级索引 | `/home/jiaqiwang/tcia/metadata/metadata.csv`（1,266 行，D11 同步） |
 
 对应磁盘占用与官方 35.78 GB 一致；详细命令与卡点见 `journal/day11.md`。
-190 端最终验收（四项计数 + DICOM 头抽查）完成后再补充结果。
 
 ### DICOM 头部核验（pydicom）
 
