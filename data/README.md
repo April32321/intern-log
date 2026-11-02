@@ -36,6 +36,12 @@
 
 备选路线 C（IDC / GCS）未采用。如果后续改用 IDC，必须记录来源、版本以及与 TCIA v4 的差异。
 
+> **D11 实际落地（2026-11-02）**：全量数据不是由 `00_download.py` 重新下载的。
+> t12ub 上已有 2026-10-14 完成的 NSCLC-Radiomics v4（IDC 布局），核验为
+> 422 患者 / 1,265 series / 52,073 DICOM，DICOM 字节 35,775,589,886（约 35.78 GB），
+> 与本页估算一致。脚本保留为可复现路线与备用方案。
+> 重排、SSH 与传输过程见 `journal/day11.md`。
+
 ### 下载脚本
 
 `code/00_download.py` 默认按 D11 的仓库布局写入 `data/raw/`，日志/完成标记写入 `logs/`。
@@ -60,17 +66,49 @@ python3 code/00_download.py --resume \
   `--resume` 会复核标记与目录内实际文件数，不一致就重新下载；
 - `logs/done/` 和 `logs/download_failed.txt` 已在 `.gitignore` 中排除。
 
-## 实际位置（190）
+## 实际位置
+
+### t12ub（数据源）
+
+2026-10-14 完成下载，原始为 IDC 布局；D11 已重排为与 190 一致的 `full/` 结构。
+
+| 内容 | 路径 |
+|---|---|
+| 原始全量（IDC 布局） | `/home/jqw/.data/nsclc-radiomics/nsclc_radiomics/` |
+| 系列级 metadata | `/home/jqw/.data/nsclc-radiomics/metadata/metadata.csv` |
+| 全量 manifest | `/home/jqw/.data/nsclc-radiomics/NSCLC-Radiomics-Version-4-Oct-2020-NBIA-manifest.tcia` |
+| 临床 CSV | `/home/jqw/.data/nsclc-radiomics/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv` |
+| 重排后全量（硬链接） | `/home/jqw/tcia/full/<PatientID>/<Modality>/<SeriesInstanceUID>/` |
+| 重排脚本 | `/home/jqw/tcia/reorg.py` |
+| Python 环境 | `/home/jqw/venvs/tcia`（pydicom 3.0.2） |
+
+### 190（目标）
 
 | 内容 | 路径 |
 |---|---|
 | 临床 CSV | `/home/jiaqiwang/tcia/clinical/NSCLC-Radiomics-Lung1.clinical-version3-Oct-2019.csv` |
 | 全量 manifest | `/home/jiaqiwang/tcia/manifests/NSCLC-Radiomics-v4.tcia` |
 | 小样本 DICOM | `/home/jiaqiwang/tcia/raw/dicom/LUNG1-001/{CT,SEG,RTSTRUCT}/<SeriesUID>/` |
-| 全量数据（D11） | `/home/jiaqiwang/tcia/full/` |
+| 全量数据（D11） | `/home/jiaqiwang/tcia/full/<PatientID>/<Modality>/<SeriesInstanceUID>/` |
 | 日志 | `/home/jiaqiwang/tcia/logs/` |
 
-这些路径在 190 上，不在 git 仓库内；仓库只保留本说明文件。
+这些路径在 t12ub / 190 上，不在 git 仓库内；仓库只保留本说明文件。
+
+### D11 核验口径
+
+- 全量应为 **422 患者 / 1,265 series / 52,073 DICOM**；
+- 模态分布：CT 422、RTSTRUCT 422、SEG 421
+  （SEG 少 1 例，与官方总数 1,265 一致，不是下载缺失）；
+- DICOM 字节数（不含 metadata.csv 等非 DICOM 文件）：
+
+  ```bash
+  find <full>/ -name '*.dcm' -printf '%s\n' | awk '{s+=$1} END {print s}'
+  # 35775589886
+  ```
+
+- 不要用 `du -sb <根目录>` 直接比对：t12ub 源根目录还包含
+  metadata.csv（684,079 B）、manifest（77,374 B）、临床 CSV（23,335 B）和
+  sample.tcia（401 B），合计 785,189 B。
 
 ## 已落地与校验
 
@@ -146,6 +184,23 @@ find ~/tcia/raw/dicom/LUNG1-001 -type f -name 'LICENSE' | wc -l
 du -sh ~/tcia/raw/dicom/LUNG1-001
 # 约 87M
 ```
+
+### 全量数据（D11，t12ub → 190）
+
+来源：t12ub 上 2026-10-14 完成的下载（IDC 布局）；D11 用 pydicom + 硬链接重排为
+`<PatientID>/<Modality>/<SeriesInstanceUID>/`，再用 rsync 传到 190。
+
+| 项 | 值 |
+|---|---:|
+| 患者 | 422 |
+| series | 1,265 |
+| DICOM 文件 | 52,073 |
+| 模态 | CT 422 / RTSTRUCT 422 / SEG 421 |
+| DICOM 字节 | 35,775,589,886（约 35.78 GB） |
+| `du -sh`（t12ub 重排后） | 34G（硬链接，不额外占盘） |
+
+对应磁盘占用与官方 35.78 GB 一致；详细命令与卡点见 `journal/day11.md`。
+190 端最终验收（四项计数 + DICOM 头抽查）完成后再补充结果。
 
 ### DICOM 头部核验（pydicom）
 
@@ -226,12 +281,15 @@ SEG -> CT: True
 
 - **LUNG1-014 / LUNG1-021 / LUNG1-085**：CT 缺层；缺失层不穿过 GTV，但做全肺或插值相关分析时需要注意；
 - **LUNG1-128**：术后病例，无 GTV-1，仅保留 CT；
+- **SEG 共 421 例**：比 CT / RTSTRUCT 的 422 少 1 例；与官方 1,265 series 总数一致，
+  不是下载缺失，具体缺 SEG 的患者在 D12 解析时确认；
 - **TNM 编码**：`clinical.T.Stage` 的 `5`、`Clinical.N.Stage` 的 `4`、`Clinical.M.Stage` 的 `3` 含义已丢失；
 - **age**：部分病例为 `NA`（如 LUNG1-056、LUNG1-149）；
 - **Histology**：部分病例为 `NA`。
 
 ## 不进入 Git
 
-- `/home/jiaqiwang/tcia/` 下的原始 DICOM、临床 CSV、manifest、zip、日志均不入库；
+- `/home/jiaqiwang/tcia/`（190）与 `/home/jqw/tcia/`、`/home/jqw/.data/nsclc-radiomics/`（t12ub）
+  下的原始 DICOM、临床 CSV、manifest、zip、日志均不入库；
 - 仓库通过 `.gitignore` 忽略 `data/clinical/*`（保留 `.gitkeep`）、`data/manifests/`、`data/raw/`、`*.tcia`、`*.dcm`、`*.zip`；
 - 仓库只保留本 README 和目录占位文件。
