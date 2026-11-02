@@ -1,0 +1,5 @@
+metric,official,actual,diff,explanation
+patients,422,422,0,unique PatientID in metadata.csv
+series,1265,1265,0,CT 422 / RTSTRUCT 422 / SEG 421
+dicom_files,52073,52073,0,verified on 190 (logs/day11-verify-190.txt)
+dicom_bytes,35775589886,35775589886,0,DICOM bytes only; excludes metadata/manifest/clinical CSV
