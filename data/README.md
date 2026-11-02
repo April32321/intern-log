@@ -263,7 +263,8 @@ SEG -> CT: True
 - SEG 的 `SegmentLabel` 中有两个 `Lung`，无法只靠标签区分左右；
   D12/D13 解析时用 `SegmentNumber` / `SegmentIdentificationSequence`，
   或直接用 RTSTRUCT 的 `ROIName`（`Lung-Left` / `Lung-Right`）；
-- `GTV-1` 在 RTSTRUCT 和 SEG 中都能找到，D12 的掩膜解析可行。
+- `GTV-1` 在 RTSTRUCT 和 SEG 中都能找到，D12 的掩膜解析可行；
+  但该结论只对标准命名病例成立，LUNG1-128 的 ROI 名为 `gtv-pre-op`，见「已知缺陷」。
 
 ## 磁盘估算
 
@@ -317,9 +318,15 @@ SEG -> CT: True
 ## 已知缺陷
 
 - **LUNG1-014 / LUNG1-021 / LUNG1-085**：CT 缺层；缺失层不穿过 GTV，但做全肺或插值相关分析时需要注意；
-- **LUNG1-128**：术后病例，无 GTV-1，仅保留 CT；
-- **SEG 共 421 例**：比 CT / RTSTRUCT 的 422 少 1 例；与官方 1,265 series 总数一致，
-  不是下载缺失，具体缺 SEG 的患者在 D12 解析时确认；
+- **LUNG1-128**：术后病例；RTSTRUCT 的 ROI 为 `gtv-pre-op`、`gtv-pre-operat`
+  （术前 GTV，命名不是 `GTV-1`），且没有 SEG；
+- **SEG 共 421 例**：比 CT / RTSTRUCT 的 422 少 1 例；缺的正是 **LUNG1-128**，
+  与官方 1,265 series 总数一致，不是下载缺失；
+- **ROI 命名不统一**（422 例全量扫描）：`GTV-1` 421 例、`gtv-2` 218 例、
+  `gtv-3` 23 例，另有 `gtv-4/5/6/7`、`gtv_4r`、`gtv_2l` 等，
+  存在大小写与 `-` / `_` 混用；所有病例都至少有一个含 `gtv` 的 ROI。
+  D12 匹配需归一化（小写 + 去掉 `-`、`_`、空格），主靶区优先 `gtv1`、
+  退回 `gtvpreop`，不得把 `gtv-2..7` 并入同一个靶区；
 - **TNM 编码**：`clinical.T.Stage` 的 `5`、`Clinical.N.Stage` 的 `4`、`Clinical.M.Stage` 的 `3` 含义已丢失；
 - **age**：部分病例为 `NA`（如 LUNG1-056、LUNG1-149）；
 - **Histology**：部分病例为 `NA`。

@@ -90,7 +90,8 @@ modality: Counter({'CT': 422, 'RTSTRUCT': 422, 'SEG': 421})
 ```
 
 SEG 421 比 CT/RTSTRUCT 少 1 例，与官方总数 1,265 一致，不是下载缺失；
-结合已知缺陷（LUNG1-128 术后无 GTV-1）记录，D12 解析时按患者逐个处理。
+缺 SEG 的病例已在第 6 步确认为 LUNG1-128（其 GTV 命名为 `gtv-pre-op`），
+D12 解析时按患者逐个处理。
 
 ### DICOM 真实性抽查
 
@@ -269,6 +270,59 @@ rsync -avhP -e 'ssh -p 3225' \
 注意：rsync 默认走 SSH 22 端口，必须显式带 `-e 'ssh -p 3225'`；
 漏掉会报 `ssh: connect to host 192.168.1.190 port 22: Connection refused`。
 
+## 抽样目视与 ROI 命名扫描（第 6 步）
+
+### 三例目录结构
+
+| 病例 | CT | SEG | RTSTRUCT |
+|---|---:|---:|---:|
+| LUNG1-001 | 134 | 1 | 1 |
+| LUNG1-002 | 111 | 1 | 1 |
+| LUNG1-128 | 100 | 0 | 1 |
+
+全局模态分布：CT 422 / SEG 421 / RTSTRUCT 422。
+
+缺 SEG 的病例确认为 **LUNG1-128**；其 RTSTRUCT ROI 为 `gtv-pre-op`、
+`gtv-pre-operat`，说明“无 GTV-1”实际是命名不同，而不是没有 GTV。
+
+DICOM 内容抽查：
+
+```bash
+f=$(find full/LUNG1-001 -name '*.dcm' | head -1)
+file "$f"                     # DICOM medical imaging data
+od -An -c -j128 -N4 "$f"      # D I C M
+```
+
+### ROI 命名扫描（422 例，只读头部）
+
+```text
+ 421  'GTV-1'
+ 411  'Spinal-Cord'
+ 355  'Esophagus'
+ 312  'Lung-Left'
+ 312  'Lung-Right'
+ 218  'gtv-2'
+ 127  'Heart'
+  97  'Lungs-Total'
+  23  'gtv-3'
+   9  'gtv-4'
+   5  'gtv_4r'
+   3  'gtv_7'
+   3  'gtv-5'
+   2  'gtv-6'
+   2  'gtv_2l'
+no GTV-like ROI: []
+```
+
+- `GTV-1` 421 例 + LUNG1-128 的 `gtv-pre-op`，正好覆盖全部 422 例；
+- 命名混用大小写与 `-` / `_`，且 `gtv-2..7` 是另一套靶区，不能与 GTV-1 合并；
+- 肺轮廓同样不统一（`Lung-Left` 312、`Lungs-Total` 97），D13 做全肺特征前需归一化。
+
+结论：D12 匹配 GTV 必须归一化（小写 + 去掉 `-`、`_`、空格），
+主靶区优先 `gtv1`、LUNG1-128 退回 `gtvpreop`，并对近似重复的 ROI 去重。
+
+证据：`~/tcia/logs/day11-visual-check.txt`（190）。
+
 ## 卡点与报错
 
 ### 卡点 1：在 190 上执行 `ssh pvmed190`
@@ -357,9 +411,13 @@ rsync -avhP -e 'ssh -p 3225' \
    t12ub 源目录暂不清理，等 D12 在 190 上跑通后再决定。
 7. 任务 1 的命令曾误启动一次全量重下（96 series / 5.8 GB），确认数据已完整后停止并清理；
    `logs/day11-accidental-download.log` 保留为这次误操作的记录。全量数据仍以 2026-10-14 的下载为准。
+8. 抽样目视三例结构正确；缺 SEG 的病例确认为 LUNG1-128，其 GTV 名为 `gtv-pre-op`；
+   ROI 命名扫描显示 `GTV-1` 421 例、`gtv-2` 218 例等，命名混用大小写与分隔符，
+   D12 必须归一化匹配，且不能把 `gtv-2..7` 与主靶区合并。
 
 ## 明日 3 件事
 
 1. D12：用 pydicom 解析 CT/SEG/RTSTRUCT 元数据，与临床表按 PatientID 合并；
-2. 用 `metadata.csv` 做 series 级索引，确认 SEG 421 例中缺哪一例；
+2. 用 `metadata.csv` 做 series 级索引；SEG 421 缺的病例已在 D11 确认为 LUNG1-128，
+   D12 直接按归一化规则匹配 GTV（`gtv1` 优先，LUNG1-128 用 `gtvpreop`）；
 3. 从 190 拉取 1–2 个患者到 mac，验证 Slicer + SlicerRT 的 CT/RTSTRUCT/SEG 显示。
