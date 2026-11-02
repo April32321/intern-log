@@ -205,6 +205,27 @@ du -sh ~/tcia/raw/dicom/LUNG1-001
 
 对应磁盘占用与官方 35.78 GB 一致；详细命令与卡点见 `journal/day11.md`。
 
+### 实际清点结果（D11）
+
+对照 Day11 第 3–4 步，官方值与实际值如下：
+
+| 指标 | 官方 | 实际 | 差异 | 解释 |
+|---|---:|---:|---:|---|
+| 患者数 | 422 | 422 | 0 | `metadata.csv` 的 1,265 行里唯一 `PatientID` 为 422；临床 CSV 共 423 行（1 表头 + 422 数据） |
+| series | 1,265 | 1,265 | 0 | CT 422 + RTSTRUCT 422 + SEG 421 |
+| 图像文件 | 52,073 | 52,073 | 0 | t12ub 与 190 两端逐文件计数一致 |
+| 体积 | 35.78 GB | 35,775,589,886 B（35.78 GB） | 约 -0.01% | 只统计 `*.dcm` 字节；`du -sh` 显示的 34G 是 GiB 口径 |
+
+统计口径说明：
+
+- 体积比对只用 DICOM 字节数，不含 metadata.csv（684,079 B）、manifest（77,374 B）、
+  临床 CSV（23,335 B）、sample.tcia（401 B）等非 DICOM 文件；
+- 目录计数要按布局选层级：`full/<PatientID>/<Modality>/<SeriesUID>/` 下
+  患者是 depth 1、series 是 depth 3；IDC 原始布局（`患者/study/series/文件`）则是
+  depth 1 / depth 4，两种布局不能套同一组参数；
+- `find ... -name A -o -name B` 与 `-print` / `-delete` 等动作组合时必须加括号
+  `\( ... \)`，否则动作只作用于最后一个条件。
+
 ### DICOM 头部核验（pydicom）
 
 190 的系统 Python 没有 pydicom；已在 `~/venvs/tcia` 建独立 venv 并安装 pydicom，
