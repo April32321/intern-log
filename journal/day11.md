@@ -308,6 +308,30 @@ rsync -avhP -e 'ssh -p 3225' \
 - 处理：患者用 depth 1（在 `nsclc_radiomics` 下），series 用 depth 4。
 - 结论：数目录前先确认层级，不要套用 190 布局的 depth 习惯。
 
+### 卡点 7：误启动全量重下，约 12 分钟后停止
+
+- 现象：按任务 1 的命令在 t12ub 执行 `--full --resume --retry 3`，约 12 分钟
+  下载了 96 个 series、5.8 GB，落在仓库的 `data/raw/`。
+- 根因：执行前没有确认两件事——① 全量数据其实已存在（t12ub 2026-10-14 的下载，
+  且已同步到 190）；② 该命令默认输出到 `data/raw/`，不是已有的 `~/tcia/full/`。
+  另外 `--resume` 的跳过依赖 `logs/done/<SeriesUID>` 标记，
+  标记不存在时它不会因为目录里已有文件而跳过，会直接重新下载。
+- 处理：确认数据已完整后 `pkill` 停止；删除 `data/raw` 与 `logs/done`；
+  日志保留为 `logs/day11-accidental-download.log`，作为这次误操作的记录
+  （96 个 `[ok]`、0 个 `[fail]`）。
+- 教训：执行长任务前先确认三件事——数据是否已有、输出目录是哪里、断点标记是否存在。
+  不确定时先用 `--dry-run` 或 `--limit 2` 试跑，不要直接上 `--full`。
+
+### 卡点 8：目录改名后 cwd 仍指向旧路径
+
+- 现象：在 `~/work/intern-jqw-nsclc-survival` 里执行 `mv` 改名后，
+  提示符仍显示旧名字，随后脚本报
+  `can't open file '.../intern-jqw-nsclc-survival.bak-20261102/code/00_download.py'`。
+- 根因：`mv` 只改目录项，进程的 cwd 跟着 inode 走；`$PWD` 是 shell 缓存的字符串，
+  不会随改名自动更新，所以提示符与真实路径不一致。
+- 处理：用 `pwd -P` 查出真实路径，再 `cd` 到绝对路径进入新目录。
+- 结论：目录改名或替换后先跑 `pwd -P`，不要用提示符判断自己在哪。
+
 ## Kilo 使用记录
 
 - 让 Kilo 判断"全量已下载"到底在哪台机器：本机 `~/tcia`、`data/raw`、`tcia-share`
@@ -331,6 +355,8 @@ rsync -avhP -e 'ssh -p 3225' \
 5. 验收口径已修正：用 DICOM 数量和 DICOM 字节数比对，不用包含 metadata 的目录总量。
 6. `metadata.csv` 已同步到 190 的 `~/tcia/metadata/`，作为系列级索引；
    t12ub 源目录暂不清理，等 D12 在 190 上跑通后再决定。
+7. 任务 1 的命令曾误启动一次全量重下（96 series / 5.8 GB），确认数据已完整后停止并清理；
+   `logs/day11-accidental-download.log` 保留为这次误操作的记录。全量数据仍以 2026-10-14 的下载为准。
 
 ## 明日 3 件事
 
