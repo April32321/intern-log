@@ -1,9 +1,10 @@
-column,n_missing,pct_missing,role
-age,22,5.21,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-gender,0,0.0,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-Histology,42,9.95,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-clinical.T.Stage,1,0.24,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-Clinical.N.Stage,0,0.0,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-Clinical.M.Stage,0,0.0,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-Survival.time,0,0.0,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
-deadstatus.event,0,0.0,按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts 互补
+column,n_missing,pct_missing
+age,22,5.21
+gender,0,0.0
+Histology,42,9.95
+clinical.T.Stage,1,0.24
+Clinical.N.Stage,0,0.0
+Clinical.M.Stage,0,0.0
+Survival.time,0,0.0
+deadstatus.event,0,0.0
+#解释：按列汇总：每列缺失数与缺失率（分母 422）；与 value_counts.csv（按取值展开）互补
