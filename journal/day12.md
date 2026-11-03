@@ -246,6 +246,10 @@ Survival.time <= 0 的行数: 0
 
 取值分布（`results/tables/value_counts.csv`，长表：`column,value,n,pct`）：
 
+> 两张表分工：`missing_rate.csv` **按列**回答“每列缺多少”，
+> `value_counts.csv` **按取值**回答“每列由什么组成”。两者的 `role` 列
+> 都写有这句话，打开 CSV 即可看到用途，不影响 pandas 读取。
+
 | 变量 | 取值 | 例数 | 占比 |
 |---|---|---:|---:|
 | `age` | 均值 68.04，标准差 10.08，范围 33.7–91.7（n=400） | — | — |
@@ -288,7 +292,7 @@ Survival.time <= 0 的行数: 0
 |---|---|
 | `index.csv` 422 行，`gtv1_present=False` 里能看到 LUNG1-128 | 02 断言 + 全量输出 |
 | `cohort.csv` 仍 422 行（没膨胀） | `validate="one_to_one"`，merge 后 422 |
-| 缺失率表 + 1 张质控图已生成 | `missing_rate.csv`（8 列）、`qc_survival_time.png` |
+| 缺失率表 + 1 张质控图已生成 | `missing_rate.csv`（含 `role` 说明列）、`qc_survival_time.png` |
 | 能解释 PatientID 是否一致 | `idx-only: []`、`cli-only: []`，两表各 422 唯一 |
 
 ## 卡点与报错
