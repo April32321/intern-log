@@ -1,0 +1,27 @@
+column,value,n,pct
+gender,male,290,68.72
+gender,female,132,31.28
+Histology,squamous cell carcinoma,152,36.02
+Histology,large cell,114,27.01
+Histology,nos,63,14.93
+Histology,adenocarcinoma,51,12.09
+Histology,NaN,42,9.95
+clinical.T.Stage,2.0,156,36.97
+clinical.T.Stage,4.0,117,27.73
+clinical.T.Stage,1.0,93,22.04
+clinical.T.Stage,3.0,53,12.56
+clinical.T.Stage,5.0,2,0.47
+clinical.T.Stage,NaN,1,0.24
+Clinical.N.Stage,0,170,40.28
+Clinical.N.Stage,2,141,33.41
+Clinical.N.Stage,3,85,20.14
+Clinical.N.Stage,1,23,5.45
+Clinical.N.Stage,4,3,0.71
+Clinical.M.Stage,0,417,98.82
+Clinical.M.Stage,3,4,0.95
+Clinical.M.Stage,1,1,0.24
+Overall.Stage,IIIb,176,41.71
+Overall.Stage,IIIa,112,26.54
+Overall.Stage,I,93,22.04
+Overall.Stage,II,40,9.48
+Overall.Stage,NaN,1,0.24

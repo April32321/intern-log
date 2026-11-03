@@ -244,6 +244,34 @@ Survival.time <= 0 的行数: 0
 `age` 与 `Histology` 的缺失与 `data/README.md` 记录一致；
 `clinical.T.Stage` 的 1 例缺失是本日新增细节。
 
+取值分布（`results/tables/value_counts.csv`，长表：`column,value,n,pct`）：
+
+| 变量 | 取值 | 例数 | 占比 |
+|---|---|---:|---:|
+| `age` | 均值 68.04，标准差 10.08，范围 33.7–91.7（n=400） | — | — |
+| `gender` | male / female | 290 / 132 | 68.72% / 31.28% |
+| `Histology` | squamous cell carcinoma | 152 | 36.02% |
+| | large cell | 114 | 27.01% |
+| | nos | 63 | 14.93% |
+| | adenocarcinoma | 51 | 12.09% |
+| | NaN | 42 | 9.95% |
+| `clinical.T.Stage` | T2 / T4 / T1 / T3 / **T5** / NaN | 156 / 117 / 93 / 53 / 2 / 1 | 36.97% / 27.73% / 22.04% / 12.56% / 0.47% / 0.24% |
+| `Clinical.N.Stage` | N0 / N2 / N3 / N1 / **N4** | 170 / 141 / 85 / 23 / 3 | 40.28% / 33.41% / 20.14% / 5.45% / 0.71% |
+| `Clinical.M.Stage` | M0 / **M3** / M1 | 417 / 4 / 1 | 98.82% / 0.95% / 0.24% |
+| `Overall.Stage` | IIIb / IIIa / I / II / NaN | 176 / 112 / 93 / 40 / 1 | 41.71% / 26.54% / 22.04% / 9.48% / 0.24% |
+
+取值层面的三个问题：
+
+1. **失效编码**：T 的 `5`（2 例）、N 的 `4`（3 例）、M 的 `3`（4 例）在
+   `data/README.md` 中已注明含义丢失，共 9 条。建模时按“未知”处理，
+   不能当作有序分期参与数值运算；
+2. **M 分期几乎没有区分度**：417/422 为 M0，非零只有 6 例且其中 4 例无法解释，
+   D15 多因素 Cox 建议不纳入或合并；
+3. **两处缺失不是同一患者**：`clinical.T.Stage` 缺的是 LUNG1-085，
+   `Overall.Stage` 缺的是 LUNG1-272，不能合并处理。
+
+`Histology` 的 `nos`（not otherwise specified）是真实类别，不是缺失。
+
 ## 步骤 5：质控图
 
 `results/figures/qc_survival_time.png`（1050×600，`bins=100 天`，事件分组叠加）：
