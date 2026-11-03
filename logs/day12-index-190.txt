@@ -1,0 +1,8 @@
+患者: 422
+CT series: 422（多 series: -）
+CT 层数合计: 51230
+层厚分布: {3.0: 422}
+无 RTSTRUCT: -
+无 SEG: ['LUNG1-128']
+无 GTV-1: ['LUNG1-128']
+写出: /home/jiaqiwang/tcia/repo/results/tables/index.csv（422 行 × 10 列）

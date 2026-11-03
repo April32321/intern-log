@@ -1,0 +1,854 @@
+根目录: /home/jiaqiwang/tcia/full
+患者数: 422
+
+LUNG1-001    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: GTV-1, Spinal-Cord, Lung-Left, Lung-Right
+LUNG1-002    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-003    CT_series=1 slices=107 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-004    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-005    CT_series=1 slices=91 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-006    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-007    CT_series=1 slices=129 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-008    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-009    CT_series=1 slices=105 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-4, gtv-3, gtv-2, GTV-1
+LUNG1-010    CT_series=1 slices=91 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-011    CT_series=1 slices=88 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-012    CT_series=1 slices=109 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-013    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-014    CT_series=1 slices=87 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+    WARN: 层距断档16处
+LUNG1-015    CT_series=1 slices=117 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-016    CT_series=1 slices=82 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-017    CT_series=1 slices=123 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: gtv-3, gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-018    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-019    CT_series=1 slices=101 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-020    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-4, gtv-3, gtv-2, GTV-1
+LUNG1-021    CT_series=1 slices=197 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+    WARN: 层距断档1处
+LUNG1-022    CT_series=1 slices=121 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-023    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-024    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-025    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord
+LUNG1-026    CT_series=1 slices=110 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: GTV-1, gtv-2, Spinal-Cord, Esophagus, Heart, Lung-Left, Lung-Right
+LUNG1-027    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-028    CT_series=1 slices=102 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-029    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lung-Left, Spinal-Cord, GTV-1, Lung-Right
+LUNG1-030    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-031    CT_series=1 slices=153 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-032    CT_series=1 slices=117 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, Lung-Right, Lung-Left, Esophagus, GTV-1
+LUNG1-033    CT_series=1 slices=113 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: GTV-1, gtv-2, gtv-3, Spinal-Cord, Esophagus, Heart, Lung-Left, Lung-Right
+LUNG1-034    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-035    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-4, gtv-3, gtv-2, GTV-1
+LUNG1-036    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-037    CT_series=1 slices=109 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-038    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: GTV-1, gtv-2, Spinal-Cord, Esophagus, Heart, Lung-Left, Lung-Right
+LUNG1-039    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-040    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-041    CT_series=1 slices=104 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord
+LUNG1-042    CT_series=1 slices=99 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-043    CT_series=1 slices=103 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-4, gtv-3, gtv-2, GTV-1
+LUNG1-044    CT_series=1 slices=99 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-045    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-046    CT_series=1 slices=89 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-047    CT_series=1 slices=110 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2
+LUNG1-048    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-049    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-050    CT_series=1 slices=104 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=1
+    ROIs: GTV-1
+LUNG1-051    CT_series=1 slices=125 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-052    CT_series=1 slices=127 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, gtv-2, GTV-1
+LUNG1-053    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord
+LUNG1-054    CT_series=1 slices=117 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-055    CT_series=1 slices=125 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Esophagus, GTV-1, gtv-2, gtv-3, Lung-Left, Lung-Right, Spinal-Cord
+LUNG1-056    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, GTV-1
+LUNG1-057    CT_series=1 slices=101 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3
+LUNG1-058    CT_series=1 slices=297 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Esophagus, Spinal-Cord, GTV-1, Lung-Left, Lung-Right
+LUNG1-059    CT_series=1 slices=110 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-060    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-061    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-062    CT_series=1 slices=101 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-063    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: GTV-1, Lung-Right, Lung-Left, Spinal-Cord
+LUNG1-064    CT_series=1 slices=104 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-065    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, gtv-4, gtv-2, GTV-1
+LUNG1-066    CT_series=1 slices=92 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: gtv_10_li, Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv_nr_7, GTV-1
+LUNG1-067    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=1
+    ROIs: GTV-1
+LUNG1-068    CT_series=1 slices=105 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-069    CT_series=1 slices=153 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-070    CT_series=1 slices=109 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord
+LUNG1-071    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-072    CT_series=1 slices=127 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-073    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-074    CT_series=1 slices=115 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-075    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-076    CT_series=1 slices=92 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-077    CT_series=1 slices=117 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-078    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-079    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-080    CT_series=1 slices=99 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-081    CT_series=1 slices=113 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-082    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-083    CT_series=1 slices=113 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-084    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-085    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=10
+    ROIs: gtv-6, Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-3_2l2, gtv-2_4r, gtv_2l, GTV-1
+    WARN: 层距断档10处
+LUNG1-086    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-087    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-088    CT_series=1 slices=123 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-089    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-090    CT_series=1 slices=125 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-091    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-092    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-093    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-094    CT_series=1 slices=84 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-095    CT_series=1 slices=107 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-096    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-097    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-098    CT_series=1 slices=110 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-099    CT_series=1 slices=117 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-100    CT_series=1 slices=107 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-101    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord
+LUNG1-102    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-103    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Heart, Lung-Left, Lung-Right
+LUNG1-104    CT_series=1 slices=297 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-105    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-106    CT_series=1 slices=99 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-4, gtv-3, gtv-2, GTV-1
+LUNG1-107    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-108    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-109    CT_series=1 slices=97 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-110    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-111    CT_series=1 slices=216 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-112    CT_series=1 slices=176 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-113    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-114    CT_series=1 slices=129 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Spinal-Cord, Lung-Right, Lung-Left, Esophagus, gtv-2, GTV-1
+LUNG1-115    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=2
+    ROIs: gtv-2, GTV-1
+LUNG1-116    CT_series=1 slices=142 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-117    CT_series=1 slices=90 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-118    CT_series=1 slices=124 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lung-Right, Lung-Left, GTV-1
+LUNG1-119    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-120    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-121    CT_series=1 slices=125 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: gtv2, Esophagus, Spinal-Cord, GTV-1
+LUNG1-122    CT_series=1 slices=124 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-123    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-124    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-4l, gtv-supral, gtv-2l, GTV-1
+LUNG1-125    CT_series=1 slices=107 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-126    CT_series=1 slices=123 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-127    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=10
+    ROIs: gtv_4r, gtv_2_l_r, gtv_5-6, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_10_l, gtv_10_r, GTV-1
+LUNG1-128    CT_series=1 slices=100 thick=3mm z_gap=3 RTSTRUCT=Y SEG=N GTV1=N ROI=2 alias=gtvpreop
+    ROIs: gtv-pre-op, gtv-pre-operat
+    WARN: 无SEG
+LUNG1-129    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-130    CT_series=1 slices=104 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-131    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-132    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, GTV-1
+LUNG1-133    CT_series=1 slices=184 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-134    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-135    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-136    CT_series=1 slices=110 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-137    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-138    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-139    CT_series=1 slices=107 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Esophagus, Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-140    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-141    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Spinal-Cord, Lung-Right, Lung-Left, GTV-1
+LUNG1-142    CT_series=1 slices=103 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-143    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-144    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-145    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: GTV-1, Spinal-Cord, Lung-Left, Lung-Right
+LUNG1-146    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-147    CT_series=1 slices=99 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, gtv-2, Spinal-Cord, Lung-Left, Lung-Right
+LUNG1-148    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv7, GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord
+LUNG1-149    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=1
+    ROIs: GTV-1
+LUNG1-150    CT_series=1 slices=120 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-151    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-152    CT_series=1 slices=119 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-153    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-154    CT_series=1 slices=113 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Esophagus, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-155    CT_series=1 slices=121 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=10
+    ROIs: gtv_10r, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_7, gtv_4r, gtv_sup_re, gtv_2r, GTV-1
+LUNG1-156    CT_series=1 slices=101 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-4, gtv-3, gtv-2, GTV-1
+LUNG1-157    CT_series=1 slices=100 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-158    CT_series=1 slices=115 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-159    CT_series=1 slices=105 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-160    CT_series=1 slices=144 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-161    CT_series=1 slices=124 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-162    CT_series=1 slices=124 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, gtv-2, Lung-Left, Lung-Right, Esophagus, Spinal-Cord
+LUNG1-163    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-164    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_7, gtv_4_r, GTV-1, gtv_11_r, gtv_10_r
+LUNG1-165    CT_series=1 slices=103 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-166    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Left, Lung-Right, Esophagus, Spinal-Cord, GTV-1
+LUNG1-167    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, gtv-2, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-168    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-169    CT_series=1 slices=97 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv_lnn, GTV-1, Lung-Right, Lung-Left, Esophagus, Spinal-Cord
+LUNG1-170    CT_series=1 slices=110 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-171    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-172    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_4r, GTV-1
+LUNG1-173    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Left, Lung-Right, Esophagus, Spinal-Cord, GTV-1
+LUNG1-174    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Esophagus, Spinal-Cord, GTV-1
+LUNG1-175    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-176    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-177    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: gtv-2r, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-178    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, GTV-1
+LUNG1-179    CT_series=1 slices=123 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-180    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-181    CT_series=1 slices=142 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_supraclav, GTV-1, gtv_5
+LUNG1-182    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, GTV-1
+LUNG1-183    CT_series=1 slices=109 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: gtv_4r, gtv__2_re, gtv_2_re_2, gtv_10r, GTV-1, Esophagus, Spinal-Cord, Lung-Left, Lung-Right
+LUNG1-184    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-185    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_10_re, GTV-1
+LUNG1-186    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-187    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-188    CT_series=1 slices=115 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-189    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=11
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_supra_re, gtv_2r, gtv_7, gtv_5, gtv_4r, gtv_2l, GTV-1
+LUNG1-190    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-191    CT_series=1 slices=119 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, gtv-2, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-192    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-193    CT_series=1 slices=106 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-194    CT_series=1 slices=127 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+    WARN: 层距断档1处
+LUNG1-195    CT_series=1 slices=90 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-196    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1, Esophagus
+LUNG1-197    CT_series=1 slices=143 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, GTV-1
+LUNG1-198    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv_2_r, GTV-1
+LUNG1-199    CT_series=1 slices=109 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, gtv-2, GTV-1
+LUNG1-200    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-201    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, Esophagus, gtv-2, Spinal-Cord, Lung-Left, Lung-Right
+LUNG1-202    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-203    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-204    CT_series=1 slices=92 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-205    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-klier_7, GTV-1
+LUNG1-206    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, GTV-1
+LUNG1-207    CT_series=1 slices=124 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Esophagus, GTV-1, Lung-Left, Lung-Right, Spinal-Cord
+LUNG1-208    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-209    CT_series=1 slices=120 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-210    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=1
+    ROIs: GTV-1
+LUNG1-211    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=10
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv7, gtv10l, GTV-1, gtv2r, gtv5, gtv6
+LUNG1-212    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-213    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-214    CT_series=1 slices=105 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-215    CT_series=1 slices=75 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-216    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-217    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-218    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-219    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-220    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, gtv-2, GTV-1
+LUNG1-221    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-222    CT_series=1 slices=109 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-223    CT_series=1 slices=129 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-224    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-225    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-226    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-227    CT_series=1 slices=118 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-228    CT_series=1 slices=90 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1, gtv-2
+LUNG1-229    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-230    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-231    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-232    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-233    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-234    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-235    CT_series=1 slices=129 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-236    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-237    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-238    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-239    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-240    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-ntotal, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-241    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-242    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=8
+    ROIs: gtv-5, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-4, gtv-2, GTV-1
+LUNG1-243    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-244    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-245    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-246    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-247    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-248    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-249    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-250    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-251    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-252    CT_series=1 slices=97 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Heart, Lung-Left, Lung-Right
+LUNG1-253    CT_series=1 slices=91 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, gtv-3, Spinal-Cord, Lung-Left, Lung-Right
+LUNG1-254    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-255    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-256    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, Esophagus, Heart, gtv-2, GTV-1
+LUNG1-257    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-258    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-259    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Esophagus, GTV-1
+LUNG1-260    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-261    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-262    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-263    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-264    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-265    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Left, Lung-Right, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-266    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-267    CT_series=1 slices=129 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-268    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-269    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-270    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-271    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-272    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Spinal-Cord, Lung-Right, Lung-Left, Esophagus, gtv-2, GTV-1
+LUNG1-273    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Esophagus, Spinal-Cord, GTV-1
+LUNG1-274    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-275    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-276    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-277    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-278    CT_series=1 slices=120 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-279    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lung-Left, Lung-Right
+LUNG1-280    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-281    CT_series=1 slices=101 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-282    CT_series=1 slices=92 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-283    CT_series=1 slices=108 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, gtv-2, GTV-1
+LUNG1-284    CT_series=1 slices=97 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-285    CT_series=1 slices=90 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Spinal-Cord, Lung-Right, Lung-Left, Esophagus, gtv-2, GTV-1
+LUNG1-286    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, gtv-2, Lung-Right, Lung-Left, Spinal-Cord
+LUNG1-287    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-288    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-289    CT_series=1 slices=125 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-290    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-291    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-292    CT_series=1 slices=125 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Esophagus, GTV-1
+LUNG1-293    CT_series=1 slices=133 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-294    CT_series=1 slices=90 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: gtv-6, gtv-7, gtv-5, Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-295    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-296    CT_series=1 slices=133 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-297    CT_series=1 slices=102 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, Lungs-Total, Esophagus, gtv-2, GTV-1
+LUNG1-298    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-299    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: GTV-1, Lungs-Total, Spinal-Cord, gtv-sum
+LUNG1-300    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, gtv-2, Spinal-Cord, Esophagus, Lungs-Total
+LUNG1-301    CT_series=1 slices=119 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=2
+    ROIs: Lungs-Total, GTV-1
+LUNG1-302    CT_series=1 slices=122 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-303    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-304    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lung-Right, Lung-Left, Spinal-Cord, GTV-1
+LUNG1-305    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Spinal-Cord, GTV-1
+LUNG1-306    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Spinal-Cord, GTV-1
+LUNG1-307    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-308    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-309    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Spinal-Cord, GTV-1
+LUNG1-310    CT_series=1 slices=143 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, GTV-1
+LUNG1-311    CT_series=1 slices=122 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-312    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-313    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Spinal-Cord, Lungs-Total, Esophagus, GTV-1
+LUNG1-314    CT_series=1 slices=96 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, Esophagus, GTV-1, gtv_2, Lungs-Total
+LUNG1-315    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-316    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-317    CT_series=1 slices=115 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Spinal-Cord, gtv-2, GTV-1
+LUNG1-318    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-319    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Esophagus, GTV-1, gtv3, gtv2, Lungs-Total, Spinal-Cord
+LUNG1-320    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Spinal-Cord, GTV-1
+LUNG1-321    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, Lungs-Total, Heart, Esophagus, GTV-1
+LUNG1-322    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, Lungs-Total, Heart, Esophagus, GTV-1
+LUNG1-323    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-324    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-325    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-326    CT_series=1 slices=112 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-327    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-328    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-329    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-330    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-331    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-332    CT_series=1 slices=124 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-333    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lungs-Total, gtv-2
+LUNG1-334    CT_series=1 slices=99 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-335    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Spinal-Cord, GTV-1
+LUNG1-336    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-337    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-338    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-339    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-340    CT_series=1 slices=92 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-341    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-342    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-343    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Spinal-Cord, Esophagus, gtv-2, GTV-1
+LUNG1-344    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-345    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=3
+    ROIs: Lungs-Total, Spinal-Cord, GTV-1
+LUNG1-346    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=9
+    ROIs: gtv-5, Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-4, gtv-r, gtv-2, GTV-1
+LUNG1-347    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-348    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-349    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-350    CT_series=1 slices=104 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-351    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-3, gtv-2, GTV-1
+LUNG1-352    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-353    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: GTV-1, Spinal-Cord, Esophagus, Lungs-Total
+LUNG1-354    CT_series=1 slices=135 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: gtv-2, Lung-Right, Esophagus, Spinal-Cord, GTV-1
+LUNG1-355    CT_series=1 slices=102 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-356    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: gtv-2, Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-357    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, gtv-2, Lungs-Total, Esophagus, GTV-1
+LUNG1-358    CT_series=1 slices=104 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-359    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Spinal-Cord, Lungs-Total, Heart, Esophagus, gtv-2, GTV-1
+LUNG1-360    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-361    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-362    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-363    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-364    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-365    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-366    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-367    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Spinal-Cord, Lungs-Total, Heart, Esophagus, GTV-1
+LUNG1-368    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-369    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-370    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-371    CT_series=1 slices=173 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Spinal-Cord, Lungs-Total, Heart, Esophagus, gtv-2, GTV-1
+LUNG1-372    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-373    CT_series=1 slices=94 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-374    CT_series=1 slices=130 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-375    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Spinal-Cord, Lungs-Total, Heart, Esophagus, GTV-1
+LUNG1-376    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-377    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Spinal-Cord, Lungs-Total, Heart, Esophagus, gtv-2, GTV-1
+LUNG1-378    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-379    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: GTV-1, gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord
+LUNG1-380    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-381    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-382    CT_series=1 slices=132 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-383    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-384    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=4
+    ROIs: Lungs-Total, Esophagus, Spinal-Cord, GTV-1
+LUNG1-385    CT_series=1 slices=114 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-386    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-387    CT_series=1 slices=101 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-388    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-389    CT_series=1 slices=93 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-390    CT_series=1 slices=129 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-391    CT_series=1 slices=119 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-392    CT_series=1 slices=122 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-393    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-394    CT_series=1 slices=95 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=5
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-395    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-396    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-397    CT_series=1 slices=139 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-398    CT_series=1 slices=123 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-399    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-400    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lungs-Total, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-401    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-402    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: gtv-2, Lungs-Total, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-403    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-404    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-405    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-406    CT_series=1 slices=111 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-407    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-408    CT_series=1 slices=107 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-409    CT_series=1 slices=126 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-410    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-411    CT_series=1 slices=136 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Spinal-Cord, gtv-2, GTV-1
+LUNG1-412    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-413    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Spinal-Cord, gtv-2, Lung-Right, Lung-Left, Heart, Esophagus, GTV-1
+LUNG1-414    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-415    CT_series=1 slices=122 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-416    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: gtv-2, Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-417    CT_series=1 slices=131 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+LUNG1-418    CT_series=1 slices=133 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-3, GTV-1
+LUNG1-419    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Spinal-Cord, gtv-2, GTV-1
+LUNG1-420    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Spinal-Cord, Lung-Right, Lung-Left, Heart, Esophagus, gtv-2, GTV-1
+LUNG1-421    CT_series=1 slices=134 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=7
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, gtv-2, GTV-1
+LUNG1-422    CT_series=1 slices=116 thick=3mm z_gap=3 RTSTRUCT=Y SEG=Y GTV1=Y ROI=6
+    ROIs: Lung-Right, Lung-Left, Heart, Esophagus, Spinal-Cord, GTV-1
+
+汇总: 患者=422 CT_series=422 slices=51230 无RTSTRUCT=- 无SEG=['LUNG1-128'] 无GTV1=['LUNG1-128'] 多series=- 有警告=5
