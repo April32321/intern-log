@@ -45,9 +45,75 @@
 
 **SEG ⊂ RTSTRUCT**：RTSTRUCT 是全部 ROI 的矢量轮廓；SEG 只是其中一部分 ROI 栅格化后的掩膜，可能只含 `GTV-1`，也可能缺失。故 `has_rtstruct`、`has_seg` 分两列统计，不能互相替代。
 
+```mermaid
+graph LR
+    A["RTSTRUCT<br/>全部 ROI 的矢量轮廓<br/>GTV-1、肺、脊髓、食管…"] -->|"挑选部分 ROI 并栅格化"| B["SEG<br/>像素级掩膜<br/>可能只含 GTV-1，也可能缺失"]
+```
+
+| | RTSTRUCT | SEG |
+|---|---|---|
+| 像素 | 无 | 有（标签图，非 HU） |
+| 内容 | 所有 ROI 的轮廓点坐标 | 部分/全部 ROI 的栅格掩膜 |
+| 覆盖度 | 全 | 可能只含部分 ROI |
+| 用途 | 主数据源 | 快速取掩膜 / 交叉核对 |
+
 ## 5. 读取习惯
 
 ```python
 ds = pydicom.dcmread(f, stop_before_pixels=True)   # 只读元数据，快
 val = getattr(ds, "SliceThickness", None)          # 缺失字段不要直接点
 ```
+
+## 6. ROI 命名观察（Lung1，422 例）
+
+大小写敏感、按原始字符串计数：
+
+| ROIName | 例数 | | ROIName | 例数 |
+|---|---:|---|---|---:|
+| `GTV-1` | 421 | | `gtv-3` | 23 |
+| `Spinal-Cord` | 411 | | `gtv-4` | 9 |
+| `Esophagus` | 355 | | `gtv_4r` | 5 |
+| `Lung-Left` / `Lung-Right` | 312 / 312 | | `gtv_7` / `gtv-5` | 3 / 3 |
+| `gtv-2` | 218 | | `gtv-6` / `gtv_2l` | 2 / 2 |
+| `Heart` | 127 | | `Lungs-Total` | 97 |
+
+- `GTV-1` 421 例 + LUNG1-128 的 `gtv-pre-op`，覆盖全部 422 例；
+- 后缀可叠加：`gtv-3_2l2`、`gtv-2_4r`（左右 + 序号）；
+- `gtv-2..7` 是另一套靶区，**不能并入主靶区**；
+- 肺轮廓也有两套：`Lung-Left`（312）与 `Lungs-Total`（97）。
+
+归一化规则（小写 + 去 `-`、`_`、空格）：
+
+```text
+GTV-1 / gtv_1 / Gtv 1      -> gtv1       主靶区
+gtv-pre-op                 -> gtvpreop   LUNG1-128 专用
+gtv-2 / gtv_2l / gtv-3_2l2 -> gtv2 / gtv2l / gtv32l2   不并入 gtv1
+```
+
+结论：`gtv1_present` 只认 `gtv1`；`gtvpreop` 单独记录，由 D16 决定是否纳入。
+
+## 7. 本项目数据要点
+
+| 项 | 值 | 处理 |
+|---|---|---|
+| CT 切片总数 | 51,230 | = 52,073 − 422 RTSTRUCT − 421 SEG |
+| CT series | 422 | 无患者多 series |
+| 层厚 | 全部 3.0 mm | 与 z 间距一致 |
+| 缺层 | 014（16）、021（1）、085（10）、194（1） | 孤立丢层，间距为 6 mm |
+| LUNG1-128 | `gtv-pre-op` / `gtv-pre-operat`，无 SEG | 命名回退 + `has_seg=False` |
+
+宽度、层厚、缺层的完整记录见 `journal/day12.md`。
+
+## 8. 临床表缺失率（422 例）
+
+| 列 | 缺失 | 缺失率 |
+|---|---:|---:|
+| `age` | 22 | 5.21% |
+| `Histology` | 42 | 9.95% |
+| `clinical.T.Stage` | 1 | 0.24% |
+| `gender` / `Clinical.N.Stage` / `Clinical.M.Stage` | 0 | 0.00% |
+| `Survival.time` / `deadstatus.event` | 0 | 0.00% |
+
+- 列名实际是小写 `gender`、`clinical.T.Stage`，不要写成 `Gender`；
+- `deadstatus.event`：1 = 死亡（373）、0 = 右删失（49）；
+- `Survival.time` 单位天，范围 10–4454，无 0/负值。
