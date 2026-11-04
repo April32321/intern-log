@@ -24,12 +24,12 @@ status: 进行中
 |---|---|---|
 | 1. 装 viewer | ✅ | 3D Slicer 5.12.4 + SlicerRT |
 | 2. 加载与阅片 | ✅ | LUNG1-085 的 CT + RTSTRUCT 已加载；肺窗/纵隔窗、三平面联动已练 |
-| 3. 5 例体积交叉验证 | ⬜ | 仅完成 085 的几何核对，体积数字未抄 |
-| 4. 导出截图 | ⬜ | 0/5 |
+| 3. 5 例体积交叉验证 | 🟡 1/5 | 085 已完成（LM 16.5597 cm³ / 5280 体素）；001/014/021/128 待做 |
+| 4. 导出截图 | 🟡 1/5 | 085 肺窗已拍，文件暂存桌面且文件名含冒号，需移到 `results/figures/viewer/` |
 | 5. `dcm2niix` 转 NIfTI | ⬜ | 未开始 |
 | `notes/dicom-viewer.md` | ⬜ | 未开始 |
 | `journal/day13.md` | 🟡 | 本文件，进行中 |
-| `journal/INDEX.md` + commit | ⬜ | 等全部完成后回填 |
+| `journal/INDEX.md` + commit | 🟡 | 已有进行中提交 `2405e25`，收尾提交待做 |
 
 ## 结论先行（截至当前）
 
@@ -46,7 +46,15 @@ status: 进行中
    “断档 10 处”一致。
 4. 缺层例（014/085）的 Slicer 体积是**规则化后的参考**，不是真实 3.0 mm 栅格；
    不能用 1–2% 阈值直接判 pipeline 失败，D17 需要同栅格比较或注明放宽。
-5. GTV-1 体积、5 例截图、体积表均未完成，今天尚未达到验收标准。
+5. 085 的 `GTV-1` 已完成第一份体积基准：`Labelmap` 5280 体素 /
+   16559.7 mm³ = **16.5597 cm³**，自检 `16559.7 / 5280 = 3.1363`，与
+   `0.9770 × 0.9770 × 3.2857` 一致；`SV` 为 16.7949 cm³（+1.42%），只作旁证。
+6. 085 的 `ScalarVolume_Mean` 为 **−34.35 HU**、Min −854、Max 144，均值偏低，
+   需回三平面确认 GTV 轮廓是否包到空气/支气管。
+7. 节点已重命名为 `LUNG1-085_CT` / `LUNG1-085_RT` / `LUNG1-085 study 20060114`，
+   重复的 `2: RTSTRUCT: 20190226_1` 已删除；肺窗截图已拍，但文件暂存桌面，
+   路径待修正。
+8. 5 例中仅 085 完成，001/014/021/128 未做，Day13 尚未达到验收标准。
 
 ## 环境
 
@@ -96,8 +104,12 @@ LUNG1-085 (LUNG1-085)
 - 085 有 10 个 ROI，阅片时只勾 `GTV-1`，其余全部隐藏；
   `gtv-2_4r`、`gtv-3_2l2`、`gtv_2l`、`gtv-6` 是另一套靶区，不能并入 `GTV-1`；
 - 截图要求：三平面 + 患者 ID + GTV 轮廓，存
-  `results/figures/viewer/LUNG1-085_gtv1_3plane.png`（PNG）；
-- 目前截图尚未保存。
+  `results/figures/viewer/LUNG1-085_gtv1_3plane_lung.png`（PNG）；
+- 085 肺窗已截图，但文件暂存在桌面：
+  `~/Desktop/results:figures:viewer:LUNG1-085_gtv1_3plane_lung.png`
+  （保存时把路径写进了文件名，macOS 把 `/` 换成了 `:`，需要移动并改名）；
+- 085 纵隔窗已拍，未确认落盘，可选；
+- 其余 4 例截图未做。
 
 ## 步骤 3：元数据核对
 
@@ -190,7 +202,30 @@ Slicer 只能存规则体素栅格，缺层只能被“平均”到整个 z 范�
 | LUNG1-128 | 3.000 | 2.8636 | 正常 |
 | LUNG1-014 | 3.5581 | 3.3963 | 16 缺层，拉伸栅格 |
 
-## 步骤 5：体积基准（待完成）
+## 步骤 5：体积基准（085 已完成，其余待做）
+
+### 085 的结果（2026-11-04 11:26）
+
+`Segment Statistics` 输出（表节点 `Table`，另存为 `~/Desktop/Table.tsv`）：
+
+| 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
+|---|---:|---:|---:|---|
+| **LM（Labelmap）** | **5280** | **16559.7** | **16.5597** | 今天的主基准 |
+| SV（另一路） | 5355 | 16794.9 | 16.7949 | 比 LM 大 1.42%，只作旁证 |
+
+- 自检：`16559.7 / 5280 = 3.1363`，与 `0.9770 × 0.9770 × 3.2857` 一致；
+- 强度：`Mean = −34.3462`、`Minimum = −854`、`Maximum = 144`；
+- 结论：几何正确；均值偏低，截图时复核轮廓是否包含空气/支气管。
+
+### 实际操作中的两个问题
+
+1. **一开始只出 ClosedSurface**：`Segment Statistics` 最初只给
+   `Surface area [mm2]` / `Volume (CS)`，没有 `Labelmap_*` 列。原因是 segmentation
+   当时只有 `Closed surface` / `Planar contour`；在 `Segmentations → Representations`
+   勾选 `Binary labelmap` 并重跑 `Apply` 后，才出现 `Voxel count (LM)` /
+   `Volume (LM)`。
+2. **重复 segmentation**：操作过程中生成了 `2: RTSTRUCT: 20190226_1`，与原始
+   `2: RTSTRUCT: 20190226` 重名，容易在 `Segment Statistics` 里选错；已删除副本。
 
 ### Segment Statistics 操作
 
@@ -199,23 +234,24 @@ Slicer 只能存规则体素栅格，缺层只能被“平均”到整个 z 范�
 3. 输入：
    - `Segmentation` = `LUNG1-085_RT`
    - `Scalar volume` = `LUNG1-085_CT`
-   - `Output table` = 新建 `stats_085`
+   - `Output table` = `Create new table`（实际节点名 `Table`）
 4. `Apply`；
 5. 找 `Segment` 列为 `GTV-1` 的行，抄：
    - `Labelmap_VoxelCount`
    - `Labelmap_Volume_mm3`（**不要用 `ClosedSurface_Volume_mm3`**）
    - `ScalarVolume_Mean`
 6. `V_cm3 = Labelmap_Volume_mm3 / 1000`；
-7. 用上面的“预期体素体积”做自检；GTV 的 `ScalarVolume_Mean` 应在约 20–60 HU。
+7. 用上面的“预期体素体积”做自检；GTV 的 `ScalarVolume_Mean` 通常在约 20–60 HU；
+   085 实测 −34.35，偏低，需复核轮廓。
 
-### 5 例体积表（骨架，待填）
+### 5 例体积表（1/5 已填）
 
 | PatientID | ROI | Slicer cm³ | VoxelCount | Mean HU | Slicer z spacing | pipeline cm³ | Δ% | 备注 |
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | LUNG1-001 | GTV-1 | | | | 3.000 | | | 对照 |
 | LUNG1-014 | GTV-1 | | | | 3.558 | | | 缺 16 层 |
 | LUNG1-021 | GTV-1 | | | | 3.015 | | | 缺 1 层 |
-| LUNG1-085 | GTV-1 | | | | 3.2857 | | | 缺 10 层，拉伸栅格 |
+| LUNG1-085 | GTV-1 | **16.5597** | **5280** | **−34.35** | 3.2857 | | | 缺 10 层，拉伸栅格；SV=16.7949；Mean 偏低待复核 |
 | LUNG1-128 | gtv-pre-op | | | | 3.000 | | | 无 GTV-1、无 SEG，D16 决策 |
 
 ```
@@ -517,9 +553,9 @@ PY
 
 | 验收标准 | 状态 | 证据 |
 |---|---|---|
-| 至少 5 例完成 Slicer 阅片并截图 | ⬜ 0/5 | 仅 085 加载并阅片，截图未存 |
+| 至少 5 例完成 Slicer 阅片并截图 | 🟡 1/5 | 085 已阅片并截肺窗图；文件暂存桌面，待移到 `results/figures/viewer/` |
 | 能指出 LUNG1-128 无 GTV-1、014/021/085 缺层 | 🟡 部分 | 085 已用 spacing 3.2857 反推 10 缺层；014/021/128 待逐例看 |
-| 体积对照表已建（pipeline 列可空） | ⬜ | 本文件有骨架，`results/tables/gtv_volume_check.csv` 未建 |
+| 体积对照表已建（pipeline 列可空） | 🟡 1/5 | 本文件 085 行已填；`results/tables/gtv_volume_check.csv` 未建 |
 | 能解释窗宽窗位、层厚、spacing 对特征的影响 | ✅ | 见“原理记录” |
 
 ## 卡点与操作记录
@@ -555,6 +591,24 @@ SEG 与 RTSTRUCT 转出的 segmentation 可能重名，且 SEG 只是 RTSTRUCT �
 先按 `3.2857/3` 判断体积会放大约 9.5%，随后修正：拉伸栅格下 GTV 跨层数同比减少，
 体积大致抵消；真正的风险是轮廓被量化到 3.2857 mm 规则层，以及几何位置不再等于真实 IPP。
 
+### 卡点 7：Segment Statistics 只给 ClosedSurface
+
+首次计算只出现 `Surface area [mm2]` / `Volume (CS)`，没有 `Labelmap_*`。
+在 `Segmentations → Representations` 勾选 `Binary labelmap` 后重跑 `Apply` 才出现；
+`LM` 与 `SV` 的体素体积相同（3.1363 mm³），但体素数差 1.42%（5280 vs 5355），
+主表统一用 `LM`。
+
+### 卡点 8：重复 segmentation
+
+操作中出现了 `2: RTSTRUCT: 20190226_1`，与原始节点重名。删除副本后，
+`Segment Statistics` 的下拉框只剩一个 segmentation，避免选错。
+
+### 卡点 9：截图路径被 macOS 改写
+
+在保存对话框里把文件名写成 `results/figures/viewer/...png`，macOS 把 `/` 换成了
+`:`，文件实际落在桌面：`results:figures:viewer:LUNG1-085_gtv1_3plane_lung.png`。
+应先把目录建好，或用 `Cmd+Shift+5` 的 `Save to → Other Location`，再重命名。
+
 ## Kilo 使用记录
 
 - 解释了 DICOM LPS 与 NIfTI/Slicer RAS 的差异、方向余弦、体素→患者坐标、
@@ -564,15 +618,21 @@ SEG 与 RTSTRUCT 转出的 segmentation 可能重名，且 SEG 只是 RTSTRUCT �
 - 帮助定位 Slicer 5.12 的 UI：Subject Hierarchy 在 `Data` 模块，
   DICOM 元数据在 `DICOM` 模块的 Series 表；
 - 纠正了“缺层会让 Slicer 体积 +9.5%”的错误判断，改为“体积大致抵消，
-  但参考几何被拉伸”。
+  但参考几何被拉伸”；
+- 定位 `Segment Statistics`：它不是 `Segmentations` 里的按钮，而是独立模块；
+  下拉框搜不到时用 `slicer.util.selectModule("SegmentStatistics")`；
+- 解释了 `LM` 与 `SV` 的区别，以及为什么主表用 `Labelmap`；
+- 给出截图内容建议：三平面 + 患者 ID + GTV，肺窗优先，纵隔窗作补充。
 
 ## 待办（收尾前）
 
-1. 085 跑 `Segment Statistics`，记录 `GTV-1` 的 VoxelCount / Volume_mm3 / Mean HU；
+1. 把桌面截图移到 `results/figures/viewer/LUNG1-085_gtv1_3plane_lung.png`
+   （当前文件名是 `results:figures:viewer:...`）；纵隔窗按需补；
 2. 001、014、021、128 重复同一流程，并逐例记录 `Volumes → Information` 的 spacing；
 3. 5 例截图存 `results/figures/viewer/`，选 2 张进报告；
 4. 用 `dcm2niix` 转 001 或 085，检查 `.nii.gz` 的 `shape`、`zooms`、`aff2axcodes`；
-5. 建 `results/tables/gtv_volume_check.csv`，回填本文件的体积表；
+5. 建 `results/tables/gtv_volume_check.csv`（085 行先填），并可选把
+   `~/Desktop/Table.tsv` 复制成 `results/tables/stats_085.tsv`；
 6. 写 `notes/dicom-viewer.md`（操作步骤、窗宽窗位、坐标系、体积表）；
 7. 更新 `journal/INDEX.md`，提交：
 
@@ -587,4 +647,5 @@ git commit -m "day13: dicom viewer 阅片与掩膜体积交叉验证"
 - Viewer 已可用，085 的 CT + RTSTRUCT 能正确加载，RTSTRUCT 自动转 segmentation；
 - 数据质量有两个新确认：描述类标签被剥离、缺层会被 Slicer 规则化为平均间距；
 - 缺层例的 Slicer 体积不是真实 3.0 mm 栅格，014/085 在 D17 不能直接用 1–2% 阈值判定；
-- 体积数字和截图尚未完成，Day13 仍处于进行中。
+- 085 完成第一份 Labelmap 体积基准（16.5597 cm³ / 5280 体素），几何自检通过；
+- 目前 5 例中完成 1 例、截图 1 张；Day13 仍处于进行中。
