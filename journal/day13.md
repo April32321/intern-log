@@ -8,8 +8,8 @@ status: 进行中
 
 # Day 13｜DICOM viewer 阅片与掩膜体积交叉验证（进行中）
 
-> 5 例体积、截图和 001 的 `dcm2niix` 对照已完成。本日尚未收尾：
-> 还差 `notes/dicom-viewer.md`，最后更新 `journal/INDEX.md` 并做收尾 commit。
+> 5 例体积、截图、001 的 `dcm2niix` 对照和 `notes/dicom-viewer.md` 已完成。
+> 本日尚未收尾：最后更新 `journal/INDEX.md` 并做收尾 commit。
 
 ## 今日目标
 
@@ -27,7 +27,7 @@ status: 进行中
 | 3. 5 例体积交叉验证 | ✅ 5/5 | 085（16.5597 cm³ / 5280）、001（156.323 cm³ / 54639）、021（214.299 cm³ / 74456）、014（9.5675 cm³ / 2817，几何存疑）、128（148.458 cm³ / 51890）已完成 |
 | 4. 导出截图 | ✅ 5/5 | 085、001、014 肺窗、021 纵隔窗、128 肺窗已移入 `results/figures/viewer/`；021 肺窗待补 |
 | 5. `dcm2niix` 转 NIfTI | ✅ | 001 已转：512×512×134、zooms 0.9765625×0.9765625×3.0；mask 54639 体素 / 156.323 cm³ 与 Slicer 一致 |
-| `notes/dicom-viewer.md` | ⬜ | 未开始 |
+| `notes/dicom-viewer.md` | ✅ | 已完成：Slicer 操作、窗宽窗位、坐标系、5 例体积表、dcm2niix 对照 |
 | `journal/day13.md` | 🟡 | 本文件，进行中 |
 | `journal/INDEX.md` + commit | 🟡 | 已有 `2405e25` / `d22f412` / `3335c63` / `020ae6d` 四次进行中提交，收尾提交待做 |
 
@@ -687,7 +687,7 @@ NIfTI affine 由 `M_RAS = F · M_LPS` 得到，`F = diag(−1, −1, 1, 1)`。
 
 ## 公式速查
 
-> 这一节按“输入 → 公式 → 输出”整理，收尾时会同步到 `notes/dicom-viewer.md`。
+> 这一节按“输入 → 公式 → 输出”整理，已同步到 `notes/dicom-viewer.md`。
 
 ### 1. 窗宽窗位显示映射
 
@@ -1030,7 +1030,7 @@ D17 用同栅格、Dice/质心比较，或直接排除 1–2% 阈值判定。
 4. `dcm2niix` 的 001 对照已完成，见“步骤 6：dcm2niix 与 NIfTI 几何”；
 5. `results/tables/gtv_volume_check.csv` 已建（5 例）；原始表统一放在
    `results/tables/slicer_raw/`，合并长表为 `results/tables/slicer_stats_all.tsv`；
-6. 写 `notes/dicom-viewer.md`（操作步骤、窗宽窗位、坐标系、体积表）；
+6. `notes/dicom-viewer.md` 已完成（操作步骤、窗宽窗位、坐标系、体积表、dcm2niix）；
 7. 更新 `journal/INDEX.md`，提交：
 
 ```bash
@@ -1060,4 +1060,4 @@ git commit -m "day13: dicom viewer 阅片与掩膜体积交叉验证"
   CT 为 LAS、Slicer mask 为 LPS，`as_reoriented` 后 affine 一致；
 - mask 54639 体素 / 156323.43 mm³ = 156.323 cm³，与 Slicer LM 基准一致；
 - 目前 5 例中完成 5 例、截图 5 张（021 为纵隔窗，014 冠状面为空）；
-  Day13 体积、截图和 dcm2niix 任务完成，收尾还差 `notes/dicom-viewer.md` 和 INDEX。
+  Day13 体积、截图、dcm2niix 和笔记均完成，收尾只剩 INDEX。
