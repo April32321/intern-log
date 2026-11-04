@@ -1,0 +1,2 @@
+Segment	Voxel count (LM)	Volume mm3 (LM)	Volume cm3 (LM)	Voxel count (SV)	Volume mm3 (SV)	Volume cm3 (SV)	Minimum	Maximum	Mean	Standard deviation	Percentile 5	Percentile 95	Median	Surface mm2	Volume mm3 (CS)	Volume cm3 (CS)
+GTV-1	2817	9567.51	9.56751	3437	11673.2	11.6732	-1020	276	-328.887	358.802	-872	152	-329	2647.27	9695.2	9.6952
