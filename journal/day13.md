@@ -441,6 +441,77 @@ z 范围:     297 mm = 99 × 3 mm，无缺层
 - `results/tables/gtv_volume_check.csv`：5 例对照摘要，pipeline / Δ% 留空给 D17；
 - 128 的 `gtv-pre-operat` 与 `gtv-pre-op` 各占一行，不能合并或平均。
 
+#### 完整统计表
+
+```tsv
+patient_id	roi	segment	voxel_count_lm	volume_mm3_lm	volume_cm3_lm	voxel_count_sv	volume_mm3_sv	volume_cm3_sv	min_hu	max_hu	mean_hu	sd_hu	p5_hu	p95_hu	median_hu	surface_mm2	volume_mm3_cs	volume_cm3_cs	source_file
+LUNG1-001	GTV-1	GTV-1	54639	156323	156.323	54639	156323	156.323	-1021	1040	-64.127	202.863	-563	68	11	20035.6	154998	154.998	stats_001.tsv
+LUNG1-014	GTV-1	GTV-1	2817	9567.51	9.56751	3437	11673.2	11.6732	-1020	276	-328.887	358.802	-872	152	-329	2647.27	9695.2	9.6952	stats_014.tsv
+LUNG1-021	GTV-1	GTV-1	74456	214299	214.299	76509	220208	220.208	-1001	1062	-63.656	308.629	-749	335	35	22405.1	215614	215.614	stats_021.tsv
+LUNG1-085	GTV-1	GTV-1	5280	16559.7	16.5597	5355	16794.9	16.7949	-854	144	-34.3462	190.287	-500	99	52	3604.92	16581.2	16.5812	stats_085.tsv
+LUNG1-128	gtv-pre-operat	gtv-pre-operat	51890	148458	148.458	51890	148458	148.458	-1024	1739	-17.8635	302.563	-921	435	-1	21743	146478	146.478	stats_128_gtvpreoperat.tsv
+LUNG1-128	gtv-pre-op	gtv-pre-op	954	2729.42	2.72942	954	2729.42	2.72942	-148	700	63.2013	147.546	-87	378	11	1878.05	1920.77	1.92077	stats_128_gtvpreop.tsv
+```
+
+#### 列的含义
+
+- `patient_id`、`roi`、`segment`：患者 ID、本次选择的 ROI、原始 Segment 名；
+  `source_file` 是原始单表文件名，位于 `results/tables/slicer_raw/`。
+- `voxel_count_lm`、`volume_mm3_lm`、`volume_cm3_lm`：二值 labelmap 的体素数
+  和体积，**主基准**。
+- `voxel_count_sv`、`volume_mm3_sv`、`volume_cm3_sv`：ScalarVolume 表示下与 CT
+  重叠的体素数和体积，旁证。
+- `min_hu`、`max_hu`、`mean_hu`、`sd_hu`、`p5_hu`、`p95_hu`、`median_hu`：
+  掩膜内 HU 的最小、最大、均值、标准差、5%/95% 分位数和中位数。
+- `surface_mm2`、`volume_mm3_cs`、`volume_cm3_cs`：ClosedSurface 表面积和体积，
+  旁证。
+
+#### 6 行分别是什么
+
+- `LUNG1-001/GTV-1`：LM 156.323 cm³，54639 体素，Mean −64.13；无缺层，LM=SV，
+  干净基准。
+- `LUNG1-014/GTV-1`：LM 9.5675 cm³，2817 体素，Mean −328.89；缺 16 层，
+  几何存疑，不作可靠基准。
+- `LUNG1-021/GTV-1`：LM 214.299 cm³，74456 体素，Mean −63.66；缺 1 层，
+  z spacing 3.0153。
+- `LUNG1-085/GTV-1`：LM 16.5597 cm³，5280 体素，Mean −34.35；缺 10 层，
+  z spacing 3.2857。
+- `LUNG1-128/gtv-pre-operat`：LM 148.458 cm³，51890 体素，Mean −17.86；
+  大靶区，含空洞/空气，主 GTV。
+- `LUNG1-128/gtv-pre-op`：LM 2.72942 cm³，954 体素，Mean 63.20；独立小 ROI，
+  不能与大的合并。
+
+#### 最重要的读法：先看自检
+
+```text
+volume_mm3_lm / voxel_count_lm = 单个体素体积
+```
+
+| 病例 | 反算值 | 对应 spacing |
+|---|---:|---|
+| 001 | 156323 / 54639 = 2.8610 | 0.9765625² × 3.0 |
+| 014 | 9567.51 / 2817 = 3.3963 | 0.9770² × 3.5581 |
+| 021 | 214299 / 74456 = 2.8782 | 0.9770² × 3.0153 |
+| 085 | 16559.7 / 5280 = 3.1363 | 0.9770² × 3.2857 |
+| 128 大 | 148458 / 51890 = 2.8610 | 0.9765625² × 3.0 |
+| 128 小 | 2729.42 / 954 = 2.8610 | 0.9765625² × 3.0 |
+
+反算值与 spacing 乘积一致，说明体素数和 LM 体积没有抄错，labelmap 落在 CT 栅格上。
+
+#### 强度列的 QC 含义
+
+- `Mean/Median/P5` 不是组学特征，只用于判断掩膜盖住了什么。
+- 001、021 的 Mean 约 −64 HU，大 GTV 可能含坏死/空气，需回三平面复核。
+- 085 的 Mean −34.35，偏低但不极端。
+- 014 的 Mean/Median 约 −329、P5 −872，一半以上体素像肺/空气，是几何存疑的
+  直接证据。
+- 128 大 ROI 的 Mean −17.86、P5 −921、Median −1，符合空洞型大病灶；
+  小 ROI 的 Mean 63.20，是实性小结构。
+- 主表用 LM 体积；SV/CS 只作旁证，128 小 ROI 的 CS 比 LM 低 29.6%，小目标
+  不要用 CS。
+- D17 用 `volume_cm3_lm` 与 pipeline 比较；001 严格，021 可正常比，085 放宽，
+  014 不作可靠基准，128 用 `gtv-pre-operat` 且 D16 修正别名。
+
 ## 原理记录
 
 ### 1. 窗宽窗位
