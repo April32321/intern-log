@@ -244,8 +244,8 @@ Slicer 只能存规则体素栅格，缺层只能被“平均”到整个 z 范�
 
 ### 085 的结果（2026-11-04 11:26）
 
-`Segment Statistics` 输出（原始表已重新导出并归档为
-`results/tables/stats_085.tsv`）：
+`Segment Statistics` 输出（原始表在 `results/tables/slicer_raw/stats_085.tsv`，
+合并表见 `results/tables/slicer_stats_all.tsv`）：
 
 | 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
 |---|---:|---:|---:|---|
@@ -269,7 +269,8 @@ Origin:     (249.51171875, 460.51171875, −681.5)   # RAS
 IJK→RAS:    diag(−1, −1, 1)
 ```
 
-`Segment Statistics` 输出（原始表已归档为 `results/tables/stats_001.tsv`）：
+`Segment Statistics` 输出（原始表在 `results/tables/slicer_raw/stats_001.tsv`，
+合并表见 `results/tables/slicer_stats_all.tsv`）：
 
 | 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
 |---|---:|---:|---:|---|
@@ -282,7 +283,8 @@ IJK→RAS:    diag(−1, −1, 1)
   `SD = 202.863`、`Median = 11`、`P5 = −563`、`P95 = 68`；
 - 001 的 GTV 很大（156.3 cm³），均值偏低，需回三平面确认轮廓是否包含空气/坏死；
 - **注意**：085 的原始表当时被 001 覆盖，后来重新导出并归档为
-  `results/tables/stats_085.tsv`；001 原始表也归档为 `stats_001.tsv`。
+  `results/tables/slicer_raw/stats_085.tsv`；001 原始表也归档为
+  `results/tables/slicer_raw/stats_001.tsv`。
 
 ### 021 的结果（2026-11-04 14:31）
 
@@ -294,7 +296,8 @@ Spacing:    0.9770 × 0.9770 × 3.0153 mm
 z 范围:     591 mm = 197 个 3 mm 间隔 → 真实 198 层，缺 1 层
 ```
 
-`Segment Statistics` 输出（原始表已复制为 `results/tables/stats_021.tsv`）：
+`Segment Statistics` 输出（原始表在 `results/tables/slicer_raw/stats_021.tsv`，
+合并表见 `results/tables/slicer_stats_all.tsv`）：
 
 | 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
 |---|---:|---:|---:|---|
@@ -324,7 +327,8 @@ IJK→RAS:    diag(−1, −1, 1)
 z 范围:     306 mm = 102 × 3 mm → 真实 103 层，缺 16 层
 ```
 
-`Segment Statistics` 输出（原始表已复制为 `results/tables/stats_014.tsv`）：
+`Segment Statistics` 输出（原始表在 `results/tables/slicer_raw/stats_014.tsv`，
+合并表见 `results/tables/slicer_stats_all.tsv`）：
 
 | 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
 |---|---:|---:|---:|---|
@@ -356,8 +360,9 @@ z 范围:     297 mm = 99 × 3 mm，无缺层
 ```
 
 128 没有 GTV-1、没有 SEG，RTSTRUCT 里有 2 个 ROI。`Segment Statistics` 输出
-（原始表已复制为 `results/tables/stats_128_gtvpreoperat.tsv` 和
-`stats_128_gtvpreop.tsv`）：
+（原始表在 `results/tables/slicer_raw/stats_128_gtvpreoperat.tsv` 和
+`slicer_raw/stats_128_gtvpreop.tsv`，合并表见
+`results/tables/slicer_stats_all.tsv`）：
 
 | ROI | LM 体素 | LM mm3 | LM cm3 | Mean | P5 | CS cm3 | 自检 |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -389,7 +394,8 @@ z 范围:     297 mm = 99 × 3 mm，无缺层
    `2: RTSTRUCT: 20190226` 重名，容易在 `Segment Statistics` 里选错；已删除副本。
 3. **Table.tsv 复用覆盖**：085 的表另存为 `Table.tsv`，001 又存到同一路径，
    085 的原始表被覆盖。以后每例另存 `stats_<PatientID>.tsv`，不要共用一个文件名；
-   事后已重新导出并归档为 `stats_085.tsv` / `stats_001.tsv`。
+   事后已重新导出并归档为 `results/tables/slicer_raw/stats_085.tsv` /
+   `results/tables/slicer_raw/stats_001.tsv`。
 
 ### Segment Statistics 操作
 
@@ -426,6 +432,14 @@ z 范围:     297 mm = 99 × 3 mm，无缺层
 
 - 质心一致性（LPS→RAS，误差 < 1 体素）；
 - 与 Slicer 导出 labelmap 的 Dice（目标 > 0.95）。
+
+### 统计表组织
+
+- `results/tables/slicer_stats_all.tsv`：6 行合并长表（5 例，128 两行），
+  列为 snake_case，含 `patient_id`、`roi`、`source_file`；
+- `results/tables/slicer_raw/`：各例原始 `Segment Statistics` 输出，保留追溯；
+- `results/tables/gtv_volume_check.csv`：5 例对照摘要，pipeline / Δ% 留空给 D17；
+- 128 的 `gtv-pre-operat` 与 `gtv-pre-op` 各占一行，不能合并或平均。
 
 ## 原理记录
 
@@ -785,8 +799,8 @@ SEG 与 RTSTRUCT 转出的 segmentation 可能重名，且 SEG 只是 RTSTRUCT �
 
 085 的表另存为 `Table.tsv`，001 又存到同一路径，085 原始表被覆盖。
 以后每例另存 `stats_<PatientID>.tsv`，或在保存对话框里直接改名。
-后续 085 重新导出，已归档为 `results/tables/stats_085.tsv`；001 也归档为
-`stats_001.tsv`，这次覆盖已补齐。
+后续 085 重新导出，已归档为 `results/tables/slicer_raw/stats_085.tsv`；001 也归档为
+`results/tables/slicer_raw/stats_001.tsv`，这次覆盖已补齐。
 
 ### 卡点 12：014 的 SV 比 LM 大 22%、Mean 约 −329 HU
 
@@ -833,9 +847,8 @@ D17 用同栅格、Dice/质心比较，或直接排除 1–2% 阈值判定。
    不能再用 `startswith("gtvpreop")` 同时匹配两个 ROI；
 3. 5 例截图存 `results/figures/viewer/`（5/5），选 2 张进报告；
 4. 用 `dcm2niix` 转 001 或 085，检查 `.nii.gz` 的 `shape`、`zooms`、`aff2axcodes`；
-5. `results/tables/gtv_volume_check.csv` 已建（5 例）；5 例原始表都已归档：
-   `stats_001.tsv`、`stats_014.tsv`、`stats_021.tsv`、`stats_085.tsv`、
-   `stats_128_gtvpreoperat.tsv`、`stats_128_gtvpreop.tsv`；
+5. `results/tables/gtv_volume_check.csv` 已建（5 例）；原始表统一放在
+   `results/tables/slicer_raw/`，合并长表为 `results/tables/slicer_stats_all.tsv`；
 6. 写 `notes/dicom-viewer.md`（操作步骤、窗宽窗位、坐标系、体积表）；
 7. 更新 `journal/INDEX.md`，提交：
 
