@@ -8,8 +8,8 @@ status: 进行中
 
 # Day 13｜DICOM viewer 阅片与掩膜体积交叉验证（进行中）
 
-> 5 例体积与截图已完成。本日尚未收尾：还差 `dcm2niix`、`notes/dicom-viewer.md`，
-> 最后更新 `journal/INDEX.md` 并做收尾 commit。
+> 5 例体积、截图和 001 的 `dcm2niix` 对照已完成。本日尚未收尾：
+> 还差 `notes/dicom-viewer.md`，最后更新 `journal/INDEX.md` 并做收尾 commit。
 
 ## 今日目标
 
@@ -26,7 +26,7 @@ status: 进行中
 | 2. 加载与阅片 | ✅ | 085、001、021、014、128 的 CT + RTSTRUCT 已加载；肺窗/纵隔窗、三平面联动已练 |
 | 3. 5 例体积交叉验证 | ✅ 5/5 | 085（16.5597 cm³ / 5280）、001（156.323 cm³ / 54639）、021（214.299 cm³ / 74456）、014（9.5675 cm³ / 2817，几何存疑）、128（148.458 cm³ / 51890）已完成 |
 | 4. 导出截图 | ✅ 5/5 | 085、001、014 肺窗、021 纵隔窗、128 肺窗已移入 `results/figures/viewer/`；021 肺窗待补 |
-| 5. `dcm2niix` 转 NIfTI | ⬜ | 未开始 |
+| 5. `dcm2niix` 转 NIfTI | ✅ | 001 已转：512×512×134、zooms 0.9765625×0.9765625×3.0；mask 54639 体素 / 156.323 cm³ 与 Slicer 一致 |
 | `notes/dicom-viewer.md` | ⬜ | 未开始 |
 | `journal/day13.md` | 🟡 | 本文件，进行中 |
 | `journal/INDEX.md` + commit | 🟡 | 已有 `2405e25` / `d22f412` / `3335c63` / `020ae6d` 四次进行中提交，收尾提交待做 |
@@ -512,6 +512,116 @@ volume_mm3_lm / voxel_count_lm = 单个体素体积
 - D17 用 `volume_cm3_lm` 与 pipeline 比较；001 严格，021 可正常比，085 放宽，
   014 不作可靠基准，128 用 `gtv-pre-operat` 且 D16 修正别名。
 
+## 步骤 6：dcm2niix 与 NIfTI 几何（001）
+
+用 001 做格式理解。Homebrew 安装时触发了 CMake 源码编译，改用官方预编译的
+`dcm2niix_mac.zip`，`dcm2niix -h` 正常。
+
+### 转换
+
+```bash
+mkdir -p work/dcm2niix/LUNG1-001
+
+dcm2niix -z y -b y \
+  -o work/dcm2niix/LUNG1-001 \
+  -f "LUNG1-001_CT" \
+  "data/raw/full/LUNG1-001/CT/1.3.6.1.4.1.32722.99.99.298991776521342375010861296712563382046"
+```
+
+输出：
+
+```text
+Found 134 DICOM file(s)
+Convert 134 DICOM as .../LUNG1-001_CT (512x512x134x1)
+```
+
+生成：
+
+```text
+work/dcm2niix/LUNG1-001/LUNG1-001_CT.nii.gz
+work/dcm2niix/LUNG1-001/LUNG1-001_CT.json
+```
+
+`work/` 已在 `.gitignore` 里，生成的 NIfTI 不提交。
+
+### NIfTI 几何
+
+```text
+shape   = (512, 512, 134)
+zooms   = (0.9765625, 0.9765625, 3.0)
+voxel   = 2.8610 mm³
+axcodes = ('L', 'A', 'S')
+
+affine =
+[[ -0.9765625,  0,          0,          249.51171875],
+ [  0,          0.9765625,  0,          -38.51171875],
+ [  0,          0,          3.0,        -681.5],
+ [  0,          0,          0,          1]]
+```
+
+`shape` 与 134 个 DICOM 文件一致；`zooms` 与 `PixelSpacing` / 层间距一致；
+`voxel = 0.9765625² × 3.0 = 2.8610 mm³`。
+
+### Slicer 掩膜与 j 轴翻转
+
+从 Slicer 导出 `GTV-1`：
+
+```text
+work/dcm2niix/LUNG1-001/LUNG1-001_GTV1.nii.gz
+mask values = {0, 1}
+voxels      = 54639
+volume      = 156323.43 mm³ = 156.323 cm³
+```
+
+掩膜几何：
+
+```text
+mask axcodes = ('L', 'P', 'S')
+mask affine y = −0.9765625·j + 460.51171875
+CT   affine y = +0.9765625·j − 38.51171875
+```
+
+两者只差 j 轴翻转：
+
+```text
+460.51171875 − 511 × 0.9765625
+= 460.51171875 − 499.0234375
+= −38.51171875
+```
+
+用 `as_reoriented` 把 mask 转到 CT 的 LAS：
+
+```python
+from nibabel.orientations import axcodes2ornt, ornt_transform
+
+ornt = ornt_transform(
+    axcodes2ornt(nib.aff2axcodes(mask.affine)),
+    axcodes2ornt(nib.aff2axcodes(ct.affine))
+)
+mask_ct = mask.as_reoriented(ornt)
+```
+
+结果：
+
+```text
+mask_ct axcodes = ('L', 'A', 'S')
+affine equal    = True
+voxels          = 54639
+volume          = 156323.43 mm³
+```
+
+`as_reoriented` 只做轴翻转，不插值，所以体素数和体积不变。`resample_from_to`
+需要 scipy；本例只差轴方向，不需要插值。
+
+### 结论
+
+- DICOM 134 层 → NIfTI `512×512×134`，几何集中在 affine；
+- dcm2niix 输出 LAS，Slicer 掩膜是 LPS，只差 j 轴翻转；
+- 掩膜 54639 体素 / 156.323 cm³，与 Slicer LM 基准一致；
+- **不能因为 shape 相同就按数组下标比较**，必须按 affine 对齐/重采样；
+- 各向异性 spacing `0.977×0.977×3.0` 下，3D 纹理邻域不是各向同性；
+  特征计算前通常重采样到 `1×1×1`，图像 B-spline、掩膜最近邻；体积仍在原始栅格算。
+
 ## 原理记录
 
 ### 1. 窗宽窗位
@@ -917,7 +1027,7 @@ D17 用同栅格、Dice/质心比较，或直接排除 1–2% 阈值判定。
 2. 128 的 ROI 别名问题留给 D16：pipeline 需精确匹配 `gtv-pre-operat`，
    不能再用 `startswith("gtvpreop")` 同时匹配两个 ROI；
 3. 5 例截图存 `results/figures/viewer/`（5/5），选 2 张进报告；
-4. 用 `dcm2niix` 转 001 或 085，检查 `.nii.gz` 的 `shape`、`zooms`、`aff2axcodes`；
+4. `dcm2niix` 的 001 对照已完成，见“步骤 6：dcm2niix 与 NIfTI 几何”；
 5. `results/tables/gtv_volume_check.csv` 已建（5 例）；原始表统一放在
    `results/tables/slicer_raw/`，合并长表为 `results/tables/slicer_stats_all.tsv`；
 6. 写 `notes/dicom-viewer.md`（操作步骤、窗宽窗位、坐标系、体积表）；
@@ -946,5 +1056,8 @@ git commit -m "day13: dicom viewer 阅片与掩膜体积交叉验证"
   自检 2.8610）；`gtv-pre-op` 只有 2.72942 cm³，是独立小 ROI；
 - 128 暴露了 D11/D12 的别名假设错误：`startswith("gtvpreop")` 会同时匹配两个
   ROI，D16 必须改成精确匹配或明确优先级；
+- 001 的 dcm2niix 对照完成：134 DICOM → 512×512×134，zooms 0.9765625×0.9765625×3.0；
+  CT 为 LAS、Slicer mask 为 LPS，`as_reoriented` 后 affine 一致；
+- mask 54639 体素 / 156323.43 mm³ = 156.323 cm³，与 Slicer LM 基准一致；
 - 目前 5 例中完成 5 例、截图 5 张（021 为纵隔窗，014 冠状面为空）；
-  Day13 体积与截图任务完成，收尾还差 `dcm2niix`、`notes/dicom-viewer.md` 和 INDEX。
+  Day13 体积、截图和 dcm2niix 任务完成，收尾还差 `notes/dicom-viewer.md` 和 INDEX。
