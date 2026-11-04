@@ -1,0 +1,6 @@
+PatientID,ROI,slicer_cm3,voxel_count_lm,mean_hu,slicer_z_spacing,pipeline_cm3,delta_pct,note
+LUNG1-001,GTV-1,156.323,54639,-64.13,3.000,,,self-check 2.8610; LM=SV; CS=154.998
+LUNG1-014,GTV-1,9.5675,2817,-328.89,3.5581,,,missing 16 slices; self-check 3.3963; SV +22.0%; geometry suspect
+LUNG1-021,GTV-1,214.299,74456,-63.66,3.0153,,,missing 1 slice; self-check 2.8782; SV +2.76%
+LUNG1-085,GTV-1,16.5597,5280,-34.35,3.2857,,,missing 10 slices; self-check 3.1363; stretched grid
+LUNG1-128,gtv-pre-operat,148.458,51890,-17.86,3.000,,,no GTV-1/SEG; gtv-pre-op 2.72942 cm3 separate; D16 alias fix

@@ -1,0 +1,2 @@
+Segment	Voxel count (LM)	Volume mm3 (LM)	Volume cm3 (LM)	Voxel count (SV)	Volume mm3 (SV)	Volume cm3 (SV)	Minimum	Maximum	Mean	Standard deviation	Percentile 5	Percentile 95	Median	Surface mm2	Volume mm3 (CS)	Volume cm3 (CS)
+gtv-pre-operat	51890	148458	148.458	51890	148458	148.458	-1024	1739	-17.8635	302.563	-921	435	-1	21743	146478	146.478
