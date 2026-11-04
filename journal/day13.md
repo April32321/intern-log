@@ -244,16 +244,18 @@ Slicer 只能存规则体素栅格，缺层只能被“平均”到整个 z 范�
 
 ### 085 的结果（2026-11-04 11:26）
 
-`Segment Statistics` 输出（表节点 `Table`，当时另存为 `~/Desktop/Table.tsv`；
-该文件后来被 001 覆盖，085 数字以本表为准）：
+`Segment Statistics` 输出（原始表已重新导出并归档为
+`results/tables/stats_085.tsv`）：
 
 | 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
 |---|---:|---:|---:|---|
 | **LM（Labelmap）** | **5280** | **16559.7** | **16.5597** | 今天的主基准 |
 | SV（另一路） | 5355 | 16794.9 | 16.7949 | 比 LM 大 1.42%，只作旁证 |
+| CS（ClosedSurface） | — | 16581.2 | 16.5812 | 比 LM 大 0.13% |
 
 - 自检：`16559.7 / 5280 = 3.1363`，与 `0.9770 × 0.9770 × 3.2857` 一致；
-- 强度：`Mean = −34.3462`、`Minimum = −854`、`Maximum = 144`；
+- 强度：`Mean = −34.3462`、`SD = 190.287`、`Min = −854`、`Max = 144`、
+  `Median = 52`、`P5 = −500`、`P95 = 99`、`Surface = 3604.92 mm²`；
 - 结论：几何正确；均值偏低，截图时复核轮廓是否包含空气/支气管。
 
 ### 001 的结果（2026-11-04 13:58）
@@ -267,7 +269,7 @@ Origin:     (249.51171875, 460.51171875, −681.5)   # RAS
 IJK→RAS:    diag(−1, −1, 1)
 ```
 
-`Segment Statistics` 输出（`~/Desktop/Table.tsv`，该文件已被 001 覆盖）：
+`Segment Statistics` 输出（原始表已归档为 `results/tables/stats_001.tsv`）：
 
 | 表示 | VoxelCount | Volume mm3 | Volume cm3 | 说明 |
 |---|---:|---:|---:|---|
@@ -279,8 +281,8 @@ IJK→RAS:    diag(−1, −1, 1)
 - 强度：`Mean = −64.127`、`Min = −1021`、`Max = 1040`、
   `SD = 202.863`、`Median = 11`、`P5 = −563`、`P95 = 68`；
 - 001 的 GTV 很大（156.3 cm³），均值偏低，需回三平面确认轮廓是否包含空气/坏死；
-- **注意**：`Table.tsv` 已被 001 覆盖，085 的原始表未单独归档；085 数字以
-  上面的 085 表为准。
+- **注意**：085 的原始表当时被 001 覆盖，后来重新导出并归档为
+  `results/tables/stats_085.tsv`；001 原始表也归档为 `stats_001.tsv`。
 
 ### 021 的结果（2026-11-04 14:31）
 
@@ -386,7 +388,8 @@ z 范围:     297 mm = 99 × 3 mm，无缺层
 2. **重复 segmentation**：操作过程中生成了 `2: RTSTRUCT: 20190226_1`，与原始
    `2: RTSTRUCT: 20190226` 重名，容易在 `Segment Statistics` 里选错；已删除副本。
 3. **Table.tsv 复用覆盖**：085 的表另存为 `Table.tsv`，001 又存到同一路径，
-   085 的原始表被覆盖。以后每例另存 `stats_<PatientID>.tsv`，不要共用一个文件名。
+   085 的原始表被覆盖。以后每例另存 `stats_<PatientID>.tsv`，不要共用一个文件名；
+   事后已重新导出并归档为 `stats_085.tsv` / `stats_001.tsv`。
 
 ### Segment Statistics 操作
 
@@ -412,7 +415,7 @@ z 范围:     297 mm = 99 × 3 mm，无缺层
 | LUNG1-001 | GTV-1 | **156.323** | **54639** | **−64.13** | 3.000 | | | 自检 2.8610；LM=SV；CS=154.998；Mean 偏低待复核 |
 | LUNG1-014 | GTV-1 | **9.5675** | **2817** | **−328.89** | 3.5581 | | | 缺 16 层；自检 3.3963；SV=11.6732（+22.0%）；CS=9.6952（+1.33%）；Mean/Median 异常低，几何存疑 |
 | LUNG1-021 | GTV-1 | **214.299** | **74456** | **−63.66** | 3.0153 | | | 缺 1 层；自检 2.8782；SV=220.208（+2.76%）；CS=215.614（+0.61%）；Mean 偏低待复核 |
-| LUNG1-085 | GTV-1 | **16.5597** | **5280** | **−34.35** | 3.2857 | | | 缺 10 层，拉伸栅格；SV=16.7949；Mean 偏低待复核 |
+| LUNG1-085 | GTV-1 | **16.5597** | **5280** | **−34.35** | 3.2857 | | | 缺 10 层，拉伸栅格；SV=16.7949（+1.42%）；CS=16.5812（+0.13%）；Mean 偏低待复核 |
 | LUNG1-128 | **gtv-pre-operat** | **148.458** | **51890** | **−17.86** | 3.000 | | | 无 GTV-1、无 SEG；另有 gtv-pre-op 2.72942 cm³，不合并；D16 修正别名 |
 
 ```
@@ -782,6 +785,8 @@ SEG 与 RTSTRUCT 转出的 segmentation 可能重名，且 SEG 只是 RTSTRUCT �
 
 085 的表另存为 `Table.tsv`，001 又存到同一路径，085 原始表被覆盖。
 以后每例另存 `stats_<PatientID>.tsv`，或在保存对话框里直接改名。
+后续 085 重新导出，已归档为 `results/tables/stats_085.tsv`；001 也归档为
+`stats_001.tsv`，这次覆盖已补齐。
 
 ### 卡点 12：014 的 SV 比 LM 大 22%、Mean 约 −329 HU
 
@@ -828,11 +833,9 @@ D17 用同栅格、Dice/质心比较，或直接排除 1–2% 阈值判定。
    不能再用 `startswith("gtvpreop")` 同时匹配两个 ROI；
 3. 5 例截图存 `results/figures/viewer/`（5/5），选 2 张进报告；
 4. 用 `dcm2niix` 转 001 或 085，检查 `.nii.gz` 的 `shape`、`zooms`、`aff2axcodes`；
-5. `results/tables/gtv_volume_check.csv` 已建（5 例）；021、014、128 原始表已复制为
-   `stats_021.tsv`、`stats_014.tsv`、`stats_128_gtvpreoperat.tsv` 和
-   `stats_128_gtvpreop.tsv`；`~/Desktop/Table.tsv` 现在是 001，可选复制成
-   `results/tables/stats_001.tsv`；085 原始表已被覆盖，以后每例另存
-   `stats_<PatientID>.tsv`；
+5. `results/tables/gtv_volume_check.csv` 已建（5 例）；5 例原始表都已归档：
+   `stats_001.tsv`、`stats_014.tsv`、`stats_021.tsv`、`stats_085.tsv`、
+   `stats_128_gtvpreoperat.tsv`、`stats_128_gtvpreop.tsv`；
 6. 写 `notes/dicom-viewer.md`（操作步骤、窗宽窗位、坐标系、体积表）；
 7. 更新 `journal/INDEX.md`，提交：
 
