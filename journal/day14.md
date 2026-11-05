@@ -8,8 +8,8 @@ status: 进行中
 
 # Day 14｜生存分析原理一：删失、KM、log-rank（进行中）
 
-> 今日完成概念打底，已生成 `notes/survival-analysis.md`（531 行），并完成 6 人 KM 手算。
-> `lifelines`（radiomics 环境 0.30.0）已用于小例子复算；分组 KM 图和 log-rank 结果尚未落地，D14 未收尾。
+> 今日完成概念笔记、6 人 KM 手算与软件复算、真实队列分组 KM 和 log-rank。
+> 只剩 `journal/INDEX.md` 更新与收尾 commit，D14 待提交。
 
 ## 今日目标
 
@@ -27,11 +27,11 @@ status: 进行中
 | `notes/survival-analysis.md` | ✅ | 531 行，含公式、5 人 KM 示例、参数模型、项目分析流程 |
 | 2. 6 人 KM 手算 | ✅ | 已完成手算并用 `lifelines` 复算：`1.0000 → 0.8333 → 0.6250 → 0.4167 → 0` |
 | 3. `lifelines` 环境 | ✅ | `radiomics` 环境 0.30.0 可用；base 环境未装 |
-| 3. `code/03_km_baseline.py` | ⬜ | 尚未创建 |
-| 3. 分组 KM 图 | ⬜ | 尚未生成；需风险表、中位线、CI、图例、时间单位 |
-| 3. log-rank p 值 | ⬜ | 尚未计算；需同时报告每组样本量与事件数 |
-| 4. 4 句结论 | ⬜ | 尚未写入报告素材 |
-| `journal/day14.md` | 🟡 | 本文件，进行中 |
+| 3. `code/03_km_baseline.py` | ✅ | 已创建并运行；`radiomics` 环境 |
+| 3. 分组 KM 图 | ✅ | `results/figures/km_by_stage.png`；含风险表、CI、中位线、p、n/events、days |
+| 3. log-rank p 值 | ✅ | p=0.532；早期 n=133/events=124，晚期 n=288/events=248 |
+| 4. 4 句结论 | ✅ | 已写入「真实队列分组 KM 结果」 |
+| `journal/day14.md` | 🟡 | 内容已补齐，待提交 |
 | `journal/INDEX.md` + commit | 🟡 | INDEX 尚未更新，收尾 commit 待做 |
 
 ## 今日完成
@@ -51,7 +51,9 @@ status: 进行中
 4. 完成 6 人 KM 手算：第 4、8 天为删失，事件时点为第 2、5、7、10 天；
    KM 阶梯值为 `1.0000 → 0.8333 → 0.6250 → 0.4167 → 0`，中位生存 7 天；
 5. 用 `lifelines 0.30.0` 复算 6 人示例，KM 阶梯值和中位生存（7 天）与手算一致；
-6. 明确了 D14 尚未完成的部分：真实队列的分组 KM 图、log-rank 和 4 句结论。
+6. 用 `Overall.Stage` 将 421 例分为早期（I–II，133 例）和晚期（III，288 例），
+   完成分组 KM 图和 log-rank：中位生存 632 vs 524 天，p=0.532；
+7. 写出 4 句结论：分组依据、各组中位生存、log-rank p、回顾性/单中心边界。
 
 ## 概念要点
 
@@ -240,79 +242,83 @@ t_median = inf{ t : Ŝ(t) ≤ 0.5 }
 - 分组后每组样本量和事件数都要报告，避免小样本组过度解读；
 - 本项目是回顾性、单中心数据，KM/log-rank 结论只能作内部描述，不能直接外推。
 
-## 环境与卡点
+## 真实队列分组 KM 结果
 
-### 卡点 1：`lifelines` 未安装
+### 分组与样本量
 
-当前本机 Python：
+- 数据：`results/tables/cohort.csv`，共 422 例；
+- 分组：`Overall.Stage` 早期（I–II）vs 晚期（III）；
+- 排除 `Overall.Stage` 缺失 1 例，分析 421 例；
+- 早期 133 例（事件 124），晚期 288 例（事件 248）。
+
+### 结果
+
+| 组 | n | events | 中位生存（天） |
+|---|---:|---:|---:|
+| 早期（I–II） | 133 | 124 | 632 |
+| 晚期（III） | 288 | 248 | 524 |
+
+- log-rank p=0.532，差异无统计学意义；
+- 两条曲线在约 1000–1500 天附近交叉；
+- 早期组前段生存略低、后段略高，不能仅凭中位数判断优劣；
+- 两组 95% CI 有重叠，p 值不支持“两组生存分布不同”。
+
+![Overall Stage 分组 KM 曲线](../results/figures/km_by_stage.png)
+
+> 图：`code/03_km_baseline.py` 生成；含风险人数表、95% CI、中位生存竖线、
+> `S(t)=0.5` 水平线、log-rank p 值和每组 n/events。
+
+### 4 句结论（报告素材）
+
+1. 按 `Overall.Stage` 将 421 例分为早期（I–II，n=133，事件 124）和晚期（III，n=288，事件 248）。
+2. 早期和晚期的中位生存分别为 632 天和 524 天。
+3. log-rank 检验 p=0.532，未发现两组生存曲线有统计学差异；两条曲线在约 1000–1500 天附近交叉，需谨慎解释。
+4. 本研究为回顾性、单中心分析，分组非随机，上述结果仅作描述性报告，不能推断因果。
+
+## 环境与运行
+
+- `base` 环境没有 `lifelines`；本次使用 `radiomics` 环境（`lifelines 0.30.0`）；
+- 运行命令：
+
+```bash
+/Users/wangjiaqi/miniconda3/envs/radiomics/bin/python code/03_km_baseline.py
+```
+
+- 运行输出：
 
 ```text
-ModuleNotFoundError: No module named 'lifelines'
+Early (I-II) n = 133 events = 124 median = 632.0
+Late (III) n = 288 events = 248 median = 524.0
+log-rank p = 0.5320842011046308
 ```
 
-需要先安装到实际运行分析的环境：
-
-```bash
-python3 -m pip install lifelines
-# 或在项目 conda 环境内：
-conda activate <env>
-pip install lifelines
-```
-
-安装后用下面命令确认：
-
-```bash
-python3 -c "import lifelines; print(lifelines.__version__)"
-```
-
-### 卡点 2：D14 还没真正“跑起来”
-
-目前只有概念笔记，还没有：
-
-- `code/03_km_baseline.py`；
-- 分组 KM 图；
-- log-rank p 值；
-- 每组样本量/事件数；
-- 4 句报告结论。
-
-因此本日的验收标准还不能全部打勾。
+- 图输出：`results/figures/km_by_stage.png`；
+- 代码：`code/03_km_baseline.py`。
 
 ## 待办（收尾前）
 
-1. 用 `lifelines` 在 `results/tables/cohort.csv` 上画真实队列的分组 KM 曲线；
-2. 新建 `code/03_km_baseline.py`：
-   - 读取 `results/tables/cohort.csv`；
-   - `event = deadstatus.event.astype(int)`；
-   - `T = Survival.time.astype(float)`；
-   - 按 `Overall.Stage` 或 `Histology` 分组；
-   - `KaplanMeierFitter.fit` + `plot_survival_function(ci_show=True)`；
-   - `add_at_risk_counts` 加风险人数表；
-   - 画中位生存线，标注时间单位（天/月）；
-3. 用 `logrank_test` 输出 p 值，并打印每组 `n` 与事件数；
-4. 写 4 句结论：
-   - 分组依据；
-   - 各组中位生存（未达到写 NR）；
-   - log-rank p；
-   - 回顾性、单中心的结论边界；
-5. 更新 `journal/INDEX.md`，提交：
+1. 更新 `journal/INDEX.md`：D14 行填 `2026-11-05`、主题、commit 短哈希和 ✅；
+2. 提交：
 
 ```bash
-git add notes/survival-analysis.md code/03_km_baseline.py \
-        results/figures journal/day14.md journal/INDEX.md
+git add code/03_km_baseline.py results/figures/km_by_stage.png \
+        journal/day14.md journal/INDEX.md
 git commit -m "day14: 生存分析基础与 km 分组曲线"
 ```
+
+3. 可选：把两个中位生存标签上下错开，并把 p 值移到左下角，减少与曲线的重叠。
 
 ## 验收对照（当前）
 
 | 验收标准 | 状态 | 证据 |
 |---|---|---|
 | 6 人小例子 KM 手算表 + 软件结果一致 | ✅ | 手算与 `lifelines 0.30.0` 复算一致；中位生存 7 天 |
-| KM 图含风险表、CI、单位、样本量 | ⬜ | 图和代码尚未生成 |
+| KM 图含风险表、CI、单位、样本量 | ✅ | `results/figures/km_by_stage.png`：风险表、95% CI、中位线、p、n/events、days |
 | 能解释删失 ≠ 缺失数据 | ✅ | 见 `notes/survival-analysis.md` 第 4 节 |
 | 能解释 log-rank 优于“是否死亡”卡方 | ✅ | 笔记第 8 节：利用事件顺序与时点，正确处理删失 |
 | 能说出中位生存“不可估计”时怎么写 | ✅ | 笔记第 9.2 节：写 NR，不写 0/NA/最大随访时间 |
 
-## 今日结论（暂定）
+## 今日结论
 
 - 生存分析的核心是同时利用**事件时间**和**删失信息**；
 - 右删失不是缺失，也不是死亡，删失者必须保留在风险集中；
@@ -320,4 +326,8 @@ git commit -m "day14: 生存分析基础与 km 分组曲线"
 - log-rank 比较整条曲线，比“是否死亡”的卡方多利用了时间信息；
 - 中位生存未达到时报告 **NR**，不能伪造数值；
 - 6 人示例的手算已完成，并用 `lifelines` 复算，中位生存为 7 天；
-- 目前概念、笔记、6 人手算和示例图已完成，D14 的真实队列 KM 图与 log-rank 尚未完成。
+- 真实队列按 `Overall.Stage` 分组：早期 133 例（事件 124，中位 632 天），
+  晚期 288 例（事件 248，中位 524 天），log-rank p=0.532，差异无统计学意义；
+- 两条曲线在约 1000–1500 天附近交叉，中位数差异不能解释为“早期组更优”；
+- 目前概念、笔记、6 人手算、真实队列 KM 图和 log-rank 均已完成，
+  只剩 `journal/INDEX.md` 和收尾 commit。
