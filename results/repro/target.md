@@ -54,9 +54,10 @@
 
 注意：
 
-1. 正文与 Figure 4b / 补充材料的命名可能不同
-   （例如 `Statistics Total Energy`、`RLGL Grey Level Nonuniformity` 等），
-   映射到 PyRadiomics 前必须逐项核对 Supplementary Methods。
+1. **上表只以正文名称为准**。Figure 4b / 补充材料可能使用
+   `Statistics Total Energy`、`RLGL Grey Level Nonuniformity` 等不同标注，
+   这些标注**尚未核实**，不能作为特征定义依据；映射到 PyRadiomics 前
+   必须逐项核对 Supplementary Methods。
 2. **4 个特征的 Cox 权重未在正文给出**，需查补充材料；
    若无法获得，复现时用相同 4 个特征在 Lung1 重新拟合 Cox，并注明权重来源。
 3. 论文的特征算法为**自研 Matlab 实现**，PyRadiomics 中同名特征不保证等价。
@@ -65,18 +66,43 @@
 
 | Dataset | 论文 C-index | 本项目结果 | 可比性 |
 |---|---:|---|---|
-| Lung1 | 主文未报告（待查 Supplementary Table 1） | apparent（全量拟合）+ 5-fold 交叉验证均值 ± SD | 仅 apparent 与论文训练集值同口径；交叉验证值**不可直接相减** |
+| Lung1 | 主文未报告（待查 Supplementary Table 1） | apparent（全量拟合）+ 5-fold 交叉验证均值 ± SD | **仅评价协议同口径**：只有论文补充材料给出 Lung1 值时，才能把我们的 apparent 值与之并列；特征实现不同（Matlab vs PyRadiomics），差异不能全部归因于模型。交叉验证值**不可与论文训练集值相减** |
 | Lung2 | 0.65 | **N/A（无数据）** | 否 |
 | H&N1 | 0.69 | **N/A（无数据）** | 否 |
 | H&N2 | 0.69 | **N/A（无数据）** | 否 |
 
-`Difference = Reproduced − Paper` 只在上表「可比性 = 是/部分」的格子计算；
+`Difference = Reproduced − Paper` 只在可比性不为「否」的格子计算；
 其余写 `N/A`，不得用 `TBD` 暗示以后能补。
 
 ## 5. D18 评估协议（先定后跑）
 
+### 5.1 分析集
+
+| 用途 | n | 说明 |
+|---|---:|---|
+| 影像主分析 | **422** | 生存结局完整，radiomic signature 不依赖 age |
+| 与临床基线对比 | **399** | 与 `code/04_cox_baseline.py` 完全一致（排除 age 缺失 22、stage 缺失 1） |
+
+跨模型比较（临床基线 vs 影像 vs 联合模型）**必须使用同一分析集**，
+并在结果表中注明 n；不得用 422 的影像结果去对比 399 的临床结果。
+
+### 5.2 Track A（主分析，对标论文）
+
+- 固定论文 4 个特征：Statistics Energy / Shape Compactness /
+  Grey Level Nonuniformity / wavelet Grey Level Nonuniformity HLH；
+- **不做特征选择**；
+- 权重在训练折内重新拟合（论文权重未公开；若补充材料给出则改用论文权重并注明）；
+- 报告 5-fold × 5 次重复的测试折 C-index 均值 ± SD（规则见 5.4）。
+
+### 5.3 Track B（次要，探索）
+
+- 使用全量 PyRadiomics 特征；
+- 稳定性筛选 + 单变量筛选**只在训练折内**进行；
+- 结果仅作探索，不作为"复现论文 signature"的主结果。
+
+### 5.4 共同规则
+
 - **内部验证**：Lung1 上 5-fold 交叉验证 × 5 次重复，按事件分层；
-- **特征选择只在训练折内进行**，测试折不参与任何筛选或调参；
 - **主指标**：测试折 C-index 的均值 ± SD（保留 3 位小数）；
 - **另报表观 C-index**：全量拟合后在 Lung1 上计算，明确标注 `apparent`；
 - 校准图与 IBS 作为次要指标，具体时间点在 D18 再定；
@@ -91,7 +117,8 @@
 - [ ] 核对 Figure 4b 的特征标注与正文命名差异；
 - [ ] 确认 PyRadiomics 与原文 Matlab 实现的参数差异（重采样、离散化、小波）；
 - [ ] 记录 D18 实际使用的软件版本、特征提取参数与随机种子；
-- [ ] 确认 545 的口径：225 + 136 + 95 = 456（生存验证），
+- [ ] 确认 422（影像主分析）与 399（临床对比）两种分析集的病人清单一致可追溯；
+- [x] 545 的口径已核实：225 + 136 + 95 = 456（生存验证），
       456 + 89（Lung3，基因关联）= 545（Discussion 口径）。
 
 ## 7. 复现说明

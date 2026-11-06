@@ -8,8 +8,9 @@ status: 进行中
 
 # Day 15｜生存分析原理二：Cox、HR、PH 假设 + 临床基线模型（进行中）
 
-> 今日完成 Cox 概念笔记、临床变量基线 Cox、PH 假设检验与分层敏感性分析。
-> 待办：论文精读、`results/repro/target.md`、G3 对照、周复盘、INDEX 回填。
+> 今日完成 Cox 概念笔记、临床变量基线 Cox、PH 假设检验与分层敏感性分析，
+> 以及 Aerts 2014 论文精读与复现目标。
+> 待办：周复盘、INDEX 回填、收尾 commit；论文训练集 C-index 等补充材料核实后补填。
 
 ## 今日目标
 
@@ -28,11 +29,11 @@ status: 进行中
 | 3. `results/tables/cox_baseline.csv` | ✅ | 7 个协变量的 β、HR、95%CI、p |
 | 4. `results/tables/cox_ph_test.csv` | ✅ | Schoenfeld 残差检验，stage 违反 PH |
 | 5. `results/tables/cox_baseline_stratified.csv` | ✅ | 按 stage 分层的敏感性分析 |
-| 6. 论文精读 `notes/paper-aerts2014.md` | ❌ | 未开始 |
-| 7. `results/repro/target.md` | ❌ | 未开始，D16 依赖 |
-| 8. G3 五项自查 | 🟡 | 前四项已有证据，待汇总 |
+| 6. 论文精读 `notes/paper-aerts2014.md` | ✅ | 12 节笔记；C-index 逐字抄录，训练集值待补充材料 |
+| 7. `results/repro/target.md` | ✅ | 范围、目标值、Track A/B 协议；数值待 D18 填 |
+| 8. G3 五项自查 | ✅ | 见「G3 门禁自查」 |
 | 9. `journal/week3-review.md` | ❌ | 未开始 |
-| 10. INDEX 回填 + 收尾 commit | 🟡 | 等论文与 G3 完成后一起做 |
+| 10. INDEX 回填 + 收尾 commit | 🟡 | 等周复盘后一起做 |
 
 ## 今日完成
 
@@ -46,7 +47,12 @@ status: 进行中
 4. 拟合 `CoxPHFitter(penalizer=0.1)`，导出基线表；
 5. 用无惩罚副本做 Schoenfeld 残差 PH 检验，发现 stage 违反 PH；
 6. 补做按 stage 分层的 Cox，验证其余协变量稳健；
-7. 记录表观 C-index，并明确它不能作为验证性能。
+7. 记录表观 C-index，并明确它不能作为验证性能；
+8. 精读 Aerts et al. 2014，完成 `notes/paper-aerts2014.md`：
+   7 个数据集 1,019 例、440 特征四分类、4 特征 signature、Matlab 自研实现、
+   验证集 C-index 0.65/0.69/0.69、545 与 456 的口径、局限与复现边界；
+9. 建立 `results/repro/target.md`：范围声明、原文逐字引文与 Fig. 4a 出处、
+   目标 4 特征、422/399 分析集、Track A/B 评估协议、待核实清单。
 
 ## 研究设计与编码
 
@@ -151,6 +157,8 @@ status: 进行中
 | `results/tables/cox_baseline.csv` | 主模型 β、HR、95%CI、p |
 | `results/tables/cox_ph_test.csv` | Schoenfeld 残差 PH 检验结果 |
 | `results/tables/cox_baseline_stratified.csv` | 按 stage 分层的敏感性分析 |
+| `notes/paper-aerts2014.md` | Aerts 2014 论文精读（队列、特征、方法、结果、局限） |
+| `results/repro/target.md` | 复现目标、原文出处、Track A/B 协议与待核实清单 |
 
 ## 环境与运行
 
@@ -170,15 +178,27 @@ PH 检验: stage_num p=0.006（违反），其余 p=0.145–0.833
 分层: I–II 121 例（113 事件），III 278 例（239 事件）
 ```
 
+## G3 门禁自查
+
+| 门禁项 | 状态 | 证据 |
+|---|---|---|
+| 数据清点数字对得上 | ✅ | `results/tables/data_audit.csv`、`missing_rate.csv`、`value_counts.csv` |
+| 422 例索引表生成 | ✅ | `results/tables/index.csv`、`cohort.csv` |
+| viewer 里能指出 GTV-1 | ✅ | `notes/dicom-viewer.md`、`results/figures/viewer/`（D13） |
+| 能解释 KM / Cox / HR / C-index | ✅ | `notes/survival-analysis.md` 第 7、11 节；本日「指标辨析」 |
+| 基线 Cox 表 | ✅ | `results/tables/cox_baseline.csv`、`cox_ph_test.csv` |
+
+口头自测：PH 用 Schoenfeld 残差检验；C-index=0.5 等于随机排序；
+HR 是瞬时风险比，不是死亡概率。
+
 ## 待办（收尾前）
 
-1. 下载 Aerts et al. 2014（DOI `10.1038/ncomms5006`），写 `notes/paper-aerts2014.md`；
-2. 把论文报告的 C-index（训练集 / 验证集）逐字抄进 `results/repro/target.md`，
-   标注表号/图号；注意 **Lung1 422 例 ≠ 论文队列 1,019 例**；
-3. 汇总 G3 五项证据：数据清点、422 例索引表、viewer 定位 GTV-1、
-   KM/Cox/HR/C-index 概念、基线 Cox 表；
-4. 写 `journal/week3-review.md`（交付 / 卡点及根因 / W4 最该提前准备的一件事）；
-5. 回填 `journal/INDEX.md` 的 D15 行并做收尾 commit。
+1. 写 `journal/week3-review.md`（交付 / 卡点及根因 / W4 最该提前准备的一件事）；
+2. 回填 `journal/INDEX.md` 的 D15 行并做收尾 commit；
+3. D16 开工前查补充材料：Lung1 训练集 C-index、4 个特征权重与精确定义、
+   Corrigendum 是否影响 0.65/0.69——确认后补进 `results/repro/target.md`。
+
+已完成的论文与 G3 事项不再列入待办；`target.md` 中的复现数值由 D18 填写。
 
 ## 验收对照（Day 15）
 
@@ -186,9 +206,9 @@ PH 检验: stage_num p=0.006（违反），其余 p=0.145–0.833
 |---|---|---|
 | Cox 基线表生成，能解释每个 HR | ✅ | `results/tables/cox_baseline.csv`；本日「Cox 基线结果」表 |
 | 做了 PH 假设检验并记录结论 | ✅ | `results/tables/cox_ph_test.csv`；stage p=0.006，已补分层 Cox |
-| `results/repro/target.md` 有目标指标 + 出处 | ❌ | 待论文精读后填写 |
+| `results/repro/target.md` 有目标指标 + 出处 | ✅ | 验证集 0.65/0.69/0.69 + Fig. 4a 逐字引文；训练集值待 Supplementary Table 1 |
 | 能区分 C-index、log-rank、校准、IBS | ✅ | 本日「指标辨析」表 + 笔记第 11 节 |
-| 细节不混淆（2014 / Nat Commun / DOI / 422≠1019） | 🟡 | 待论文笔记落盘后核对 |
+| 细节不混淆（2014 / Nat Commun / DOI / 422≠1019） | ✅ | `notes/paper-aerts2014.md` 第 1、3、8 节 |
 
 ## 今日结论
 
@@ -201,4 +221,9 @@ PH 检验: stage_num p=0.006（违反），其余 p=0.145–0.833
   其余协变量 HR 变化 <0.02，结论稳健；
 - 临床基线模型仅 age 显著（每 10 岁 HR≈1.145），表观 C-index=0.553，
   区分能力有限，为 D18 影像特征增量价值提供对照；
-- C-index 必须在未参与训练的样本上报告，本日数值仅为表观值。
+- C-index 必须在未参与训练的样本上报告，本日数值仅为表观值；
+- Aerts 2014 的 4 特征 signature 在 Lung2/H&N1/H&N2 的 C-index 为
+  0.65/0.69/0.69，但本项目只有训练集 Lung1（422 例），
+  **不能复现外部验证结果**，D18 只能做 Lung1 内部交叉验证；
+- 原论文特征为 Matlab 自研实现，本项目用 PyRadiomics 只能做方法级复现，
+  不得声称数值级一致。
