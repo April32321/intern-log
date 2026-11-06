@@ -464,7 +464,439 @@ h(t)=\alpha\lambda t^{\alpha-1}
 
 ---
 
-## 11. 本项目完整分析流程
+## 11. Cox Proportional Hazards Model（Cox 比例风险模型）⭐⭐⭐
+
+**定义：** Cox Proportional Hazards Model 是生存分析中常用的半参数回归模型（Semi-parametric Regression Model），用于研究协变量（Covariates）与事件发生风险之间的关系。Cox 模型可以在适当假设下处理右删失数据。
+
+例如，在医学研究中，可以分析：
+- 年龄是否与患者死亡风险有关。
+- 肿瘤体积是否与死亡风险有关。
+- 影像组学特征是否能够预测患者预后。
+- 不同治疗方式是否与患者生存结局有关。
+
+**与 Kaplan–Meier（KM）方法的区别：**
+
+| 方法 | 主要作用 |
+|---|---|
+| Kaplan–Meier Estimator | 估计患者的生存概率，绘制生存曲线 |
+| Log-rank Test | 比较不同组的整体生存分布 |
+| Cox Regression | 研究多个协变量与瞬时事件风险之间的关系 |
+
+教材位置：Chapter 2, Section 2.6 — Regression Models for Survival Data，教材第 48–49 页。
+
+### 11.1 Cox 模型核心公式
+
+Cox 模型定义为：
+
+\[
+\boxed{
+h(t\mid X)=h_0(t)\exp(\beta_1X_1+\cdots+\beta_pX_p)
+}
+\]
+
+也可以写成：
+
+\[
+h(t\mid X)=h_0(t)e^{\beta^\top X}
+\]
+
+其中：
+
+| 符号 | 含义 |
+|---|---|
+| \(h(t\mid X)\) | 给定协变量时，在时间 \(t\) 的瞬时事件风险率 |
+| \(h_0(t)\) | Baseline Hazard，基准风险函数 |
+| \(X_1,\ldots,X_p\) | Covariates，协变量 |
+| \(\beta_1,\ldots,\beta_p\) | Regression Coefficients，回归系数 |
+| \(\exp(\cdot)\) | 指数函数 |
+
+### 11.2 Baseline Hazard（基准风险）
+
+\(h_0(t)\) 表示所有协变量取 0 时的风险函数。Cox 模型可以理解为：
+
+\[
+\boxed{
+\text{Individual Hazard}
+=
+\text{Baseline Hazard}\times\text{Covariate Effect}
+}
+\]
+
+其中：
+
+\[
+\text{Covariate Effect}=e^{\beta^\top X}
+\]
+
+**重点：**
+- 基准风险函数可以随时间变化。
+- Cox 模型不要求提前指定基准风险函数的具体形式。
+- 指数函数保证预测的风险率非负。
+- Cox 模型主要研究协变量对相对风险的影响。
+
+教材对应：Section 2.6，公式 (2.6.3)。
+
+### 11.3 Hazard Ratio（HR，风险比）
+
+Hazard Ratio 用于比较两个不同协变量水平对应的瞬时风险率。对于单个协变量：
+
+\[
+h(t\mid X)=h_0(t)e^{\beta X}
+\]
+
+当 \(X\) 从 \(x\) 增加到 \(x+1\) 时：
+
+\[
+HR=\frac{h(t\mid x+1)}{h(t\mid x)}
+\]
+
+代入 Cox 公式：
+
+\[
+\begin{aligned}
+HR
+&=\frac{h_0(t)e^{\beta(x+1)}}{h_0(t)e^{\beta x}}\\
+&=e^\beta
+\end{aligned}
+\]
+
+因此：
+
+\[
+\boxed{HR=e^\beta}
+\]
+
+**解释：** 在其他协变量保持不变的情况下，某个协变量每增加 1 个单位，瞬时风险率变为原来的 \(e^\beta\) 倍。对于增加 \(\Delta X\) 个单位：
+
+\[
+HR=e^{\beta\Delta X}
+\]
+
+**HR 的解释：**
+
+| HR | 含义 | 解释 |
+|---|---|---|
+| HR = 1 | 风险率不变 | 无相对风险变化 |
+| HR > 1 | 风险率升高 | 与更高事件风险相关（危险因素） |
+| HR < 1 | 风险率降低 | 与更低事件风险相关（保护因素） |
+
+**注意：** HR > 1 和 HR < 1 常被描述为危险因素和保护因素，但统计关联不一定代表因果关系。
+
+**计算例子：**
+
+假设肿瘤体积的 Cox 回归系数为 \(\beta=0.2\)，则：
+
+\[
+HR=e^{0.2}\approx1.221
+\]
+
+即肿瘤体积每增加 1 个单位，瞬时死亡风险率约增加：
+
+\[
+(1.221-1)\times100\%=22.1\%
+\]
+
+如果 \(\beta=-0.3\)，则：
+
+\[
+HR=e^{-0.3}\approx0.741
+\]
+
+即每增加 1 个单位，瞬时死亡风险率约降低：
+
+\[
+(1-0.741)\times100\%=25.9\%
+\]
+
+**重点：**
+- HR 描述瞬时风险率的相对变化。
+- HR 不等于死亡概率。
+- HR 不直接表示生存时间的变化比例。
+- HR 的解释取决于协变量的单位和编码方式。
+
+### 11.4 Proportional Hazards Assumption（PH 比例风险假设）
+
+**定义：** 对于固定协变量水平的不同个体或组，其风险率之比不随时间变化。
+
+假设患者 A 和 B 的风险函数分别为：
+
+\[
+h_A(t)=h_0(t)e^{\beta X_A}
+\]
+
+\[
+h_B(t)=h_0(t)e^{\beta X_B}
+\]
+
+两者风险比为：
+
+\[
+\begin{aligned}
+HR(t)
+&=\frac{h_A(t)}{h_B(t)}\\
+&=\frac{h_0(t)e^{\beta X_A}}{h_0(t)e^{\beta X_B}}\\
+&=e^{\beta(X_A-X_B)}
+\end{aligned}
+\]
+
+因此：
+
+\[
+\boxed{HR(t)=\text{Constant}}
+\]
+
+风险比不依赖时间 \(t\)。
+
+**直观理解：**
+
+| 时间 | Group A Hazard | Group B Hazard | HR (B/A) |
+|---|---|---|---|
+| Day 1 | 0.01 | 0.02 | 2 |
+| Day 2 | 0.02 | 0.04 | 2 |
+| Day 3 | 0.03 | 0.06 | 2 |
+
+虽然两组风险率都随时间增加，但风险比始终为 2，因此符合 PH 假设。
+
+**重要区别：**
+- PH 假设不要求 Hazard Function 恒定。
+- PH 假设要求不同固定协变量组之间的 Hazard Ratio 恒定。
+- 风险率可以随时间增加、下降或发生其他变化。
+
+**与 Survival Function 的关系：**
+
+\[
+S(t\mid X)=S_0(t)^{\exp(\beta^\top X)}
+\]
+
+两边取对数：
+
+\[
+\ln S(t\mid X)=e^{\beta^\top X}\ln S_0(t)
+\]
+
+进一步得到：
+
+\[
+\boxed{
+\ln[-\ln S(t\mid X)]
+=
+\beta^\top X+\ln[-\ln S_0(t)]
+}
+\]
+
+因此，不同固定协变量组的 \(\ln[-\ln S(t)]\) 曲线理论上应具有平行关系。这可以用于辅助检查 PH 假设。
+
+教材对应：Section 2.6，公式 (2.6.4)、(2.6.6)、(2.6.7)，教材第 48–49 页。
+
+### 11.5 Schoenfeld Residuals（Schoenfeld 残差检验）
+
+Schoenfeld 残差检验是检查 Cox 模型 PH 假设的常用方法（该内容为实际建模补充，上传教材 Chapter 2 没有系统讲解其计算过程）。
+
+**基本原理：** 比较事件发生时实际观察到的协变量值与根据模型和风险集计算的期望协变量值。如果 PH 假设成立，经过适当缩放的 Schoenfeld 残差不应表现出系统性的时间变化趋势。
+
+**假设检验：**
+
+原假设：
+
+\[
+H_0:\text{PH assumption holds}
+\]
+
+备择假设：
+
+\[
+H_1:\text{PH assumption is violated}
+\]
+
+通常使用显著性水平 \(\alpha=0.05\)：
+
+| p-value | 解释 |
+|---|---|
+| \(p<0.05\) | 有证据表明可能违反 PH 假设 |
+| \(p\ge0.05\) | 未发现足够证据拒绝 PH 假设 |
+
+**注意：** p-value 大于或等于 0.05 不代表 PH 假设一定成立。
+
+**Python 实现：**
+
+```python
+from lifelines import CoxPHFitter
+
+cph = CoxPHFitter()
+
+cph.fit(
+    df,
+    duration_col="time",
+    event_col="event"
+)
+
+cph.print_summary()
+
+cph.check_assumptions(
+    df,
+    p_value_threshold=0.05,
+    show_plots=True
+)
+```
+
+其中：
+- `df`：包含生存时间、事件标记和协变量的数据集。
+- `duration_col="time"`：生存时间列。
+- `event_col="event"`：事件标记列。
+- `p_value_threshold=0.05`：显著性阈值。
+- `show_plots=True`：显示相关诊断图。
+
+**重点：** 建立 Cox 模型后，应检查 PH 假设，并在报告中说明检查方法和结果。
+
+### 11.6 如果 PH 假设不满足怎么办？
+
+**① Stratified Cox Model（分层 Cox 模型）**
+
+对于不满足 PH 假设的分类变量，可以考虑使用分层 Cox 模型：
+
+\[
+h(t\mid X,s)=h_{0s}(t)e^{\beta^\top X}
+\]
+
+其中：
+- \(s\)：分层。
+- \(h_{0s}(t)\)：第 \(s\) 层的基准风险函数。
+- \(\beta\)：其他协变量的回归系数。
+
+核心思想是允许不同分层具有不同的基准风险函数。例如按照疾病分期分层，让不同分期拥有不同的基准风险函数。
+
+注意：
+- 分层变量通常不再估计一个统一的 HR。
+- 其他协变量仍需满足模型对应的假设。
+
+**② Time-varying Effects（时变效应）**
+
+如果协变量对风险的影响随时间变化，可以使用时变系数模型：
+
+\[
+h(t\mid X)=h_0(t)\exp[\beta(t)X]
+\]
+
+此时：
+
+\[
+\boxed{HR(t)=e^{\beta(t)}}
+\]
+
+风险比可以随时间变化。例如某种治疗在早期的保护作用较强，但后期逐渐减弱。
+
+**注意：**
+- Time-varying Covariate：协变量本身随时间变化。
+- Time-varying Coefficient：协变量对风险的影响随时间变化。
+- 两者不是同一个概念。
+
+**③ Accelerated Failure Time Model（AFT 模型）**
+
+AFT 模型是 Cox 模型之外的另一类生存回归模型，基本形式：
+
+\[
+\boxed{\ln T=\alpha+\beta^\top X+\sigma W}
+\]
+
+其中：
+- \(T\)：生存时间。
+- \(X\)：协变量。
+- \(\beta\)：回归系数。
+- \(W\)：误差项。
+
+AFT 模型直接研究协变量如何改变生存时间的尺度。对于常见的 AFT 参数化形式：
+
+\[
+\boxed{TR=e^\beta}
+\]
+
+其中 TR 表示 Time Ratio（时间比）。例如 \(TR=1.5\) 表示对应协变量增加 1 个单位时，模型中的生存时间尺度变为原来的 1.5 倍。
+
+**Cox 与 AFT 的区别：**
+
+| | Cox Model | AFT Model |
+|---|---|---|
+| 研究重点 | 瞬时风险率 | 生存时间尺度 |
+| 核心指标 | Hazard Ratio (HR) | Time Ratio (TR) |
+| 主要解释 | 风险率增加或降低多少 | 时间尺度延长或缩短多少 |
+| 常见假设 | Proportional Hazards | 指定的 AFT 分布及模型结构 |
+
+AFT 不一定优于 Cox，需要根据数据和研究目标选择。
+
+教材对应：Section 2.6，公式 (2.6.1)–(2.6.2)，教材第 46–48 页。
+
+### 11.7 Cox Model 与 Kaplan–Meier 的关系
+
+**Kaplan–Meier** 主要回答：患者在时间 \(t\) 之后仍然存活的概率是多少？
+
+\[
+S(t)=P(T>t)
+\]
+
+**Cox Regression** 主要回答：在控制其他协变量后，某个变量与患者死亡风险之间有什么关系？
+
+\[
+h(t\mid X)=h_0(t)e^{\beta^\top X}
+\]
+
+例如：
+- KM：比较高风险组与低风险组的生存曲线。
+- Log-rank：检验两组整体生存分布是否存在统计学差异。
+- Cox：估计肿瘤体积、年龄等变量对应的 HR。
+
+### 11.8 医学影像组学中的 Cox 模型
+
+假设从患者 CT 影像中提取 Tumor Volume、Texture Entropy、Shape Sphericity，同时记录 Survival Time 与 Event，可建立 Cox 模型：
+
+\[
+h(t\mid X)
+=
+h_0(t)
+\exp(
+\beta_1X_{\text{volume}}
++\beta_2X_{\text{entropy}}
++\beta_3X_{\text{sphericity}}
+)
+\]
+
+通过模型可以：
+1. 估计不同影像特征对应的 HR。
+2. 研究影像特征与死亡风险的关联。
+3. 结合多个变量构建患者风险评分。
+4. 检查 PH 假设。
+5. 进一步评估模型的预测表现。
+
+需要注意，影像组学特征数量较多时，应重视过拟合、特征筛选、模型验证及潜在混杂因素。
+
+### 11.9 Cox 部分必背公式
+
+| 知识点 | 公式 |
+|---|---|
+| Cox Model | \(h(t\mid X)=h_0(t)e^{\beta^\top X}\) |
+| Hazard Ratio | \(HR=e^\beta\) |
+| HR for \(\Delta X\) | \(HR=e^{\beta\Delta X}\) |
+| PH Assumption | \(HR(t)=\text{Constant}\) |
+| Conditional Survival | \(S(t\mid X)=S_0(t)^{e^{\beta^\top X}}\) |
+| Log-log Survival | \(\ln[-\ln S(t\mid X)]=\beta^\top X+\ln[-\ln S_0(t)]\) |
+| Stratified Cox | \(h(t\mid X,s)=h_{0s}(t)e^{\beta^\top X}\) |
+| Time-varying Effect | \(h(t\mid X)=h_0(t)e^{\beta(t)X}\) |
+| AFT Model | \(\ln T=\alpha+\beta^\top X+\sigma W\) |
+
+### 11.10 Cox 部分最重要的结论
+
+1. **Cox Proportional Hazards Model** 用于分析多个协变量与事件风险之间的关系。
+2. **Hazard Ratio（HR）** 是 Cox 模型的核心解释指标：\(HR=e^\beta\)。
+3. **HR > 1** 表示较高的瞬时事件风险率，**HR < 1** 表示较低的瞬时事件风险率。
+4. **PH 假设** 要求不同固定协变量组的风险比不随时间变化，而不是要求风险率本身恒定。
+5. **Schoenfeld Residuals** 可用于检查 PH 假设，通常结合 p-value 和诊断图判断。
+6. **如果 PH 假设不满足**，可以考虑 Stratified Cox、Time-varying Effects 或 AFT Model。
+7. **KM 与 Cox 的区别：** KM 主要估计生存概率；Cox 主要估计协变量与瞬时风险率之间的关系。
+
+**一句话总结：** Cox 模型通过基准风险函数和协变量的指数效应建立生存回归模型，利用 Hazard Ratio 解释协变量与死亡风险之间的关系，并要求在标准模型中满足比例风险假设。
+
+---
+
+## 12. 本项目完整分析流程
 
 **Step 1 — Define Event**
 
@@ -500,9 +932,13 @@ h(t)=\alpha\lambda t^{\alpha-1}
 
 如果需要比较不同患者组，使用 log-rank 检验分析整体生存分布差异。
 
+**Step 8 — Cox Regression**
+
+以临床变量（如 age、Gender、Histology、Stage）拟合 Cox 模型，输出 β、HR、95% CI 与 p，并用 Schoenfeld 残差检验 PH 假设。
+
 ---
 
-## 12. 必背公式总结
+## 13. 必背公式总结
 
 | 概念 | 公式 |
 |---|---|
@@ -516,8 +952,13 @@ h(t)=\alpha\lambda t^{\alpha-1}
 | Mean Residual Life | \(mrl(t)=\frac{\int_t^\infty S(u)du}{S(t)}\) |
 | Kaplan–Meier | \(\hat S(t)=\prod_{t_i\le t}(1-d_i/n_i)\) |
 | Median Survival | \(\inf\{t:\hat S(t)\le0.5\}\) |
+| Cox Model | \(h(t\mid X)=h_0(t)e^{\beta^\top X}\) |
+| Hazard Ratio | \(HR=e^\beta\) |
+| Conditional Survival | \(S(t\mid X)=S_0(t)^{e^{\beta^\top X}}\) |
+| Stratified Cox | \(h(t\mid X,s)=h_{0s}(t)e^{\beta^\top X}\) |
+| AFT Model | \(\ln T=\alpha+\beta^\top X+\sigma W\) |
 
-## 13. 最重要的结论
+## 14. 最重要的结论
 
 1. **Event** 决定研究什么事件，本项目以死亡为终点。
 2. **Survival Time** 衡量从治疗开始到死亡或随访结束的时间。
@@ -527,5 +968,8 @@ h(t)=\alpha\lambda t^{\alpha-1}
 6. **Kaplan–Meier** 通过各事件时间点的条件生存比例连乘，估计生存曲线。
 7. **Log-rank Test** 比较不同组的整体生存分布。
 8. **Median Survival Time** 是 KM 曲线第一次达到或低于 0.5 的时间；如果始终未达到，则报告 Not Reached。
+9. **Cox Model** 通过 \(h(t\mid X)=h_0(t)e^{\beta^\top X}\) 建立协变量与瞬时风险率的关系，核心指标为 HR：\(HR=e^\beta\)。
+10. **PH 假设** 要求风险比不随时间变化（不是风险率恒定），需用 Schoenfeld 残差检验并报告结论；不满足时改用分层 Cox、时依项或 AFT。
+11. **KM/Log-rank 与 Cox 的分工：** KM 估计生存概率、log-rank 比较组间整体生存分布、Cox 在控制混杂后估计协变量的 HR。
 
 **核心理解：生存分析的关键在于同时考虑事件发生时间和删失信息，从而合理估计患者的生存情况。**
