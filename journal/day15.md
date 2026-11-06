@@ -3,14 +3,14 @@ day: 15
 date: 2026-11-06
 theme: 生存分析原理二：Cox、HR、PH 假设 + 临床基线模型
 gate: G3
-status: 进行中
+status: 完成
 ---
 
-# Day 15｜生存分析原理二：Cox、HR、PH 假设 + 临床基线模型（进行中）
+# Day 15｜生存分析原理二：Cox、HR、PH 假设 + 临床基线模型
 
-> 今日完成 Cox 概念笔记、临床变量基线 Cox、PH 假设检验与分层敏感性分析，
-> 以及 Aerts 2014 论文精读与复现目标。
-> 待办：周复盘、INDEX 回填、收尾 commit；论文训练集 C-index 等补充材料核实后补填。
+> 今日完成 Cox 概念笔记、临床变量基线 Cox、PH 假设检验与分层敏感性分析、
+> Aerts 2014 论文精读与复现目标，以及临床 Cox v2 的交叉验证探索。
+> 收尾：G3 自查、周复盘、INDEX 回填。
 
 ## 今日目标
 
@@ -32,8 +32,9 @@ status: 进行中
 | 6. 论文精读 `notes/paper-aerts2014.md` | ✅ | 12 节笔记；C-index 逐字抄录，训练集值待补充材料 |
 | 7. `results/repro/target.md` | ✅ | 范围、目标值、Track A/B 协议；数值待 D18 填 |
 | 8. G3 五项自查 | ✅ | 见「G3 门禁自查」 |
-| 9. `journal/week3-review.md` | ❌ | 未开始 |
-| 10. INDEX 回填 + 收尾 commit | 🟡 | 等周复盘后一起做 |
+| 9. `journal/week3-review.md` | ✅ | 三行复盘：交付 / 卡点 / W4 准备 |
+| 10. INDEX 回填 + 收尾 commit | 🟡 | 本次提交后回填 |
+| 11. 临床 Cox v2 探索 | ✅ | `code/04b_cox_clinical_v2.py`；CV 对比 v1/v2 |
 
 ## 今日完成
 
@@ -52,7 +53,9 @@ status: 进行中
    7 个数据集 1,019 例、440 特征四分类、4 特征 signature、Matlab 自研实现、
    验证集 C-index 0.65/0.69/0.69、545 与 456 的口径、局限与复现边界；
 9. 建立 `results/repro/target.md`：范围声明、原文逐字引文与 Fig. 4a 出处、
-   目标 4 特征、422/399 分析集、Track A/B 评估协议、待核实清单。
+   目标 4 特征、422/399 分析集、Track A/B 评估协议、待核实清单；
+10. 新建 `code/04b_cox_clinical_v2.py`，探索 T/N 分期 + age 样条 + stage 四水平
+    的临床 v2，并用同一套 5-fold × 5 次重复与 v1 做配对 CV 对比。
 
 ## 研究设计与编码
 
@@ -137,6 +140,37 @@ status: 进行中
 - 表观 C-index=0.553 接近随机，说明"只靠基础临床变量"区分能力很弱，
   这正是 D18 引入影像组学特征、做增量比较的出发点；但该数值不能当作验证性能。
 
+## 临床 Cox v2 探索（附加，不替代主模型）
+
+`code/04b_cox_clinical_v2.py` 在 v1 基础上：
+age 改 4 节点限制性立方样条、加入 T 分期（1–4）与 N 分期（0–3，按有序数值）、
+stage 改四水平（I/II/IIIa/IIIb，参考 I 期）；histology 仍以腺癌为参考。
+
+- 共同分析集：**395 例，348 事件**（422 − age 22 − stage 1 − T/N 编码丢失，
+  与前述排除有重叠）；T=5、N=4 含义已丢失，直接排除；
+- v1 与 v2 使用同一批病人、同一套 5-fold × 5 次重复划分；
+- 样条节点在训练折内确定，测试折只应用；C-index 用 `-predict_partial_hazard`
+  （lifelines 约定分数越大 = 生存越长）。
+
+结果：
+
+| 模型 | CV C-index（测试折） |
+|---|---|
+| v1（age + gender + stage 二分 + histology） | 0.5459 ± 0.0301 |
+| v2（加 T/N、age 样条、stage 四水平） | **0.5706 ± 0.0244** |
+| 配对差 v2−v1 | +0.0247 ± 0.0208；v2 更好的折占 88% |
+
+解释与边界：
+
+- 提升约 +0.025，幅度不大但方向稳定；主要来自 T/N 与 age 非线性，
+  不是 stage 四水平本身（stage4 各水平相对 I 期 HR<1，与曲线交叉一致，
+  不能解释为"晚期更安全"）；
+- T/N 的 HR 约 1.12/级，p≈0.06，处于边缘；
+- v2 的 PH 检验全部 p>0.17，未发现违反；
+- v2 全量表观 C-index=0.5909，**不能当性能**；正式数字是 CV 0.5706；
+- v2 是事后探索，D18 若采用，必须在报告中注明"基线选择为事后决定"，
+  且影像模型必须使用同一 395 例比较。
+
 ## 指标辨析
 
 | 指标 | 回答什么问题 | 本项目怎么算 |
@@ -159,6 +193,11 @@ status: 进行中
 | `results/tables/cox_baseline_stratified.csv` | 按 stage 分层的敏感性分析 |
 | `notes/paper-aerts2014.md` | Aerts 2014 论文精读（队列、特征、方法、结果、局限） |
 | `results/repro/target.md` | 复现目标、原文出处、Track A/B 协议与待核实清单 |
+| `code/04b_cox_clinical_v2.py` | 临床 v2：T/N + age 样条 + stage 四水平，CV 对比 v1 |
+| `results/tables/cox_clinical_v2.csv` | v2 全量拟合 HR 表（apparent） |
+| `results/tables/cox_clinical_v2_ph.csv` | v2 的 PH 检验（全部不违反） |
+| `results/tables/cox_cv_comparison.csv` | v1 vs v2 的 CV 均值 ± SD |
+| `results/tables/cox_cv_folds.csv` | 25 折逐折分数（审计用） |
 
 ## 环境与运行
 
@@ -191,14 +230,15 @@ PH 检验: stage_num p=0.006（违反），其余 p=0.145–0.833
 口头自测：PH 用 Schoenfeld 残差检验；C-index=0.5 等于随机排序；
 HR 是瞬时风险比，不是死亡概率。
 
-## 待办（收尾前）
+## 待办（D16 开工前）
 
-1. 写 `journal/week3-review.md`（交付 / 卡点及根因 / W4 最该提前准备的一件事）；
-2. 回填 `journal/INDEX.md` 的 D15 行并做收尾 commit；
-3. D16 开工前查补充材料：Lung1 训练集 C-index、4 个特征权重与精确定义、
-   Corrigendum 是否影响 0.65/0.69——确认后补进 `results/repro/target.md`。
+1. 回填 `journal/INDEX.md` 的 D15 行并做收尾 commit（本次提交后完成）；
+2. 查补充材料：Lung1 训练集 C-index、4 个特征权重与精确定义、
+   Corrigendum 是否影响 0.65/0.69——确认后补进 `results/repro/target.md`；
+3. 决定 D18 的临床主对照用 v1（399）还是 v2（395）：v2 为事后探索，
+   若采用，影像模型必须使用同一 395 例并在报告中注明基线选择理由。
 
-已完成的论文与 G3 事项不再列入待办；`target.md` 中的复现数值由 D18 填写。
+`journal/week3-review.md` 已完成；论文与 G3 事项不再列入待办。
 
 ## 验收对照（Day 15）
 
@@ -226,4 +266,7 @@ HR 是瞬时风险比，不是死亡概率。
   0.65/0.69/0.69，但本项目只有训练集 Lung1（422 例），
   **不能复现外部验证结果**，D18 只能做 Lung1 内部交叉验证；
 - 原论文特征为 Matlab 自研实现，本项目用 PyRadiomics 只能做方法级复现，
-  不得声称数值级一致。
+  不得声称数值级一致；
+- 临床 v2（T/N + age 样条 + stage 四水平）在共同 395 例上的 CV C-index
+  为 0.5706 ± 0.0244，比 v1 的 0.5459 高约 0.025（88% 折更好），
+  但属于事后探索，D18 若采用需同集比较并注明选择理由。
