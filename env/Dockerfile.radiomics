@@ -1,0 +1,59 @@
+# 在 dev 底座之上安装 radiomics 运行环境
+# 前置：docker tag intern-radiomics:1.0 intern-dev:1.0
+#
+# 构建：
+#   docker build -f env/Dockerfile.radiomics -t intern-radiomics:1.0 .
+# 注意上下文是项目根目录（需要 COPY env/environment.docker.yml），
+# 且必须有根目录 .dockerignore 排除 data/，否则 900+ MB 会传给 daemon。
+FROM intern-dev:1.0 AS radiomics
+
+USER root
+ENV DEBIAN_FRONTEND=noninteractive
+
+# pyradiomics 3.0.1 无 py3.10 轮子，需源码编译：编译链 + numpy 头文件
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      bzip2 gcc g++ make \
+ && rm -rf /var/lib/apt/lists/*
+
+# 用 Miniforge 而非 Miniconda：它的 default_channels 本身就是 conda-forge，
+# 不会触发 conda>=25 对 repo.anaconda.com 的 ToS 预检查。
+# 备选方案（nodefaults / conda config --set default_channels）都已验证无效：
+# 前者只在求解期生效，后者在新版 conda 中是不可写的键。
+ARG TARGETARCH=arm64
+ENV CONDA_DIR=/opt/conda
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      arm64|aarch64) MC_ARCH="aarch64" ;; \
+      amd64|x86_64)  MC_ARCH="x86_64"  ;; \
+      *) echo "unsupported arch: ${TARGETARCH}"; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/miniforge.sh \
+      "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${MC_ARCH}.sh"; \
+    bash /tmp/miniforge.sh -b -p "${CONDA_DIR}"; \
+    rm -f /tmp/miniforge.sh
+ENV PATH=${CONDA_DIR}/bin:${PATH}
+
+COPY env/environment.docker.yml /tmp/environment.yml
+# environment.docker.yml 用 nodefaults 排除 defaults 渠道，作为第二道保险
+RUN conda env create -f /tmp/environment.yml \
+ && conda clean -afy \
+ && rm -f /tmp/environment.yml
+
+# pyradiomics 必须单独装：conda env create 内部的 pip 不继承
+# --no-build-isolation，会退回构建隔离而失败（见 env/README.md）
+# 用环境内的 pip 而不是 `conda run`：后者缓冲子进程输出，
+# 编译期间日志完全静默，无法区分"在编译"和"已死"。
+RUN /opt/conda/envs/radiomics/bin/pip install --no-cache-dir versioneer \
+ && /opt/conda/envs/radiomics/bin/pip install --no-cache-dir --no-build-isolation pyradiomics==3.0.1
+
+# python 直接指向环境解释器，后续 docker run 不必 conda run
+ENV PATH=/opt/conda/envs/radiomics/bin:${PATH}
+
+# 构建期自检：任一失败则镜像不生成
+RUN python -c "import numpy, radiomics, lifelines, sksurv, pydicom; \
+assert numpy.__version__.startswith('1.26'), numpy.__version__; \
+print('radiomics', radiomics.__version__, '| numpy', numpy.__version__)"
+
+USER dev
+WORKDIR /work
+CMD ["bash"]

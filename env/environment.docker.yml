@@ -1,0 +1,17 @@
+name: radiomics
+channels:
+  - conda-forge
+  - nodefaults        # 不追加 defaults（repo.anaconda.com），否则 conda>=25 会要求接受 ToS
+dependencies:
+  - python=3.10
+  - numpy=1.26        # PyRadiomics 3.0.1 用了 numpy 2 已移除的 np.float
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - tqdm
+  - pydicom
+  - simpleitk
+  - lifelines
+  - scikit-survival
+  - pip

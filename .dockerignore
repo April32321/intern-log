@@ -8,6 +8,9 @@ data
 work
 results
 logs
+journal
+notes
+*.pdf
 
 # 密钥与本地配置：绝不进构建上下文
 .env
