@@ -334,6 +334,43 @@ Energy 是唯一对"灰度零点"敏感的求和量。LUNG1-001 若把 HU 加 10
 - 因此上述中位数只能作为「同量级」证据，**不能当作 Lung1 的代表值**，
   更不能据此声称数值复现。
 
+### 7. 三个结果表的内容说明
+
+三张表分工明确：**一张放结果、一张放成本与几何证据、一张放失败清单**。
+
+**(1) `features_10.csv` —— 结果本体**
+
+- 形状：`10 行 × 538 列` = 10 例 ×（1 列 `PatientID` + **537 个特征**）；
+- 列名 = PyRadiomics 完整特征名，格式为 `影像类型_特征类_特征名`：
+  `original_firstorder_Energy`、`wavelet-HLH_glrlm_GrayLevelNonUniformity`；
+- 列顺序大致按 `original_*`（shape → firstorder → glcm → glrlm）再到
+  `wavelet-*`（8 个分解按字母序），**最后一行追加**补算的
+  `original_shape_Compactness2_derived`；
+- 值均为浮点数，保留完整精度（未四舍五入），便于后续标准化与建模；
+- 用途：D18 建模的输入。Track A 只取其中 4 列（`target.md` §3 的映射），
+  其余 533 列留给 Track B 与 D19 的敏感性分析。
+
+**(2) `features_10_timing.csv` —— 成本与几何证据**
+
+| 列 | 含义 | 用途 |
+|---|---|---|
+| `PatientID` | 病例 ID | 与特征表、索引表关联 |
+| `roi_name` | 实际使用的 ROI 名（LUNG1-128 为 `gtv-pre-op`） | 复核选中的是不是肿瘤 |
+| `roi_candidates` | 该病例全部 GTV 相关 ROI（用竖线分隔） | 审计"为什么选这一个" |
+| `mask_voxels` | 掩膜体素数 | 与下面一列互校 |
+| `mask_volume_mm3` | 体素数 × 体素体积 | **QC 时与 Slicer 对照的就是这列** |
+| `seconds` | 纯 `extractor.execute()` 耗时 | 衡量特征计算本身 |
+| `n_features` | 该例产出特征数（应恒为 537） | 若某例少几列，说明有特征没算出来 |
+| `total_seconds` | 含读 DICOM、建掩膜的合计耗时 | **外推全量时间用它** |
+
+**(3) `unmatched_roi.csv` —— 失败清单**
+
+- 两列：`PatientID`, `error`；
+- 本次**只有表头、没有数据行**：10 例全部匹配成功，这不是写错文件，
+  而是"已检查、无失败"的证据；
+- D17 跑 422 例时，若某例 ROI 命名极特殊（如拼写变异、多原发灶命名），
+  会在这里逐行出现并附带错误原因，届时再人工决定是否补别名。
+
 ## 六、参数文件与计划模板的偏离
 
 `code/params.yaml` 与 Day16 模板有三处不同，均以论文原文为准
