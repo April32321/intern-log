@@ -302,6 +302,10 @@ ITK 计算与 virtiofs 读取 DICOM 都有开销。结论：D17 跑全量优先�
 差异全部集中在 D13 已标注几何异常的病例，方向一致（Slicer 因补层而偏大），
 **不是栅格化错误**；两例几何干净的相差 <1.3%。
 
+已回填 `results/tables/gtv_volume_check.csv` 的 `pipeline_cm3` 与 `delta_pct` 两列
+（D13 只查过其中 5 例，其余 5 例没有 Slicer 参照值，故不在此表）。
+LUNG1-128 的 `slicer_cm3` 列是另一结构，delta 按 note 中的 2.72942 cm³ 计算。
+
 ### 4. 4 个 signature 特征（量纲校验）
 
 | 特征 | 本批中位数 | 论文 Fig. 1 | 比值 |
