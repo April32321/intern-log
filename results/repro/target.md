@@ -110,7 +110,7 @@ PyRadiomics 各类特征更多且含论文没有的类别），数量天然不�
 | 正文名称 | 编号（正文 / 补充材料） | 数学定义 | PyRadiomics 名称 |
 |---|---|---|---|
 | Statistics Energy | 1 / **#1** Energy | Group 1 第 1 项，ΣX² | `original_firstorder_Energy` |
-| Shape Compactness | 16 / **#16 Compactness 2** | Group 2 第 16 项 | `original_shape_Compactness2` |
+| Shape Compactness | 16 / **#16 Compactness 2** | Group 2 第 16 项 | `original_shape_Compactness2`（**PyRadiomics 3.x 已移除该特征**，由 `36π·V²/A³` 现算，列名后缀 `_derived`） |
 | Grey Level Nonuniformity | 48 / **#47 GLN（GLRLM）** | Group 3 GLRLM 灰度不均匀性 | `original_glrlm_GrayLevelNonUniformity` |
 | wavelet GLNU HLH | Group 4 / **Group 4** | Coiflet 1 非降采样小波 HLH 分解上的 GLRLM GLN | `wavelet-HLH_glrlm-GrayLevelNonUniformity` |
 
@@ -184,6 +184,15 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 - 形状面积：论文用三角化表面积、体素计数求体积；PyRadiomics 用 marching cubes，
   两者在曲面重建上存在小幅差异，影响 Compactness 2。
 - 特征实现：Matlab 自研 vs PyRadiomics，同名特征不保证等价。
+- **Energy 的取值基准**：D16 本地预跑（10 例）显示 Energy 中位数约 4.2×10⁸，
+  比论文的 1.21×10¹⁰ 低约 30 倍；而另外 3 个特征（Compactness2、GLN、
+  wavelet HLH GLN）与论文中位数在 0.5–1.0 倍范围内。Energy 是唯一对
+  "灰度零点"敏感的求和量，其余三个是比值或相对分箱量。
+  初步验证：若把 HU 加上 1024（即未减 DICOM rescale intercept 的存储值），
+  LUNG1-001 的 ΣX² 从 2.28×10⁹ 变为 5.29×10¹⁰，量级进入 10¹⁰
+  （该例体积 156 cm³ 偏大，绝对值高于论文中位数属正常），
+  提示论文是在**未转为 HU 的存储像素值**上计算 Energy。
+  待 D19 用全量 422 例确认后写入差异表。
 
 ## 5. 复现范围与可比性
 

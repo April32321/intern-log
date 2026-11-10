@@ -1,0 +1,27 @@
+# Day 16：PyRadiomics 参数（对齐 Aerts 2014）
+# 每一条的出处见 results/repro/target.md §2.2 与 §4，改动前先改那份文档。
+#
+# 与 Day16 计划模板的三处有意偏离：
+#   1) 不写 resampledPixelSpacing —— 论文未重采样，用原始体素（Lung1 层厚 3 mm）
+#   2) 不开 glszm / gldm / ngtdm —— 论文只定义四类特征
+#   3) 保留 Wavelet —— signature 的第 4 个特征是小波 GLN，不可省
+#
+# 另注意：PyRadiomics 3.x 移除了 Compactness1/2 与 SphericalDisproportion，
+# 论文 signature 的第 2 个特征（#16 Compactness 2）由 05_extract_features.py
+# 用 MeshVolume 与 SurfaceArea 补算：36π·V² / A³，列名带 _derived 后缀。
+
+imageType:
+  Original: {}
+  Wavelet: {}            # 论文：Coiflet 1、离散一层、非降采样，8 个分解（PyRadiomics 默认 coif1）
+
+featureClass:
+  firstorder:            # 论文 #1–#14
+  shape:                 # 论文 #15–#22（Compactness 2 在 #16）
+  glcm:                  # 论文 #23–#44
+  glrlm:                 # 论文 #45–#55（GLN 在 #47）
+
+setting:
+  binWidth: 25           # Supplementary Methods, Group 3 原文
+  normalize: false       # 论文明确未做归一化，直接用 DICOM 原始值
+  label: 1
+  geometryTolerance: 1e-4

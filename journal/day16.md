@@ -1,23 +1,22 @@
 ---
 day: 16
 date: 2026-11-10
-theme: 锁定复现目标 + 镜像 v1（特征提取待续）
+theme: 锁定复现目标 + 镜像 v1 + 管线跑通 10 例
 gate: 无（G4 在 D20）
-status: 进行中（步骤 1–2 完成，步骤 3–4 未开始）
+status: 完成
 ---
 
-# Day 16｜锁定复现目标 + 镜像 v1
+# Day 16｜锁定复现目标 + 镜像 v1 + 管线跑通 10 例
 
-> 今日完成 D16 的步骤 1–2：用 Supplementary Information 把「复现目标」写成
-> 可验收的数字，并构建、验证 radiomics 镜像 v1。
-> 步骤 3–4（`params.yaml`、`05_extract_features.py`、10 例提取与 QC）尚未开始。
+> 今日完成 D16 四步：用 Supplementary Information 把「复现目标」写成可验收的数字；
+> 构建并验证 radiomics 镜像 v1；写参数文件与提取脚本；在容器内跑通 10 例并完成 QC。
 
 ## 今日目标
 
 - 把"要复现什么"写成**可验收的数字**，每一格都有论文原值与出处；
 - 构建镜像 v1，容器内跑通 `import radiomics`；
-- （未完成）特征提取管线跑通 10 例，产出特征表与每例耗时；
-- （未完成）QC：掩膜体积、NaN/inf、特征数量、未匹配 ROI 清单。
+- 特征提取管线跑通 10 例，产出特征表与每例耗时；
+- QC：掩膜体积、NaN/inf、特征数量、未匹配 ROI 清单。
 
 ## 进度快照
 
@@ -28,9 +27,9 @@ status: 进行中（步骤 1–2 完成，步骤 3–4 未开始）
 | 3. 同步 `notes/paper-aerts2014.md` | ✅ | 修正 3 处特征定义，同 commit |
 | 4. `env/Dockerfile.radiomics` | ✅ | Miniforge + conda-forge + 源码编译 pyradiomics |
 | 5. 镜像构建与验证 | ✅ | 4.14 GB；`radiomics v3.0.1 \| numpy 1.26.4`；commit `df4131a` |
-| 6. `code/params.yaml` | ⬜ | 待写 |
-| 7. `code/05_extract_features.py` | ⬜ | 待写 |
-| 8. 10 例提取 + QC | ⬜ | 待跑 |
+| 6. `code/params.yaml` | ✅ | binWidth 25、不重采样、四类 + Wavelet |
+| 7. `code/05_extract_features.py` | ✅ | RTSTRUCT 栅格化、ROI 容错、逐例计时、失败不中断 |
+| 8. 10 例提取 + QC | ✅ | 10/10 成功，0 NaN，容器内 22.0 s/例 |
 
 ## 一、补充材料核对（今日最实质的进展）
 
@@ -191,6 +190,162 @@ WRITE_OK     ← /work 可写
 `which python` 已指向环境解释器，功能等价。如需严格一致，可补 `ENV CONDA_PREFIX` 与
 `ENV CONDA_DEFAULT_ENV`（不影响本项目任何功能，暂未加）。
 
+## 五、10 例提取与 QC
+
+### 概述：这套管线在做什么、怎么搭的
+
+**一句话**：把「检查报告里的 GTV 轮廓变成一行影像组学特征」这件事，拆成
+「参数文件 + 提取脚本 + 三张结果表」，让 10 例能在容器内一键跑通，并自带质控证据。
+
+**四个产出分别做什么**
+
+| 文件 | 它解决的问题 | 实际内容 |
+|---|---|---|
+| `code/params.yaml` | **算什么、按什么口径算** | binWidth 25、normalize false、Original + Wavelet、四类特征、label 1；**不写重采样** |
+| `code/05_extract_features.py` | **怎么算、算不出来怎么办** | 读索引 → 读 CT → 读 RTSTRUCT → 匹配 ROI → 栅格化 → 提取 → 记录耗时与失败 |
+| `results/tables/features_10.csv` | **结果本体** | 10 行 × 538 列（PatientID + 537 个特征，其中 1 个为补算的 Compactness2） |
+| `results/tables/features_10_timing.csv` | **成本与几何证据** | 每例耗时、掩膜体素与体积，用于外推全量时间、对照 Slicer |
+| `results/tables/unmatched_roi.csv` | **匹配失败清单** | 本次为空表：10 例全部命中，LUNG1-128 靠别名匹配 |
+
+**数据流**
+
+```mermaid
+graph LR
+  A[index.csv] --> B[筛出本地存在的病例]
+  B --> C[读 CT 序列<br/>SimpleITK]
+  B --> D[读 RTSTRUCT<br/>pydicom]
+  D --> E[normalize_roi + 优先级匹配]
+  E --> F[轮廓点 → 连续索引坐标]
+  F --> G[向量化扫描线填充<br/>even-odd / XOR]
+  C --> H[掩膜对齐到 CT 网格]
+  G --> H
+  H --> I[PyRadiomics 提取]
+  I --> J[features_10.csv]
+  I --> K[timing.csv]
+  E --> L[unmatched_roi.csv]
+```
+
+**六条搭建思路**
+
+1. **参数先对齐论文，再写代码**：`params.yaml` 每条都有出处（`target.md` §2.2/§4）。
+   先定参数，避免"跑完才发现口径错了"。
+2. **ROI 匹配做成"容错 + 有优先级"**：`normalize_roi()` 去掉大小写/连字符/下划线，
+   把 `GTV-1`、`GTV1`、`gtv_1` 归一到 `gtv1`；再按 `gtv1` > 含 `pre` 的别名 >
+   唯一 `gtv*` 的顺序挑。LUNG1-128 的 `gtv-pre-operat` 靠第二优先级命中。
+3. **栅格化自己实现，不引依赖**：镜像里没有 rt-utils / dcmqi，于是用 pydicom 读轮廓点、
+   SimpleITK 把毫米坐标转索引坐标、numpy 做向量化扫描线填充（even-odd）。
+   同一层多轮廓用 XOR 合并，天然支持孔洞；掩膜与 CT 天然同网格。
+4. **失败不中断，但必须留痕**：每例单独 try/except，失败写入
+   `features_10_failures.csv`（本次 0 例），未匹配单独汇总。
+   批处理最怕"第 7 例挂了、前 6 例白跑"。
+5. **QC 内置在脚本里**：跑完自动打印特征总数与构成、NaN/inf 计数、平均耗时与外推时间、
+   4 个 signature 特征与论文中位数的比值——每次重跑都自带一份质检报告。
+6. **处理论文没提、但必须处理的实现差异**：PyRadiomics 3.x 删掉了 Compactness1/2，
+   而 signature 第 2 个特征正是 Compactness 2；用 `36π·V²/A³` 从 MeshVolume 与
+   SurfaceArea 现算，列名加 `_derived`，**补算并标注**而不是换库或假装不存在。
+
+**这套东西的价值**：不只是"跑出 10 行数字"，而是建立一条可重复、可审计、
+可扩展到 422 例的链路——参数有出处、ROI 匹配有清单、失败有记录、耗时能外推、
+异常有解释。D17 只需去掉 `--limit 10`（或分批），产出的表即可直接进 D18 建模。
+
+具体结果见下面 1–5 节。
+
+### 1. 总览（容器内正式结果）
+
+| 指标 | 本机（预跑） | **容器（正式）** |
+|---|---|---|
+| 成功 / 总数 | 10 / 10 | **10 / 10** |
+| 特征数 / 例 | 537 | **537** |
+| NaN / inf | 0 | **0** |
+| 总耗时 | 89.8 s | **220.2 s** |
+| 单例均值 | 9.0 s | **22.0 s** |
+| 外推 422 例 | ≈ 63 min | **≈ 155 min** |
+
+两侧的掩膜体积、特征值、4 个 signature 中位数**完全一致**，说明管线是确定性的，
+容器化没有改变结果。
+
+**容器比本机慢约 2.4 倍**：Linux aarch64 跑在 Docker Desktop 的 VM 里，
+ITK 计算与 virtiofs 读取 DICOM 都有开销。结论：D17 跑全量优先用本机原生或服务器，
+容器用于环境一致性验证（10 例已证明等价）。
+
+### 2. 逐例结果
+
+| # | 病例 | 选中 ROI | 掩膜体积 (cm³) | 提取 (s) | 合计 (s) |
+|---:|---|---|---:|---:|---:|
+| 1 | LUNG1-001 | GTV-1 | 156.2 | 26.7 | 27.6 |
+| 2 | LUNG1-009 | GTV-1 | 98.5 | 19.9 | 20.9 |
+| 3 | LUNG1-010 | GTV-1 | 16.1 | 15.7 | 16.5 |
+| 4 | LUNG1-014 | GTV-1 | 8.5 | 15.2 | 16.0 |
+| 5 | LUNG1-021 | GTV-1 | 209.2 | 40.4 | 41.7 |
+| 6 | LUNG1-085 | GTV-1 | 12.1 | 19.5 | 20.9 |
+| 7 | LUNG1-103 | GTV-1 | 8.9 | 19.4 | 20.7 |
+| 8 | LUNG1-128 | **gtv-pre-op**（别名） | 2.8 | 16.9 | 17.4 |
+| 9 | LUNG1-203 | GTV-1 | 26.0 | 18.9 | 19.6 |
+| 10 | LUNG1-217 | GTV-1 | 176.9 | 18.1 | 19.0 |
+
+特征构成（每例 537）：original 73（firstorder 18 / glcm 24 / glrlm 16 / shape 15）
++ wavelet 464（8 个分解 × 58）。
+
+### 3. 掩膜体积 vs D13 的 Slicer 值
+
+| 病例 | 本管线 (cm³) | Slicer (cm³) | 相对差 | D13 备注 |
+|---|---:|---:|---:|---|
+| LUNG1-001 | 156.2 | 156.3 | **−0.07%** | 几何干净 |
+| LUNG1-128 | 2.76 | 2.73 | **+1.2%** | 别名病例 |
+| LUNG1-021 | 209.2 | 214.3 | −2.4% | 缺 1 层 |
+| LUNG1-014 | 8.54 | 9.57 | −10.7% | geometry suspect |
+| LUNG1-085 | 12.11 | 16.56 | −26.9% | 缺 10 层、拉伸网格 |
+
+差异全部集中在 D13 已标注几何异常的病例，方向一致（Slicer 因补层而偏大），
+**不是栅格化错误**；两例几何干净的相差 <1.3%。
+
+### 4. 4 个 signature 特征（量纲校验）
+
+| 特征 | 本批中位数 | 论文 Fig. 1 | 比值 |
+|---|---:|---:|---:|
+| `original_firstorder_Energy` | 4.245×10⁸ | 1.213×10¹⁰ | **×0.03** |
+| `original_shape_Compactness2_derived` | 0.1813 | 0.24 | ×0.76 |
+| `original_glrlm_GrayLevelNonUniformity` | 508.9 | 984.7 | ×0.52 |
+| `wavelet-HLH_glrlm_GrayLevelNonUniformity` | 1059 | 1111 | ×0.95 |
+
+### 5. 两个新发现
+
+**(1) PyRadiomics 3.x 移除了 Compactness1/2**
+shape 只剩 14 个特征，`original_shape_Compactness2` 不存在。已改为用
+`MeshVolume` 与 `SurfaceArea` 现算 `36π·V²/A³`，列名带 `_derived`；
+`target.md` §3 已标注。
+
+**(2) Energy 差 30 倍，其余三个特征同量级**
+Energy 是唯一对"灰度零点"敏感的求和量。LUNG1-001 若把 HU 加 1024
+（即未减 DICOM rescale intercept 的存储值），ΣX² 从 2.28×10⁹ 变为 5.29×10¹⁰，
+量级进入 10¹⁰，提示论文可能在**未转成 HU 的存储像素值**上计算 Energy。
+已写入 `target.md` §4 的残余差异，待 D17 全量确认。
+
+### 6. 本批样本的局限
+
+这 10 例是 D10/D11 小样本阶段下载的，**不是随机抽样**：
+
+- 体积跨度 2.8–209.2 cm³，中位数约 21 cm³，但 3 例 >150 cm³，分布很偏；
+- `LUNG1-085` 有 5 个 GTV 相关 ROI（`gtv-2_4r`、`gtv_3_2l2`…），提示多病灶，
+  我们取 `GTV-1`，与论文"单原发灶"假设未必一致；
+- 因此上述中位数只能作为「同量级」证据，**不能当作 Lung1 的代表值**，
+  更不能据此声称数值复现。
+
+## 六、参数文件与计划模板的偏离
+
+`code/params.yaml` 与 Day16 模板有三处不同，均以论文原文为准
+（`target.md` §2.2 / §4 有出处）：
+
+| 项 | 计划模板 | 实际 | 原因 |
+|---|---|---|---|
+| `resampledPixelSpacing` / `interpolator` | `[1,1,1]` / `sitkBSpline` | **不写** | 论文未重采样；1 mm 重采样会引入系统偏移，破坏 D19 的差异归因 |
+| `featureClass` | 七类（含 glszm / gldm / ngtdm） | **四类** + Wavelet | 论文只定义 firstorder / shape / glcm / glrlm |
+| Compactness 2 | 模板未提 | **脚本补算** | PyRadiomics 3.x 已移除该特征，用 `36πV²/A³` 现算 |
+
+`binWidth: 25`、`normalize: false`、`label: 1` 与模板一致。模板本身要求
+"这些参数必须在 `target.md` 里对齐论文/文献"，因此上述偏离是**对齐的结果**，
+不是随意改动。
+
 ## 卡点与排查
 
 | # | 现象 | 原因 | 处置 |
@@ -212,11 +367,30 @@ WRITE_OK     ← /work 可写
 | `notes/paper-aerts2014.md` | 论文笔记同步：特征定义修正、Table 1 对照、待核实清单关闭 |
 | `env/Dockerfile.radiomics` | radiomics 镜像层（Miniforge + 源码编译 pyradiomics + 自检） |
 | `env/environment.docker.yml` | 镜像用依赖清单（conda-forge + nodefaults，去掉 jupyter/seaborn） |
+| `code/params.yaml` | 与论文对齐的提取参数（binWidth 25、不重采样、四类 + Wavelet） |
+| `code/05_extract_features.py` | RTSTRUCT → mask、ROI 名容错、逐例计时、失败不中断 |
+| `results/tables/features_10.csv` | 10 例 × 537 特征 |
+| `results/tables/features_10_timing.csv` | 每例耗时、掩膜体素与体积 |
+| `results/tables/unmatched_roi.csv` | 未匹配清单（本次为空：10 例全部命中） |
 | `.dockerignore` | 补 `journal`、`notes`、`*.pdf` |
 | `data/paper/ncomms5006_supplementary.pdf` | 补充材料（本地，不入库） |
 | `logs/build2.log` / `build3.log` / `build4.log` | 三次构建日志，保留中断现场（本地，已被 `logs/*.log` 忽略） |
 
 ## 环境与运行
+
+镜像 `intern-radiomics:1.0`（ID `f7ee2f9daa9e`）内的版本：
+
+| 组件 | 版本 |
+|---|---|
+| Python | 3.10.22 |
+| numpy | 1.26.4 |
+| SimpleITK | 2.5.6（用于序列读取与物理坐标→索引换算） |
+| pydicom | 3.0.2（用于解析 RTSTRUCT） |
+| pyradiomics | 3.0.1（源码编译） |
+| lifelines / scikit-survival | 随 conda 环境安装 |
+
+掩膜实现方式：**pydicom 解析轮廓 + SimpleITK 坐标换算 + numpy 向量化扫描线填充**
+（未用 rt-utils / dcmqi；生成的是同一网格上的 even-odd 掩膜）。
 
 ```bash
 # 构建（上下文必须是项目根目录）
@@ -225,6 +399,13 @@ docker build --progress=plain -f env/Dockerfile.radiomics -t intern-radiomics:1.
 # 验收
 docker run --rm intern-radiomics:1.0 python -c \
   "import numpy, radiomics, lifelines, sksurv; print(radiomics.__version__, numpy.__version__)"
+
+# 10 例提取（正式结果由这条产生）
+docker run --rm -u dev -e HOME=/home/dev \
+  -v "$PWD":/work -w /work \
+  -v "$PWD/data/raw":/data:ro \
+  intern-radiomics:1.0 \
+  python code/05_extract_features.py --limit 10
 
 # 交互式进入（代码与数据都挂载，镜像只装环境）
 docker run --rm -it -u dev -e HOME=/home/dev \
@@ -238,9 +419,9 @@ docker run --rm -it -u dev -e HOME=/home/dev \
 |---|---|---|
 | `target.md` 所有"论文原值"格都填了且标了出处 | ✅ | 7 项均填，含「未报告 / N/A」的显式结论 |
 | 镜像能跑通 `import radiomics` | ✅ | `radiomics v3.0.1 \| numpy 1.26.4`；另验证 lifelines / sksurv |
-| 10 例特征表生成，无 NaN | ⬜ | 待步骤 3 |
-| 每例耗时有记录，能外推全量时间 | ⬜ | 待步骤 3 |
-| 未匹配 ROI 清单已产出（预期含 LUNG1-128） | ⬜ | 待步骤 3 |
+| 10 例特征表生成，无 NaN | ✅ | `features_10.csv`，10 × 537，非有限值 0 |
+| 每例耗时有记录，能外推全量时间 | ✅ | `features_10_timing.csv`；22.0 s/例 → 422 例约 155 min |
+| 未匹配 ROI 清单已产出（预期含 LUNG1-128） | ✅ | `unmatched_roi.csv` 为空：`normalize_roi()` 把 `gtv-pre-operat` 匹配成功 |
 
 ## 今日结论
 
@@ -253,16 +434,25 @@ docker run --rm -it -u dev -e HOME=/home/dev \
 - 镜像构建的难点不在 Python 包，而在 **conda 25 的 ToS 机制**；
   绕开（Miniforge）比接受条款更合适，也更适合放进可复现的 Dockerfile；
 - `target.md` 已能回答"复现成功与否"：量纲校验 + 方向一致 + CV CI 不含 0.5 +
-  同集比较 + 五类差异归因，六条都可验收。
+  同集比较 + 五类差异归因，六条都可验收；
+- 管线在容器与本机给出**逐位一致**的特征值（掩膜体积、537 特征、4 个中位数全部相同），
+  说明环境可复现；但容器单例 22.0 s 比本机 9.0 s 慢 2.4 倍，
+  D17 全量应优先本机原生或服务器，容器保留作一致性验证；
+- 10 例是历史小样本，**不是随机抽样**（体积 2.8–209.2 cm³，含多病灶病例），
+  因此中位数对照只能证明"同量级"，不能证明"数值复现"；
+- PyRadiomics 3.x 移除 Compactness1/2 是一个必须显式处理的实现差异——
+  用 `36πV²/A³` 补算并在文档中标注，比直接换库或忽略更稳妥；
+- Energy 与论文相差约 30 倍，而其余三个特征在 0.5–1.0 倍内；
+  "+1024 偏移"能把量级拉回 10¹⁰，提示差异来自**灰度零点**而非算法错误，
+  这是 D19/D20 归因的第一条实证线索。
 
-## 待办（D16 剩余）
+## 待办（D17 开工前）
 
-1. 写 `code/params.yaml`：binWidth 25、`normalize: false`、四类特征、不写 `resampledPixelSpacing`；
-2. 写 `code/05_extract_features.py`：RTSTRUCT → mask、`normalize_roi()` 容错、逐例计时、失败不中断；
-3. 跑 `data/raw/full` 的 10 例，产出 `results/tables/features_10.csv` + 计时表；
-4. QC 四项：掩膜体积 vs D13 的 Slicer、NaN/inf、特征数量、4 个特征中位数 vs Fig. 1；
-5. 产出未匹配 ROI 清单（预期含 `LUNG1-128`，其 ROI 名为 `gtv-pre-operat`；
-   已在 `results/tables/gtv_volume_check.csv` 中标注「D16 alias fix」）；
-6. 回填 `journal/INDEX.md` 的 D16 行；
-7. 收尾 commit：`day16: 复现目标定义、镜像 v1 与 10 例特征提取`
-   （步骤 1–2 已分别提交为 `48e96fb`、`df4131a`）。
+1. 回填 `journal/INDEX.md` 的 D16 行；
+2. 收尾 commit：`day16: 复现目标定义、镜像 v1 与 10 例特征提取`
+   （步骤 1–2 已分别提交为 `48e96fb`、`df4131a`）；
+3. D17 全量 422 例：优先本机原生或服务器（容器内约 155 min）；
+   运行前先确认磁盘与中断策略（`nohup` + 日志），并保留 `--limit` 分批能力；
+4. D17 顺带做两件加分项：
+   - 用 SEG 与 RTSTRUCT 掩膜做一次 Dice 对照（2 例即可），独立验证栅格化；
+   - 用全量数据复核 Energy 的 +1024 偏移假设，确认后写入 `target.md` 差异表。
