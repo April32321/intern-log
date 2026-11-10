@@ -1,0 +1,51 @@
+# Miniforge 基础层（实验 / 调试用，**不是交付镜像**）
+#
+# 本文件只装到 Miniforge 为止：没有 conda 环境、没有 PyRadiomics、
+# 没有 lifelines / scikit-survival，`import radiomics` 会失败。
+#
+# 用途：
+#   - 单独验证 Miniforge 安装是否成功（绕开 conda 25 的 ToS 预检查）；
+#   - 作为调试底座，在容器里手动试 `conda create` / `pip install`；
+#   - 层缓存复用：改环境依赖时不必每次重装 Miniforge。
+#
+# 交付用的完整镜像请用 env/Dockerfile.radiomics（产出约 4.14 GB，含四项自检）。
+#
+# 构建：
+#   docker build -f env/Dockerfile.miniforge -t intern-radiomics:miniforge .
+# 验证：
+#   docker run --rm intern-radiomics:miniforge conda --version
+FROM intern-dev:1.0 AS miniforge
+
+USER root
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 与完整版保持同一底座能力：pyradiomics 源码编译需要编译链，
+# 若要在本层之上手动 conda create / pip install，这里必须已经装好
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      bzip2 gcc g++ make \
+ && rm -rf /var/lib/apt/lists/*
+
+# 按目标架构选择 Miniforge 安装包（arm64 = Apple Silicon，amd64 = x86 服务器）
+ARG TARGETARCH=arm64
+ENV CONDA_DIR=/opt/conda
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      arm64|aarch64) MC_ARCH="aarch64" ;; \
+      amd64|x86_64)  MC_ARCH="x86_64"  ;; \
+      *) echo "unsupported arch: ${TARGETARCH}"; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/miniforge.sh \
+      "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${MC_ARCH}.sh"; \
+    bash /tmp/miniforge.sh -b -p "${CONDA_DIR}"; \
+    rm -f /tmp/miniforge.sh
+ENV PATH=${CONDA_DIR}/bin:${PATH}
+
+# 基础层自检：conda 必须可用，radiomics 必须不可导入
+RUN conda --version \
+ && if python -c "import radiomics" 2>/dev/null; then \
+      echo "错误：基础层里不应存在 radiomics，请检查是否误装了环境"; exit 1; \
+    fi
+
+USER dev
+WORKDIR /work
+CMD ["bash"]
