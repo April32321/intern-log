@@ -2,7 +2,9 @@
 
 > 论文：Decoding tumour phenotype by noninvasive imaging using a quantitative radiomics approach.
 > *Nature Communications* 2014;5:4006. DOI `10.1038/ncomms5006`。
-> 本笔记依据正文、图注与方法段整理；标「待核实」的内容需回原文或补充材料确认。
+> 本笔记依据正文、图注、方法段与 Supplementary Information（32 页，2026-11-10 核对）整理。
+> **目标值与复现协议以 `results/repro/target.md`（当前 v1.2）为唯一权威**；
+> 本笔记只记录文献理解与原文事实，两者冲突时以 target.md 为准。
 
 ## 1. 论文基本信息
 
@@ -13,7 +15,7 @@
 | 期刊 | *Nature Communications* |
 | 年份 / 卷号 | 2014；**5**:4006 |
 | DOI | `10.1038/ncomms5006` |
-| 更正 | Corrigendum：`10.1038/ncomms5644`（2014-08-07），引用数值前需核对 |
+| 更正 | Corrigendum：`10.1038/ncomms5644`（2014-08-07）。**已核对：仅为作者姓名拼写更正（Sara Cavalho → Sara Carvalho），不影响任何数值或特征定义** |
 | 研究方向 | Radiomics、Survival Analysis、Radiogenomics |
 | 本项目数据 | TCIA `NSCLC-Radiomics`（Lung1），422 例，DOI `10.7937/K9/TCIA.2015.PF0M9REI` |
 
@@ -51,16 +53,23 @@
 
 ## 4. 影像组学特征
 
-共 **440 个定量特征**，分为四类：
+共 **440 个定量特征**（论文口径），分为四类：
 
-| 特征类别 | 中文名称 | 描述内容 |
-|---|---|---|
-| Intensity | 一阶强度特征 | 肿瘤体素灰度值及其统计分布 |
-| Shape | 形状特征 | 几何形状、球形度、紧凑度 |
-| Texture | 纹理特征 | 肿瘤内部灰度分布与空间异质性 |
-| Wavelet | 小波特征 | 不同频率范围内的强度与纹理信息 |
+| 特征类别 | 中文名称 | 描述内容 | 补充材料编号 | 数量 |
+|---|---|---|---|---|
+| Intensity | 一阶强度特征 | 肿瘤体素灰度值及其统计分布 | #1–#14 | 14 |
+| Shape | 形状特征 | 几何形状、球形度、紧凑度 | #15–#22 | 8 |
+| Texture | 纹理特征 | GLCM #23–#44、GLRLM #45–#55 | #23–#55 | 22 + 11 |
+| Wavelet | 小波特征 | Coiflet 1、非降采样、8 个分解，每分解含一阶 + 纹理 | Group 4 | 8 × 47 |
 
 其中纹理与小波特征用于刻画肿瘤内部异质性，是 signature 的核心信息来源。
+
+**关于 440 的可复原性**：按补充材料编号可数出 55 个原始特征，
+加 8 个小波分解 × 47 = 376，合计 **431**，与正文 440 差 9。
+差额来源无法从公开材料解释，本笔记不作推测；
+440 只作为论文口径记录，不作为本项目的特征数预期
+（PyRadiomics 的特征集与论文不同，数量天然不可比）。
+详见 `results/repro/target.md` §2.4。
 
 ## 5. Radiomic Signature
 
@@ -76,21 +85,40 @@
 
 ### 5.2 最终四个特征
 
-| 特征（正文名称） | Figure 4b / 补充材料标注（待核对） | 类别 | 原文编号 |
-|---|---|---|---|
-| Statistics Energy | Statistics (Total) Energy | 一阶强度 | Feature 1 |
-| Shape Compactness | Shape Compactness | 形状 | Feature 16 |
-| Grey Level Nonuniformity | RLGL Grey Level Nonuniformity | 纹理 | Feature 48 |
-| wavelet Grey Level Nonuniformity HLH | Wavelet HLH RLGL GLNU | 小波 | Feature Group 4 |
+| 特征（正文名称） | 补充材料标注（已核对） | 补充材料编号 | PyRadiomics 名称 | 备注 |
+|---|---|---|---|---|
+| Statistics Energy | `Stats_energy` | **#1** Energy | `original_firstorder_Energy` | 是 Energy（ΣX²），**不是** Total Energy |
+| Shape Compactness | `Shape_compactness2` | **#16** Compactness 2 | `original_shape_Compactness2` | 不是 Compactness 1（#15） |
+| Grey Level Nonuniformity | `RLGL_grayLevelNonuniformity` | **#47** GLN（GLRLM） | `original_glrlm_GrayLevelNonUniformity` | 正文写 "Feature 48"，但 #48 是 Run Length Non-Uniformity |
+| wavelet Grey Level Nonuniformity HLH | `Wavelet_HLH_rlgl_grayLevelNonuniformity` | Group 4 | `wavelet-HLH_glrlm-GrayLevelNonUniformity` | HLH 分解上的 GLRLM GLN |
 
 说明：
 
-- 正文使用的是 `Statistics Energy` 和 `Grey Level Nonuniformity`；
-  Figure 4b 可能使用 `Statistics Total Energy`、`RLGL Grey Level Nonuniformity`
-  等标注，**属于命名差异，精确数学定义必须查 Supplementary Methods**；
-- **4 个特征的 Cox 权重（系数）未在正文给出**，需查补充材料；
-  若无法获得，复现时用相同 4 特征在 Lung1 重新拟合，并注明权重来源；
+- 以上标注与编号均取自 Supplementary Information（已核对）：
+  - **Compactness 是 2 不是 1**：补充材料 #15 = Compactness 1、#16 = Compactness 2，
+    Supplementary Fig. 1 图注亦为 `Shape_compactness2`；
+  - **GLN 的编号存在 off-by-one**：正文 "Feature 48" 与补充材料编号对不上
+    （#47 = GLN、#48 = RLN）；Fig. 1 图注写作 `RLGL_grayLevelNonuniformity`
+    （RLGL = run-length gray level），故实际特征是 GLRLM 的 GLN；
+  - 正文的 `Statistics Energy` 对应补充材料 #1 Energy，**不是** "Total Energy"；
+    PyRadiomics 的 `TotalEnergy` 额外乘体素体积，量级会差一个体素体积因子。
+- **4 个特征的 Cox 权重已查：补充材料只给 #1–#55 的数学定义，未公开系数**；
+  复现时一律在训练折内用相同 4 特征重新拟合，并标注「自拟合」，
+  不得写成"采用论文权重"。
 - 特征算法为作者自研 Matlab 实现，PyRadiomics 中同名特征不保证等价。
+
+Supplementary Fig. 1 给出 4 个特征在 Lung1 上的中位数（即论文锁定的分组阈值），
+可作量纲校验锚点：
+
+| 特征 | Lung1 中位数 |
+|---|---:|
+| `Stats_energy` | 12,133,187,584（≈1.21×10¹⁰） |
+| `Shape_compactness2` | 0.24 |
+| `RLGL_grayLevelNonuniformity` | 984.67 |
+| `Wavelet_HLH_rlgl_grayLevelNonuniformity` | 1110.68 |
+
+这些值只能用于**量纲校验**，不可直接当作 PyRadiomics 特征的分组阈值
+（实现不同，数值分布不可假定一致）。
 
 ## 6. 特征提取软件与参数
 
@@ -105,20 +133,20 @@
   因此不存在"作者选择不用 PyRadiomics"的问题，而是当时**只能自研**；
 - 特征算法的详细定义在 Supplementary Methods，正文未完整给出。
 
-### 6.2 复现时需要核实的参数
+### 6.2 复现参数（已核实）
 
-| 参数 | 需要核实的内容 |
-|---|---|
-| Feature definitions | 数学定义是否一致（Feature 1/16/48/Group 4） |
-| Image preprocessing | 是否重采样、滤波、插值 |
-| Gray-level discretization | bin width / bin count 的定义 |
-| Texture matrix | 三维计算方式、方向合并方式 |
-| Wavelet decomposition | 小波类型、滤波与边界处理 |
-| Segmentation / ROI | 肿瘤掩膜来源与勾画规则是否一致 |
+| 参数 | 原文结论 | 出处 |
+|---|---|---|
+| Feature definitions | 见 §5.2：Energy、Compactness 2、GLRLM GLN、wavelet HLH GLN | Supplementary Methods 编号 #1–#55 |
+| Image preprocessing | **未重采样**，直接用原始体素（Lung1 层厚 3 mm）；无滤波、无插值 | Supplementary Methods；Lung1 数据集段 |
+| Gray-level discretization | 等宽分箱，**binWidth = 25 HU** | Group 3 第 1 段 |
+| Texture matrix | 3D、26 邻域、13 方向；每个 3D 特征取 13 方向的均值；distance = 1 | Group 3 |
+| Wavelet decomposition | **Coiflet 1**，离散、一层、**非降采样**，8 个分解；每个分解计算一阶 + 纹理特征 | Group 4 |
+| Segmentation / ROI | GTV，放疗医生在融合 PET-CT 上按固定窗宽勾画；TCIA 发布的是同一批 delineation | Lung1 数据集段；TCIA |
+| Normalization | **未做任何归一化**，直接使用 DICOM 原始数值 | Methods |
 
-原论文明确说明：影像组学特征**未在任何数据集上归一化**，
-只使用直接从 DICOM 图像计算出的原始数值。但这不等于所有预处理和
-特征参数都已完整公开。
+仍未知的细节：等宽分箱的**起点规则**（全局最小值还是 ROI 最小值）原文未说明；
+PyRadiomics 从 ROI 内最小值起算，这一条留作残余差异。
 
 ### 6.3 复现级别
 
@@ -148,7 +176,7 @@
 | Concordance Index | 评价模型区分能力（Harrell's C） |
 | Bootstrap + Wilcoxon | 比较两个模型 / 与随机 C-index=0.5 的差异 |
 | GSEA | 分析影像特征相关的基因集 |
-| 相关性分析 | 影像特征与基因表达关联（具体方法待核实，正文方法段未见 Spearman 的明确表述） |
+| 相关性分析 | 影像特征与基因表达关联（正文与补充材料均未明确方法名；**与复现无关**，仅影响 radiogenomics 部分的解读） |
 
 ### 7.1 Kaplan–Meier
 
@@ -181,7 +209,7 @@ h(t|X) = h0(t) × exp(β1X1 + β2X2 + ... + βpXp)
 
 | 数据集 | 角色 | 样本量 | C-index | 原文逐字 | 出处 |
 |---|---|---:|---:|---|---|
-| Lung1 | 训练集 | 422 | **主文未报告** | — | Results「Prognostic validation of radiomic signature」；待查 Supplementary Table 1 |
+| Lung1 | 训练集 | 422 | **主文未报告** | — | Supplementary Table 1 亦无（该表仅含验证集） |
 | Lung2 | 验证集 | 225 | 0.65 | "CI=0.65, *P*=2.91 × 10−09, Wilcoxon test" | 同上 + Fig. 4a |
 | H&N1 | 验证集 | 136 | 0.69 | "CI=0.69, *P*=7.99 × 10−07, Wilcoxon test" | 同上 + Fig. 4a |
 | H&N2 | 验证集 | 95 | 0.69 | "CI=0.69, *P*=3.53 × 10−06, Wilcoxon test" | 同上 + Fig. 4a |
@@ -189,12 +217,25 @@ h(t|X) = h0(t) × exp(β1X1 + β2X2 + ... + βpXp)
 **注意：**
 
 1. 正文只报告三个验证集的 C-index，**没有报告 4 特征 signature 在 Lung1 的 C-index**；
-   训练集数值可能在 Supplementary Table 1（signature vs volume vs TNM 对比表）中；
+   已核对 Supplementary Table 1（标题即 "Prognostic performance in validation datasets"），
+   该表只有 Lung2 / H&N1 / H&N2 三行，**不含训练集值**——「Lung1 训练集 C-index」
+   在本项目中判定为**不可对照**，不得用其他模型的数字顶替；
 2. 不能把验证集结果误写为训练集结果；
 3. **本项目只有 Lung1（论文训练集），没有 Lung2/H&N1/H&N2**，
    因此无法复现 0.65/0.69/0.69，只能做 Lung1 内部交叉验证；
 4. 545 与 456 的口径：225 + 136 + 95 = 456（生存验证），
    456 + 89（Lung3）= 545（Discussion 口径）。
+
+### 8.1 Supplementary Table 1（仅验证集）
+
+| Dataset | TNM | Volume | Radiomics | TNM + Radiomics | Volume + Radiomics |
+|---|---:|---:|---:|---:|---:|
+| Lung2 | 0.60 | 0.63 | 0.65 | 0.64 | 0.65 |
+| H&N1 | 0.69 | 0.68 | 0.69 | 0.70 | 0.69 |
+| H&N2 | 0.66 | 0.65 | 0.69 | 0.69 | 0.68 |
+
+可用于「量级参照」：signature 在三个验证集均不低于 volume；
+加 TNM 后在三个验证集都优于单独 TNM。本项目没有这三个队列，不进入差异计算。
 
 ## 9. 核心研究结果
 
@@ -216,6 +257,14 @@ h(t|X) = h0(t) × exp(β1X1 + β2X2 + ... + βpXp)
 - signature 在 Lung2、H&N2 优于 TNM，在 H&N1 与 TNM 相当；
   signature + TNM 在所有验证集均优于单独 TNM（Supplementary Table 1）；
 - HPV 阴性亚组（n=130，占 76%）C-index = 0.66。
+
+补充（Supplementary Tables 2–3）：
+
+- 按治疗分组的 C-index——单纯放疗：Lung2 0.66、H&N1 0.72、H&N2 0.78；
+  放化疗：Lung2 0.64、H&N1 0.65、H&N2 0.58；
+- HPV 状态：H&N1 为 HPV− 53 / HPV+ 22 例，H&N2 为 77 / 18，合并 130 / 40（HPV− 占 76%）；
+  组内 C-index：HPV− 0.66、HPV+ 0.53；
+  单独用 HPV 状态预测的 C-index：H&N1 0.84、H&N2 0.81、合并 0.83。
 
 ### 9.3 肿瘤异质性与基因表达相关
 
@@ -248,13 +297,13 @@ h(t|X) = h0(t) × exp(β1X1 + β2X2 + ... + βpXp)
 ### 10.5 扫描协议与标准化
 
 不同医院、扫描仪和采集协议会影响特征一致性。
-原论文未做特征归一化，也未按队列/扫描仪校正；
+原论文未做特征归一化、未按队列/扫描仪校正，也**未做体素重采样**；
 未来需要进一步标准化与跨平台验证。
 
 ### 10.6 权重与实现未完全公开
 
-4 个特征的 Cox 系数未在正文给出，特征算法为自研 Matlab 实现，
-外部团队难以逐位复现。
+4 个特征的 Cox 系数正文与 Supplementary Information 均未给出，
+特征算法为自研 Matlab 实现，外部团队难以逐位复现。
 
 ## 11. 复现项目建议
 
@@ -268,22 +317,27 @@ h(t|X) = h0(t) × exp(β1X1 + β2X2 + ... + βpXp)
 
 - 只有 Lung1（论文训练集），**没有外部验证队列**；
 - 只能做 Lung1 内部交叉验证，不能声称复现论文的 0.65/0.69/0.69；
-- 影像主分析用 422 例；与临床基线（399 例）对比时必须使用同一分析集；
-- 论文训练集 C-index 未报告，需查补充材料后才能判断是否可对照。
+- 影像主分析用 422 例；与临床基线对比时必须使用同一分析集
+  （临床 v1 399 例 / v2 395 例）；
+- 论文训练集 C-index 未报告（正文与 Supplementary Table 1 均无），**已判定为不可对照**；
+- apparent 与 CV 不得并列比较（详见 target.md §6.1–6.2）。
 
 ### 11.3 待核实清单
 
-- [ ] 获取并阅读 Supplementary Methods；
-- [ ] 核对 4 个最终特征的数学定义与编号（Feature 1/16/48/Group 4）；
-- [ ] 核对原始 Matlab 实现与 PyRadiomics 的差异；
-- [ ] 确认 Lung1 训练集 C-index（Supplementary Table 1）；
-- [ ] 确认 signature 的 4 个 Cox 权重是否公开；
-- [ ] 核对 Corrigendum `10.1038/ncomms5644` 是否影响数值；
+- [x] 获取并阅读 Supplementary Methods：已获取（32 页，Open access，2026-11-10）；
+- [x] 核对 4 个最终特征的数学定义与编号：见 §5.2
+      （Compactness 2；GLRLM GLN，正文 #48 与补充材料 #47 差一位）；
+- [ ] 核对原始 Matlab 实现与 PyRadiomics 的差异（D16/D19 实测后补）；
+- [x] 确认 Lung1 训练集 C-index：**正文与 Supplementary Table 1 均无，判定为未报告**；
+- [x] 确认 signature 的 4 个 Cox 权重是否公开：**未公开**，一律自拟合；
+- [x] 核对 Corrigendum `10.1038/ncomms5644`：仅为作者姓名拼写更正，不影响数值；
 - [x] 核对 545 与 456 两种样本量口径：225 + 136 + 95 = 456；
       456 + 89（Lung3）= 545（Discussion 口径）；
-- [ ] 确认本数据集患者数量、分割文件与索引表一致（422 例）；
-- [ ] 记录实际使用的软件版本与特征提取参数；
-- [ ] 将复现 C-index 与论文报告值按「同口径/不同口径」分别对照。
+- [x] 确认本数据集患者数量、分割文件与索引表一致：422 例；
+      性别（290 男 / 132 女）与分期（I 93、II 40、IIIa 112、IIIb 176）与论文 Table 4 一致，
+      缺 1 例 stage 与排除数吻合；
+- [ ] 记录实际使用的软件版本与特征提取参数（D16）；
+- [ ] 将复现 C-index 与论文报告值按「同口径/不同口径」分别对照（D18）。
 
 ## 12. 总结
 
@@ -307,7 +361,12 @@ Aerts HJWL, Rios Velazquez E, Leijenaar RTH, et al.
 Decoding tumour phenotype by noninvasive imaging using a quantitative radiomics approach.
 *Nature Communications*. 2014;5:4006. DOI: `10.1038/ncomms5006`.
 
-Corrigendum. *Nature Communications*. 2014. DOI: `10.1038/ncomms5644`
-（页码/文章号以出版页为准）。
+Corrigendum: *Nature Communications*. 2014;5:4644. DOI: `10.1038/ncomms5644`
+（2014-08-07）。已核对：仅为作者姓名拼写更正（Sara Cavalho → Sara Carvalho），
+不影响任何数值或特征定义。
+
+Supplementary Information（32 页，含 Supplementary Methods #1–#55、
+Figs 1–4、Tables 1–7）：`https://www.nature.com/articles/ncomms5006#MOESM716`
+（Open access；2026-11-10 获取，1,252,817 B；本地 `data/paper/` 不入库）。
 
 Dataset: TCIA NSCLC-Radiomics (Lung1). DOI: `10.7937/K9/TCIA.2015.PF0M9REI`.
