@@ -99,6 +99,40 @@ status: 进行中（步骤 1–2 完成，步骤 3–4 未开始）
 
 ## 三、镜像 v1
 
+### 概述：它是什么、做了什么、怎么搭的
+
+**一句话**：把一个能在任何机器上复现的 PyRadiomics 运行环境固化成 Docker 镜像，
+镜像只装依赖、不装代码和数据。
+
+**要解决什么**：项目要用 PyRadiomics 3.0.1 + numpy 1.26 + SimpleITK + lifelines +
+scikit-survival 跑特征提取与生存建模；这套组合在本机 conda 里调通容易，换台机器
+（例如实习的 Linux 服务器）就未必。`Dockerfile.radiomics` 把这份环境写成可重建的配方，
+产出 `intern-radiomics:1.0`，保证"我这儿能跑"和"别人那儿能跑"是同一套依赖。
+
+**做了什么**：在已有的开发底座（ubuntu 24.04 固定 digest + 非 root 用户 `dev` + sudo +
+`/work`）之上，安装 Miniforge，用 conda-forge 建 `python 3.10 / numpy 1.26` 的
+`radiomics` 环境，再**从源码编译 pyradiomics 3.0.1**（该版本无 py3.10 轮子），
+最后加一条构建期自检——`import radiomics / lifelines / sksurv` 且断言 numpy 为 1.26，
+任一失败镜像就不生成。成品 4.14 GB，容器内验证输出 `radiomics v3.0.1 | numpy 1.26.4`。
+
+**怎么搭起来的**：三层决策。
+
+1. **分层**：复用 D12 的 `intern-dev:1.0` 作为第一层，只在其上追加科学栈。
+   底座几乎不变，重建环境时不用重跑 apt 与用户配置。
+2. **换 Miniforge**：conda ≥ 25 会对 `repo.anaconda.com` 做 ToS 预检查，容器里没有
+   "点同意"的途径；`nodefaults` 只在求解期生效、`conda config --set default_channels`
+   已被禁用，所以直接改用默认渠道即 conda-forge 的 Miniforge——绕开而不是接受条款。
+3. **绕开两个已知坑**：pyradiomics 必须"先装 versioneer、再 `--no-build-isolation`"
+   才能编译；且用 `/opt/conda/envs/radiomics/bin/pip` 直接调用，而不是 `conda run`
+   ——后者会缓冲输出，让编译期日志完全静默，无法判断死活。
+
+两个补充细节：`ARG TARGETARCH` 自动在 aarch64 / x86_64 之间切换安装包，
+将来上 x86 服务器不用改文件；根目录 `.dockerignore` 排除 `data/`，
+把构建上下文从 920 MB 压到几 MB。
+
+验证方式与真实输出见 §四：镜像体积、三项 import、`conda env list` 与 `which python`、
+数据挂载与工作区写入，四项均已通过。
+
 ### 1. 分层设计
 
 ```mermaid
