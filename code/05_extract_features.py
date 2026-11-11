@@ -19,6 +19,8 @@
   - 单例失败不中断整批，记 case_id 与原因；
   - 幂等：成功即写逐例缓存，重跑跳过；缓存带 params 与脚本哈希，改任一项自动重算；
   - 并行：--jobs N 起 N 个进程，每进程只建一个 extractor 且 ITK 只用单线程；
+  - 分块：--chunk N 每 N 例销毁并重建进程池，worker 退出即释放内存；某块崩溃只影响该块；
+  - 排除：--exclude 跳过指定病例（如单例峰值超过容器的内存上限，例如 297 层的大 CT），其余照常处理；
   - 打印 4 个 signature 特征与论文 Supplementary Fig. 1 的 Lung1 中位数对照。
 """
 
@@ -248,8 +250,13 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def load_cache(path: Path, params_sha: str, script_sha: str) -> tuple[dict, dict] | None:
-    """读取并校验逐例缓存；文件缺失、损坏、参数或代码已变都返回 None。"""
+def load_cache(path: Path, params_sha: str, script_sha: str,
+               check_script: bool = True) -> tuple[dict, dict] | None:
+    """读取并校验逐例缓存；文件缺失、损坏、参数或代码已变都返回 None。
+
+    check_script=False 时只校验参数哈希：用于"仅改了调度/输出代码、提取逻辑未变"
+    的场景，避免长跑中断后因脚本哈希变化而全量重算。
+    """
     try:
         with path.open(encoding="utf-8") as f:
             payload = json.load(f)
@@ -257,7 +264,7 @@ def load_cache(path: Path, params_sha: str, script_sha: str) -> tuple[dict, dict
         return None
     if payload.get("params_sha256") != params_sha:
         return None
-    if payload.get("script_sha256") != script_sha:
+    if check_script and payload.get("script_sha256") != script_sha:
         return None
     features, qc = payload.get("features"), payload.get("qc")
     if not isinstance(features, dict) or not isinstance(qc, dict):
@@ -355,11 +362,17 @@ def main() -> None:
     ap.add_argument("--all", action="store_true", help="处理索引中全部本地存在的病例")
     ap.add_argument("--patients", nargs="*", default=None,
                     help="指定病例（默认按 index 顺序取前 limit 例）")
+    ap.add_argument("--exclude", nargs="*", default=None,
+                    help="排除的病例 ID（例如内存峰值超限的大病例，后续单独补算）")
     ap.add_argument("--jobs", type=int, default=1,
                     help="并行进程数（经验值：核数一半，内存吃紧再降）")
+    ap.add_argument("--chunk", type=int, default=10,
+                    help="每处理 N 例重建一次进程池以释放累积内存（<=0 表示不分块）")
     ap.add_argument("--cache-dir", default="results/cache/features",
                     help="逐例缓存目录；复算时换一个目录即可强制重算")
     ap.add_argument("--force", action="store_true", help="忽略已有缓存，全部重算")
+    ap.add_argument("--cache-ignore-script", action="store_true",
+                    help="复用缓存时忽略脚本哈希（仅当提取逻辑未变、只改了调度代码时使用）")
     ap.add_argument("--out-name", default=None,
                     help="输出前缀（默认 --all 时 features_all，否则 features_10）")
     ap.add_argument("--expect", type=int, default=None,
@@ -388,6 +401,10 @@ def main() -> None:
 
     if args.patients:
         index = index[index["PatientID"].isin(args.patients)]
+    if args.exclude:
+        before = len(index)
+        index = index[~index["PatientID"].isin(args.exclude)]
+        print(f"排除 {before - len(index)} 例: {' '.join(args.exclude)}")
     if not args.all:
         index = index.head(args.limit)
     if index.empty:
@@ -395,7 +412,11 @@ def main() -> None:
     print(f"待处理病例: {len(index)} 例（{index['PatientID'].iloc[0]} … "
           f"{index['PatientID'].iloc[-1]}）")
     print(f"参数: {args.params}（sha256 {params_sha[:12]}）；"
-          f"脚本: {script_sha[:12]}；缓存: {cache_dir}；并行进程: {args.jobs}")
+          f"脚本: {script_sha[:12]}；缓存: {cache_dir}；"
+          f"并行进程: {args.jobs}；分块: {args.chunk if args.chunk > 0 else '关闭'}")
+    if args.cache_ignore_script:
+        print("警告：--cache-ignore-script 已启用，将忽略脚本哈希复用缓存；"
+              "请确认提取逻辑（extract_one 及其依赖）未修改")
 
     rows: list[tuple[int, dict]] = []
     qc_rows: list[tuple[int, dict]] = []
@@ -405,7 +426,8 @@ def main() -> None:
     for pos, (_, row) in enumerate(index.iterrows(), start=1):
         case_id = str(row["PatientID"])
         hit = (None if args.force
-               else load_cache(cache_dir / f"{case_id}.json", params_sha, script_sha))
+               else load_cache(cache_dir / f"{case_id}.json", params_sha, script_sha,
+                               check_script=not args.cache_ignore_script))
         if hit is not None:
             values, qc = hit
             rows.append((pos, values))
@@ -418,14 +440,27 @@ def main() -> None:
     print(f"缓存命中 {cached_hits} 例，待计算 {len(tasks)} 例")
 
     t_start = time.perf_counter()
-    if tasks:
+    # 分块：每处理 chunk 例就销毁并重建进程池，worker 退出即释放累积内存。
+    # 依据：1 进程长跑也会在新算 25–27 例后 OOM（见 journal/day17 §二.7）。
+    chunk_size = len(tasks) if args.chunk <= 0 else max(1, args.chunk)
+    n_chunks = (len(tasks) + chunk_size - 1) // chunk_size if tasks else 0
+    if n_chunks > 1:
+        print(f"分块执行: 每 {chunk_size} 例重建进程池，共 {n_chunks} 块")
+
+    for chunk_idx in range(n_chunks):
+        part = tasks[chunk_idx * chunk_size:(chunk_idx + 1) * chunk_size]
+        if n_chunks > 1:
+            print(f"\n[chunk {chunk_idx + 1}/{n_chunks}] {len(part)} 例"
+                  f"（{part[0][1]['PatientID']} … {part[-1][1]['PatientID']}）",
+                  flush=True)
         with ProcessPoolExecutor(
             max_workers=max(1, args.jobs),
             initializer=init_worker,
             initargs=(args.params, str(raw_root), str(cache_dir), params_sha, script_sha),
         ) as pool:
-            futures = {pool.submit(process_case, task): task for task in tasks}
+            futures = {pool.submit(process_case, task): task for task in part}
             for done, future in enumerate(as_completed(futures), start=1):
+                done_overall = chunk_idx * chunk_size + done
                 task = futures[future]
                 try:
                     res = future.result()
@@ -437,17 +472,20 @@ def main() -> None:
                     failures.append({"PatientID": res["PatientID"],
                                      "error_type": res["error_type"],
                                      "error": res["error"]})
-                    print(f"[{done}/{len(tasks)}] {res['PatientID']} 失败: "
+                    print(f"[{done_overall}/{len(tasks)}] {res['PatientID']} 失败: "
                           f"{res['error_type']}: {res['error']}", flush=True)
                     continue
                 rows.append((res["pos"], res["values"]))
                 qc_rows.append((res["pos"], res["qc"]))
                 qc = res["qc"]
-                print(f"[{done}/{len(tasks)}] {res['PatientID']} 完成 "
+                print(f"[{done_overall}/{len(tasks)}] {res['PatientID']} 完成 "
                       f"（{qc['roi_name']}，{qc['n_features']} 特征，"
                       f"掩膜 {qc['mask_volume_mm3'] / 1000:.1f} cm³，"
                       f"提取 {qc['seconds']:.1f}s，合计 {qc['total_seconds']:.1f}s）",
                       flush=True)
+        if n_chunks > 1:
+            print(f"[chunk {chunk_idx + 1}/{n_chunks}] 结束："
+                  f"累计成功 {len(rows)}，失败 {len(failures)}", flush=True)
 
     elapsed = time.perf_counter() - t_start
     if not rows:

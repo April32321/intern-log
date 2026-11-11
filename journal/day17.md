@@ -29,7 +29,7 @@ status: 进行中
 | 1c. 并行度定档 | ✅ | 实测 2 进程在 8 GB 下必 OOM；12 GB 调整失败，**改用 1 进程**（§二.4/§二.6）；1 进程仍 OOM，见 1f |
 | 1d. 容器首跑（2 进程） | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
 | 1e. Docker Desktop 启动失败 | ✅ | 已恢复（Docker Desktop 4.97.0，linux/arm64）；`MemTotal` 仍 8 GB，决定不再调内存 |
-| 1f. 第二跑（1 进程）仍 OOM | ❌ | 62 例成功后死在 LUNG1-058；`OOMKilled=true`，说明问题不是进程数（§二.7） |
+| 1f. 第二跑（1 进程）仍 OOM | ❌ | 62 例后死在 LUNG1-058；单例探针确认该例单独就会 OOM（151 MB / 297 层）（§二.7） |
 | 2. 全量 422 例提取 | 🟡 | 待"分块重建进程池"后重跑，缓存可续（62 例已完成） |
 | 3. `code/06_qc_features.py` | ✅ | 已实现并用 35 行残缺表验证（§三）；待全量后正式运行 |
 | 4. 5 例 `--jobs 1` 复算 | ⬜ | 一致性证据 |
@@ -303,7 +303,7 @@ D18/D19 使用的数据完全不受影响，只有 `*_timing.csv` 的耗时列�
 全量约 147 min（后续加入分块后仍约 140 min，见 §二.7）。
 12 GB 只作为**未来可选优化**记录在这里，不作为今天的执行前提。
 
-### 7. 第二跑（1 进程）仍然 OOM：推翻"峰值重叠"解释
+### 7. 第二跑（1 进程）仍 OOM：最终定位为"单例大病例超限"
 
 按 §二.4(4) 用 `--all --jobs 1` 重跑（15:24 启动），结果：
 
@@ -315,32 +315,44 @@ D18/D19 使用的数据完全不受影响，只有 `*_timing.csv` 的耗时列�
 | 总成功 / 失败 | 62 / 360 |
 | `docker inspect extract2` | `OOMKilled=true`，`ExitCode=1`（脚本 `SystemExit`） |
 
-**关键对比**：
+单 worker 也死在约 27 例，一开始判断为"随例数累积的内存"。**这个判断后来被推翻**：
 
-| 运行 | worker 数 | 新算成功数 | 死亡点 |
-|---|---:|---:|---|
-| 首跑 | 2 | 25 | LUNG1-031 |
-| 第二跑 | **1** | **27** | **LUNG1-058** |
+1. 实现分块后用 `--limit 100 --chunk 10` 复跑：**chunk 1（`LUNG1-058…067`）10 例全灭，
+   chunk 2（`LUNG1-068…077`）10 例全部成功**——若是累积，第二块不可能满血；
+2. `LUNG1-058` 的 CT 为 **151 MB / 297 层**，是邻居（52–57 MB / 约 110 层）的 3 倍；
+3. 单例探针 `--patients LUNG1-058 --jobs 1 --force` 仍然 `BrokenProcessPool`，
+   `docker inspect` → `OOMKilled=true`。
 
-单 worker 也死在约 27 例，说明：
+**结论**：不是累积、也不是并发峰值重叠，而是**个别大病例的单例内存峰值超过 8 GB
+容器上限**。之前"25–27 例"只是恰好运行到 `LUNG1-058`（首跑 2 进程更早撞上同类大病例
+`LUNG1-031`）。jobs 越小只是降低同时叠加的概率，单例超限无法靠降并发解决。
 
-- **不是"两个 worker 峰值重叠"**（这次只有一个 worker）；
-- **不是某个特定病例**（两次死亡病例不同，且 LUNG1-058 体积/掩膜并无异常）；
-- 是**随处理例数累积的内存**：常驻进程里的 PyRadiomics/ITK 缓存或 page cache 压力，
-  涨到 8 GB VM 的临界点后，OOM killer 杀掉 worker。之前 12 例采样只到 4.29 GiB、
-  未见单调上升，是因为还没跨过 ~25–27 例的临界点。
+**分块仍然有价值**：它把一次 OOM 的影响限制在一块（10 例），不会像之前整批 388 例全灭。
+在此基础上再加 `--exclude`：跳过内存超限的大病例，其余照常跑，最后单独补算该病例，
+再跑一次 `--all` 汇总（缓存命中，几秒完成）。
 
-**修正方案：分块重建进程池（尚未实现）**
+已实现的两个开关：
 
-不改变提取逻辑，只改调度：每处理 `--chunk`（默认 10）例就销毁并重建一次
-`ProcessPoolExecutor`，worker 退出即释放累积内存，永远到不了 ~27 例的上限；
-若某块内 worker 崩溃，也只影响这一块，其余块继续。
+- `--chunk N`（`<=0` 关闭）：每 N 例销毁并重建进程池，块内崩溃只影响该块；
+- `--exclude IDs`：从索引中剔除指定病例，`--expect` 按剔除后的数量校验；
+- 另有 `--cache-ignore-script`：只跳过脚本哈希、仍校验参数哈希，
+  用于"只改调度代码"时复用已有缓存（本次改动会使脚本 sha256 变化）。
 
-代价：每块多一次 extractor 构建（2–3 秒），387 例分 39 块约多 2 分钟。
-验证方式：先跑 `--limit 70 --jobs 1 --chunk 10`，能越过 27 例死亡点即说明有效，
-再全量 `--all --jobs 1 --chunk 10`。
+小样本验证（本机 conda，`LUNG1-005…008`）：
 
-62 例缓存完整保留，重跑从第 63 例继续。
+| 检查 | 结果 |
+|---|---|
+| `--chunk 2`（2 块） | 4 例成功，块日志正常 |
+| `--chunk 2` vs `--chunk 0` | **逐值完全相同**（最大绝对差 0） |
+| 旧缓存复用（`--cache-ignore-script`） | 8 例全部命中，未重算 |
+| `--exclude LUNG1-058` | 日志显示"排除 1 例"，后续按 421 例处理 |
+
+代价：每块多一次 extractor 构建（2–3 秒），可忽略。
+
+**接下来的执行策略**：容器内用
+`--all --exclude LUNG1-058 --jobs 1 --chunk 10 --cache-ignore-script --expect 421`
+跑完其余病例（约 90 例缓存已在），`LUNG1-058` 单独用本机 conda 补算，
+再 `--all --expect 422` 汇总。
 
 ## 三、QC 脚本：`code/06_qc_features.py`
 
@@ -434,7 +446,7 @@ docker run --rm -u dev -e HOME=/home/dev \
 | 2 | 探针命令 `--cache-dir results/cache/probe2` 全命中缓存、未产生内存数据 | 该目录此前已写入同一批病例的缓存；缓存只校验 params/脚本哈希，不区分用途 | 探针统一加 `--force` + 全新缓存目录，并用容器内 `/sys/fs/cgroup/memory.peak` 读峰值 |
 | 3 | 全量 `--jobs 2` 跑 18 分钟后 388 例 `BrokenProcessPool`，成功 35；吞吐从 2.5 降到 0.7 例/分钟 | 单 worker 瞬态峰值 4.3 GiB，2 worker 峰值重叠超过 8 GB VM；page cache 回收导致先变慢、后被 OOM kill（根因后续被卡点 5 修正为"随例数累积"）。`--rm` 导致无法 `docker inspect` 复核 | 先试 12 GB；12 GB 未生效后改用 `--jobs 1`（约 147 min）；全量一律加 `--name`、不用 `--rm` |
 | 4 | 内存从 10 GB 改到 12 GB 并 Apply & restart 后，点击 Docker Desktop 图标无反应，`docker` 命令不可用 | 未定。候选：① 12 GB 分配在 16 GB 宿主上启动失败；② 虚拟机框架卡死（本机 uptime 已 11 天）；③ 旧进程残留占用 socket | **已恢复**：Docker Desktop 4.97.0 起、引擎 `linux/arm64` 正常；但 `MemTotal` 仍是 `8,319,770,624`，12 GB 未生效。**决定不再调内存**，改用 `--jobs 1`；未使用 Reset to factory defaults（会删 `intern-radiomics:1.0`） |
-| 5 | `--jobs 1` 重跑，62 例成功后从 `LUNG1-058` 起 360 例 `BrokenProcessPool`；`docker inspect extract2` → `OOMKilled=true` | **随例数累积的内存**：两次都在新算 25–27 例后 OOM，单进程也一样；不是峰值重叠，也不是特定病例（两次死亡病例不同） | 待实现"分块重建进程池"（`--chunk 10`），每块结束 worker 退出、内存清零；先 `--limit 70` 验证越过 27 例死亡点，再全量 |
+| 5 | `--jobs 1` 重跑，62 例成功后从 `LUNG1-058` 起 360 例 `BrokenProcessPool`；`docker inspect extract2` → `OOMKilled=true` | **单例大病例超限**：`LUNG1-058` 为 151 MB / 297 层，单例探针（`--jobs 1 --force`）仍 `BrokenProcessPool` + `OOMKilled=true`；不是累积、也不是并发重叠 | 分块（`--chunk`）把影响限制在一块；`--exclude LUNG1-058` 先跳过，其余按 421 例跑完；058 用本机 conda 补算后 `--all` 汇总 |
 
 > 卡点 4 的真实代价不是报错，而是**两次改内存都没有生效**：配置文件里找不到
 > `memoryMiB`（Docker Desktop 4.97 换了存储位置/字段），GUI 设置也未被应用。
@@ -450,7 +462,7 @@ docker run --rm -u dev -e HOME=/home/dev \
 | 文件 | 状态 | 内容 |
 |---|---|---|
 | `journal/day17.md` | ✅ | 本文件 |
-| `code/05_extract_features.py` | 🟡 | `--all` / `--jobs` / 逐例缓存已实现；**`--chunk` 分块待实现**（§二.7） |
+| `code/05_extract_features.py` | ✅ | `--all` / `--jobs` / `--chunk` / `--exclude` / 逐例缓存 / `--cache-ignore-script`（§二.7） |
 | `results/cache/features/*.json` | 🟡 62 例 | 逐例缓存（续跑依据，不入库） |
 | `results/tables/features_all.csv` | 🟡 残缺 | 第二跑 62 行（OOM 中断），重跑后覆盖 |
 | `results/tables/features_all_timing.csv` | 🟡 残缺 | 每例耗时与掩膜几何 |
@@ -479,16 +491,21 @@ docker run --rm -u dev -e HOME=/home/dev \
 0. ~~恢复 Docker Desktop~~：已完成，引擎 `linux/arm64` 正常；`MemTotal` 仍 8 GB，
    **不再调整内存**，直接进入第 1 条；
 1. 补做数据计数校验：患者目录 422、CT 422、RTSTRUCT 422（SEG 已按计划排除）；
-2. 先给 `code/05_extract_features.py` 加 **`--chunk`**（默认 10）：每块重建
-   `ProcessPoolExecutor`，worker 退出即释放累积内存；块内崩溃只影响该块；
-3. 验证分块：`--limit 70 --jobs 1 --chunk 10`（约 25 min），必须越过 27 例死亡点；
-4. 通过后全量重跑：`--all --jobs 1 --chunk 10 --expect 422`，
-   容器加 `--name extract3`、去掉 `--rm`，日志写 `logs/extract-chunk.log`；约 140 min；
-   中断后重跑会跳过已完成病例；
-5. 全量结束后运行 `code/06_qc_features.py`（§三），生成报告与各明细表；
-6. 抽 5 例 `--jobs 1 --cache-dir results/cache/features_recheck` 复算，
+2. ~~给 `code/05_extract_features.py` 加 `--chunk`~~：已完成，并在本机用
+   `--chunk 2` vs `--chunk 0` 验证逐值相同；同时新增 `--cache-ignore-script`
+   与 `--exclude`（跳过内存超限的大病例）；
+3. ~~容器内验证分块~~：已由 `--limit 100 --chunk 10` 验证——chunk 1（058–067）全灭、
+   chunk 2（068–077）全成功，据此定位到 `LUNG1-058` 单例超限；
+4. 容器内跑其余病例：`--all --exclude LUNG1-058 --jobs 1 --chunk 10
+   --cache-ignore-script --expect 421`，容器加 `--name extract3`、去掉 `--rm`，
+   日志写 `logs/extract-no058.log`；中断后重跑会跳过已完成病例；
+5. `LUNG1-058` 单独补算（本机 conda，或调大 VM 内存后用容器），写入
+   `results/cache/features/LUNG1-058.json`；
+6. 缓存齐后再跑 `--all --expect 422` 汇总，生成完整的 422 行 `features_all.csv`；
+7. 运行 `code/06_qc_features.py`（§三），生成报告与各明细表；
+8. 抽 5 例 `--jobs 1 --cache-dir results/cache/features_recheck` 复算，
    回填本文件 §四/§五/§验收；
-7. 回填 `journal/INDEX.md` 的 D17 行，收尾 commit：`day17: 全量 422 例特征提取与质控报告`。
+9. 回填 `journal/INDEX.md` 的 D17 行，收尾 commit：`day17: 全量 422 例特征提取与质控报告`。
 
 ## 今日结论（进行中）
 
@@ -503,9 +520,9 @@ docker run --rm -u dev -e HOME=/home/dev \
   两个 worker 峰值重叠就会超过 8 GB VM；4 进程则必 OOM。实测加速比 1.72，
   但 12 GB 设置两次都未生效（且导致 Docker Desktop 启动失败），
   **最终放弃调参，用 `--jobs 1` 跑全量**；
-- 单进程也会 OOM：两次运行都在新算 25–27 例后死亡（35 例 / 62 例），
-  说明根因是**随例数累积的内存**，不是并发峰值；正确解法是分块重建进程池，
-  让 worker 定期退出，而不是继续降并发或加内存；
+- 单进程也会 OOM，但根因不是累积：`LUNG1-058`（151 MB / 297 层）单例峰值就超过
+  8 GB 容器上限，单例探针同样 `OOMKilled=true`。分块把影响限制在一块，
+  `--exclude` 先把该例跳过、其余照跑，最后单独补算——**隔离问题病例比继续降并发更有效**；
 - 8 GB 下全量首跑在 35 例处被 OOM 杀死，但 `--expect 422` 让失败显式化，
   缓存让重跑只需补算剩余病例——**失败可见 + 断点续跑** 比一次跑完更重要；
 - 诊断顺序应当是"先分资源问题与代码问题"：`OOMKilled`/退出码 -9 是 OOM，
