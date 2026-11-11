@@ -26,10 +26,10 @@ status: 进行中
 | 0. 运行环境核对 | ✅ | 确认用 `intern-radiomics:1.0`；`Dockerfile.miniforge` 只是调试底座（§一） |
 | 1. 并行化 + 幂等改造 | ✅ | `--all` / `--jobs` / 逐例缓存已实现，2 例小样本验证通过（§二） |
 | 1b. 数据落地 | ✅ | 190 → 本机 `data/raw/full`，26 GiB（排除 SEG），8.0 MB/s、约 56 min |
-| 1c. 并行度定档 | 🟡 | 实测定档 **2 进程**；8 GB VM 下全量首跑仍 OOM，改为 12 GB 重跑（§二.4/§五） |
+| 1c. 并行度定档 | ✅ | 实测 2 进程在 8 GB 下必 OOM；12 GB 调整失败，**最终改用 1 进程**（§二.4/§二.6） |
 | 1d. 容器首跑 | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
-| 1e. Docker Desktop 启动失败 | ❌ | 内存改 12 GB 后图标无响应，重跑被阻塞（§五 卡点 4） |
-| 2. 全量 422 例提取 | 🟡 | 待 12 GB 内存重跑，缓存可续（35 例已完成） |
+| 1e. Docker Desktop 启动失败 | ✅ | 已恢复（Docker Desktop 4.97.0，linux/arm64）；`MemTotal` 仍 8 GB，决定不再调内存 |
+| 2. 全量 422 例提取 | 🟡 | 待 `--jobs 1` 重跑（约 147 min），缓存可续（35 例已完成） |
 | 3. `code/06_qc_features.py` | ⬜ | 行数、缺失率、零方差、直方图（§三） |
 | 4. 5 例 `--jobs 1` 复算 | ⬜ | 一致性证据 |
 | 5. `results/tables/features_qc.md` | ⬜ | 缺失与剔除记录 |
@@ -123,7 +123,7 @@ miniforge 之上**再装一遍 Miniforge**：`/opt/conda` 被覆盖安装、层�
 docker run --rm -u dev -e HOME=/home/dev \
   -v "$PWD":/work -w /work \
   intern-radiomics:1.0 \
-  python code/05_extract_features.py --all --jobs 2 \
+  python code/05_extract_features.py --all --jobs 1 \
     --expect 422
 ```
 
@@ -133,7 +133,7 @@ docker run --rm -u dev -e HOME=/home/dev \
   `f7ee2f9daa9e` 不同——中途重建过；容器内实测版本仍为
   `radiomics v3.0.1 | numpy 1.26.4`，与 D16 一致，因此结果仍可与 `features_10.csv` 比对；
 - D16 实测容器内单例 22.4 s、本机原生 9.0 s（约 2.4×）；今天实测容器串行 23.9 s/例，
-  全量单进程约 168 min，2 进程约 100 min（§二.4）；
+  全量单进程约 168 min；最终按内存约束使用 1 进程（实测 20.9 s/例，约 147 min，§二.4）；
 - 若为省时改用本机 conda，必须先确认版本一致（radiomics 3.0.1 / numpy 1.26.4），
   且**并行度与一致性复算必须同一平台**，避免把平台差异写进结果；
 - 多进程会同时放大内存：每个 worker 独占一份 CT + 掩膜 + 小波分解中间数组，
@@ -175,7 +175,7 @@ docker run --rm -u dev -e HOME=/home/dev \
 结论：并行与缓存都不改变数值；`--jobs 1` 复算可作为 D17 的一致性证据。
 按本机原生 10.8 s/例外推，422 例单进程约 76 min；容器实测见 §二.4。
 
-### 4. 并行度定档：为什么最终用 2 进程
+### 4. 并行度定档：曾选 2 进程，最终改为 1 进程
 
 #### (1) 容器内实测
 
@@ -209,11 +209,23 @@ docker run --rm -u dev -e HOME=/home/dev \
   继续加进程的边际收益递减：3 进程最多再省 ~25 min，却要重启 VM 并承担再 OOM 的风险；
 - 全量跑在后台，100 min 与 75 min 对当天收尾没有差别（14:10 启动 → 约 15:50 结束）。
 
-#### (4) 最终配置
+#### (4) 最终配置：放弃 2 进程，改用 `--jobs 1`
 
-**Docker Desktop 内存改为 12 GB，`--jobs 2`**。定档时的初值是 10 GB，但那次设置
-并未生效（`MemTotal` 一直是 8 GB），首跑因此仍在 8 GB 下运行并被 OOM 杀死；
-之后按同一组峰值数据把上限提到 12 GB，失败经过与推导见 §二.6。
+**决定：今天用 `--jobs 1` 跑全量，不再调 Docker 内存。**
+
+决策依据按优先级：
+
+1. **8 GB 下 2 进程已被实测证伪**：全量在 35 例处 OOM，388 例失败（§二.5）；
+2. **12 GB 方案不可靠**：两次尝试都没有生效（`MemTotal` 始终是 `8,319,770,624`），
+   且改设置后 Docker Desktop 一度无法启动（§五 卡点 4）；继续调参的时间成本高于收益；
+3. **1 进程是唯一确定能跑完的配置**：单 worker 峰值 4.3 GiB，8 GB 余量充足，
+   12 例实测全部成功，单例 20.9 s；
+4. **任务目标从"最快"改为"今天/明天确定跑完"**：147 min 只是慢，
+   而再失败一次要重新排查环境，代价更高。
+
+代价与影响：全量约 147 min（`--jobs 2` 理论 85–100 min）；特征值、行数、列与
+D18/D19 使用的数据完全不受影响，只有 `*_timing.csv` 的耗时列不同。
+缓存与并行度无关，未来内存可用时随时能切回 `--jobs 2` 续跑，已算病例不重算。
 
 判定规则留给之后复用：`jobs 上限 ≈ (VM 内存 − 1.5 GB) / 单 worker 峰值`，
 其中单 worker 峰值用 `--jobs 1` 或 `--jobs 2` 跑一次、读容器内 `/sys/fs/cgroup/memory.peak`
@@ -242,14 +254,15 @@ docker run --rm -u dev -e HOME=/home/dev \
 `--jobs 2` 只跑 10 例时没撞上峰值，所以测速阶段看不出来；跑久了撞上的概率累积，
 同时 page cache 被反复回收导致"越跑越慢"。
 
-**修正配置**：VM 内存提到 **12 GB**，仍用 `--jobs 2`；若 12 GB 仍失败，
-退回 `--jobs 1`（实测 20.9 s/例 → 422 例约 147 min）。进度不会丢，缓存已有 35 例。
+**当时的修正**：先把 VM 内存提到 **12 GB**、仍用 `--jobs 2`（推导见 §二.6）。
+但 12 GB 两次都未生效，最终按 §二.4(4) 改为 `--jobs 1`（约 147 min）。
+进度不会丢，缓存已有 35 例。
 
 **流程教训**：全量运行不要用 `--rm`，加 `--name` 保留容器，事故后可用
 `docker inspect --format 'OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}}'`
 直接定位；本次因 `--rm` 只能事后推断。
 
-### 6. 为什么会升到 12 GB：失败经过倒推
+### 6. 为什么会考虑升到 12 GB（最终未采用）
 
 升到 12 GB 不是优化，是被两次 OOM 和一次未生效的设置逼出来的。按发生顺序：
 
@@ -272,12 +285,18 @@ docker run --rm -u dev -e HOME=/home/dev \
 - 任务要求一次跑完 422 例，不能接受"可能在第 200 例挂掉再续跑"。
 
 宿主 16 GB 上可调的只有 VM 内存：8 GB 已证伪，10 GB 余量不足，往上是 12 GB
-（给 macOS 留 4 GB）。所以选择 12 GB，理由不是"余量大更好"，而是**10 GB 无法消除
-已经观察到的失败模式**。
+（给 macOS 留 4 GB）。按失败数据推导，12 GB 是消除"峰值重叠"的最小可行值。
 
-12 GB 目前尚未验证（Docker Desktop 起不来，见 §五 卡点 4）。起来后先确认
-`MemTotal ≈ 12.9e9` 再重跑；若仍 OOM，说明峰值比采样更高，只能退回 `--jobs 1`
-（单 worker 4.3 GiB，8 GB 也放得下，全量约 147 min）。
+**但 12 GB 最终没有采用**：
+
+- 第一次把设置改到 10 GB，`MemTotal` 未变（仍是 8 GB），等于没改；
+- 第二次改到 12 GB 并重启后，Docker Desktop 无法启动（§五 卡点 4），
+  恢复后 `MemTotal` 仍是 `8,319,770,624`，说明 12 GB 也没有真正写入生效；
+- 继续调参需要反复重启应用/虚拟机，单次失败就可能再耗 30–60 分钟，
+  而任务要求是"今天或明天确定跑完"，不是"跑得最快"。
+
+因此放弃 12 GB 方案，改回 `--jobs 1`：单 worker 峰值 4.3 GiB，8 GB VM 确定可容纳，
+全量约 147 min。12 GB 只作为**未来可选优化**记录在这里，不作为今天的执行前提。
 
 ## 三、QC 脚本设计（待写 `code/06_qc_features.py`）
 
@@ -300,6 +319,7 @@ docker run --rm -u dev -e HOME=/home/dev \
 | `features_all.csv` 行 × 列 | 35 × 538（残缺，重跑后覆盖） |
 | NaN / inf | 0（35 例样本内） |
 | 单例均值 | 首跑日志 20–30 s；`--jobs 1` 12 例实测 20.9 s |
+| 最终运行配置 | `--jobs 1`（8 GB VM），预计 422 例约 147 min |
 | 缺例数及原因 | 待重跑后统计；首跑失败 388 例均为 `BrokenProcessPool` |
 | 零方差列数 / 缺失率 >20% 列数 | 待 06 回填 |
 | 5 例 `--jobs 1` 复算最大相对差 | 待回填 |
@@ -308,14 +328,15 @@ docker run --rm -u dev -e HOME=/home/dev \
 
 | # | 现象 | 原因 | 处置 |
 |---|---|---|---|
-| 1 | 容器内 `--jobs 4` 时 10 例在 20 s 内全部 `BrokenProcessPool`，`--jobs 1/2` 正常 | 不是 fork/ITK 问题，而是内存打爆：`docker inspect` → `OOMKilled=true`；Docker VM 仅 8 GB，2 worker 峰值已达 7.46 GiB | 定档 `--jobs 2`，VM 内存提到 10 GB；**不要改用 spawn**（每 worker 重新 import，内存更高） |
+| 1 | 容器内 `--jobs 4` 时 10 例在 20 s 内全部 `BrokenProcessPool`，`--jobs 1/2` 正常 | 不是 fork/ITK 问题，而是内存打爆：`docker inspect` → `OOMKilled=true`；Docker VM 仅 8 GB，2 worker 峰值已达 7.46 GiB | 当时定档 `--jobs 2`（后又因内存不足改为 1 进程，见卡点 3）；**不要改用 spawn**（每 worker 重新 import，内存更高） |
 | 2 | 探针命令 `--cache-dir results/cache/probe2` 全命中缓存、未产生内存数据 | 该目录此前已写入同一批病例的缓存；缓存只校验 params/脚本哈希，不区分用途 | 探针统一加 `--force` + 全新缓存目录，并用容器内 `/sys/fs/cgroup/memory.peak` 读峰值 |
-| 3 | 全量 `--jobs 2` 跑 18 分钟后 388 例 `BrokenProcessPool`，成功 35；吞吐从 2.5 降到 0.7 例/分钟 | 单 worker 瞬态峰值 4.3 GiB，2 worker 峰值重叠超过 8 GB VM；page cache 回收导致先变慢、后被 OOM kill。`--rm` 导致无法 `docker inspect` 复核 | VM 提到 12 GB 重跑；全量一律加 `--name`、不用 `--rm`；仍失败则 `--jobs 1`（147 min） |
-| 4 | 内存从 10 GB 改到 12 GB 并 Apply & restart 后，点击 Docker Desktop 图标无反应，`docker` 命令不可用 | 未定。候选：① 12 GB 分配在 16 GB 宿主上启动失败；② 虚拟机框架卡死（本机 uptime 已 11 天）；③ 旧进程残留占用 socket | 进行中：`docker version` 判断引擎是否起来；看 `~/Library/Group Containers/group.com.docker/log/host/com.docker.backend.log` 的 `memory`/`hypervisor` 关键字；`pkill` 残留后 `open -a Docker`；必要时把 `settings-store.json` 的 `memoryMiB` 改回 10240 或重启 macOS。**不做 Reset to factory defaults**——会删掉 `intern-radiomics:1.0`，重新编译 pyradiomics 至少要半小时 |
+| 3 | 全量 `--jobs 2` 跑 18 分钟后 388 例 `BrokenProcessPool`，成功 35；吞吐从 2.5 降到 0.7 例/分钟 | 单 worker 瞬态峰值 4.3 GiB，2 worker 峰值重叠超过 8 GB VM；page cache 回收导致先变慢、后被 OOM kill。`--rm` 导致无法 `docker inspect` 复核 | 先试 12 GB；12 GB 未生效后改用 `--jobs 1`（约 147 min）；全量一律加 `--name`、不用 `--rm` |
+| 4 | 内存从 10 GB 改到 12 GB 并 Apply & restart 后，点击 Docker Desktop 图标无反应，`docker` 命令不可用 | 未定。候选：① 12 GB 分配在 16 GB 宿主上启动失败；② 虚拟机框架卡死（本机 uptime 已 11 天）；③ 旧进程残留占用 socket | **已恢复**：Docker Desktop 4.97.0 起、引擎 `linux/arm64` 正常；但 `MemTotal` 仍是 `8,319,770,624`，12 GB 未生效。**决定不再调内存**，改用 `--jobs 1`；未使用 Reset to factory defaults（会删 `intern-radiomics:1.0`） |
 
-> 卡点 4 记录时仍未解决。它是**工具阻塞**，不是数据或代码问题；解决后用
-> `--name extract2` 重跑即可，35 例缓存已在。若最终只能给 10 GB，就必须用
-> `--jobs 1`（单 worker 峰值 4.3 GiB 可容纳），全量约 147 min。
+> 卡点 4 的真实代价不是报错，而是**两次改内存都没有生效**：配置文件里找不到
+> `memoryMiB`（Docker Desktop 4.97 换了存储位置/字段），GUI 设置也未被应用。
+> 今天的时间预算不足以继续排查，最终以 `--jobs 1` 收束；35 例缓存保留，
+> 重跑只需补算剩余病例。
 
 排查方法沉淀：判断"并行失败"先分三类——**代码/并发 bug**（可复现且与资源无关）、
 **OOM**（`OOMKilled=true` 或退出码 -9）、**段错误**（退出码 -11）。
@@ -334,7 +355,8 @@ docker run --rm -u dev -e HOME=/home/dev \
 | `code/06_qc_features.py` | ⬜ | 缺失率 / 零方差 / 直方图 |
 | `results/tables/feature_missing_rate.csv` | ⬜ | 缺失率明细 |
 | `results/tables/features_qc.md` | ⬜ | 质控报告（含剔除记录） |
-| `logs/extract_2026-11-11.log` | ⬜ | 全量运行日志 |
+| `logs/extract_2026-11-11.log` | 🟡 | 首跑日志（35 例后 OOM） |
+| `logs/extract-retry.log` | ⬜ | `--jobs 1` 重跑日志 |
 
 ## 验收对照（Day 17）
 
@@ -347,13 +369,12 @@ docker run --rm -u dev -e HOME=/home/dev \
 
 ## 待办
 
-0. **先恢复 Docker Desktop**：`docker version` 判断引擎；看 backend 日志；`pkill` 残留后
-   `open -a Docker`；12 GB 起不来则改回 `memoryMiB=10240` 或重启 macOS。
-   确认 `MemTotal` 后再继续；
+0. ~~恢复 Docker Desktop~~：已完成，引擎 `linux/arm64` 正常；`MemTotal` 仍 8 GB，
+   **不再调整内存**，直接进入第 1 条；
 1. 补做数据计数校验：患者目录 422、CT 422、RTSTRUCT 422（SEG 已按计划排除）；
-2. Docker 内存调到 **12 GB** 后重跑全量：`--all --jobs 2 --expect 422`，
+2. 用 **`--jobs 1`** 重跑全量：`--all --jobs 1 --expect 422`，
    容器加 `--name extract2`、去掉 `--rm`，日志写 `logs/extract-retry.log`；
-   若 12 GB 仍 OOM，退回 `--jobs 1`（约 147 min）；
+   预计约 147 min，中断后重跑会跳过已完成病例；
 3. 重跑期间写 `06_qc_features.py`；
 4. 跑 QC、抽 5 例 `--jobs 1 --cache-dir results/cache/features_recheck` 复算，
    写 `features_qc.md`，回填本文件 §四/§五/§验收；
@@ -370,7 +391,8 @@ docker run --rm -u dev -e HOME=/home/dev \
   因为 422 例是数小时量级，中断概率不低；
 - 并行度不是按核数拍的，而是由**内存**决定：单 worker 瞬态峰值 4.3 GiB，
   两个 worker 峰值重叠就会超过 8 GB VM；4 进程则必 OOM。实测加速比 1.72，
-  最终定档 **2 进程**，并把 VM 提到 12 GB；
+  但 12 GB 设置两次都未生效（且导致 Docker Desktop 启动失败），
+  **最终放弃调参，用 `--jobs 1` 跑全量**（约 147 min）；
 - 8 GB 下全量首跑在 35 例处被 OOM 杀死，但 `--expect 422` 让失败显式化，
   缓存让重跑只需补算剩余病例——**失败可见 + 断点续跑** 比一次跑完更重要；
 - 诊断顺序应当是"先分资源问题与代码问题"：`OOMKilled`/退出码 -9 是 OOM，
