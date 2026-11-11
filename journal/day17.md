@@ -30,7 +30,7 @@ status: 进行中
 | 1d. 容器首跑 | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
 | 1e. Docker Desktop 启动失败 | ✅ | 已恢复（Docker Desktop 4.97.0，linux/arm64）；`MemTotal` 仍 8 GB，决定不再调内存 |
 | 2. 全量 422 例提取 | 🟡 | 待 `--jobs 1` 重跑（约 147 min），缓存可续（35 例已完成） |
-| 3. `code/06_qc_features.py` | ⬜ | 行数、缺失率、零方差、直方图（§三） |
+| 3. `code/06_qc_features.py` | ✅ | 已实现并用 35 行残缺表验证（§三）；待全量后正式运行 |
 | 4. 5 例 `--jobs 1` 复算 | ⬜ | 一致性证据 |
 | 5. `results/tables/features_qc.md` | ⬜ | 缺失与剔除记录 |
 | 6. INDEX 回填 + 收尾 commit | 🟡 | 本文件已建，结果待填 |
@@ -298,18 +298,75 @@ D18/D19 使用的数据完全不受影响，只有 `*_timing.csv` 的耗时列�
 因此放弃 12 GB 方案，改回 `--jobs 1`：单 worker 峰值 4.3 GiB，8 GB VM 确定可容纳，
 全量约 147 min。12 GB 只作为**未来可选优化**记录在这里，不作为今天的执行前提。
 
-## 三、QC 脚本设计（待写 `code/06_qc_features.py`）
+## 三、QC 脚本：`code/06_qc_features.py`
 
-核心函数按 Day17 计划要求：**输入特征 DataFrame，输出缺失率 / 零方差 / 异常值报告**。
+### 1. 定位
 
-| 检查 | 判据 | 输出 |
+输入特征表与索引，输出一份可判定的质控报告：**行数是否齐、哪些列不能用于建模、
+结果与 D16 基线是否一致、并行是否改变数值**。行数不符时以非零码退出，
+避免"少跑却显示通过"（与 `05` 的 `--expect` 同一思路）。
+
+### 2. 函数结构
+
+| 函数 | 输入 | 作用 / 输出 |
 |---|---|---|
-| 行数 | 成功例数 = 索引中本地存在且 `has_rtstruct` 的例数（目标 422） | 缺例清单（PatientID + 原因） |
-| 缺失率 | 每列 NaN 比例；>20% 标记 | `results/tables/feature_missing_rate.csv` |
-| 零方差 | `nunique <= 1` 或标准差为 0 | 待剔除列清单 |
-| 非有限值 | NaN / inf 计数 | 与 D16 的 0 对照 |
-| 分布 | 随机 6 个特征直方图 | `results/figures/qc/hist_*.png` |
-| 特征构成 | original 73 + wavelet 464 = 537 | 与每例 `n_features` 互校 |
+| `load_features()` | `features_all.csv` | 校验 `PatientID` 列；缺失则 `SystemExit` |
+| `load_optional()` | 时序表 / 失败表 / 基线 / 并行结果 | 不存在时返回 `None`，对应小节自动跳过 |
+| `expected_patients()` | `index.csv` + `data/raw/full` | 应有例数 = `has_rtstruct=True` 且本地存在目录 |
+| `missing_reasons()` | 应有病例、实际病例、失败表 | 缺例逐条归因（提取失败 / RTSTRUCT 缺失 / 无记录），写 `qc_missing_patients.csv` |
+| `numeric_block()` | 特征表 | 去掉 `PatientID`，全部转数值 |
+| `missing_table()` | 数值块 | 每列缺失率，降序，>阈值标记；写 `feature_missing_rate.csv` |
+| `zero_variance_table()` | 数值块 | `nunique <= 1` 或全缺失的列；写 `feature_zero_variance.csv` |
+| `feature_breakdown()` | 列名 | 按（影像类型, 特征类）统计，核对 537 的构成 |
+| `compare_tables()` | 两张特征表 | 按 PatientID 对齐，逐列算最大相对/绝对差、超阈值列数、Top5 差异列 |
+| `plot_random_histograms()` | 数值块 + seed | 固定 seed 抽 6 个非零方差特征，输出 `hist_random6.png` |
+| `build_report()` | 以上全部结果 | 生成 `features_qc.md`（9 节：行数/缺失/零方差/非有限值/基线一致性/并行一致性/分布/构成/结论） |
+
+### 3. 命令行参数
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `--features` | `results/tables/features_all.csv` | 待检特征表 |
+| `--timing` | `results/tables/features_all_timing.csv` | 用于核对每例特征数 |
+| `--failures` | `results/tables/features_all_failures.csv` | 缺失原因来源 |
+| `--baseline` | `results/tables/features_10.csv` | D16 基线，取交集比对 |
+| `--parallel-a/b` | `results/tables/speedtest/speed_j1.csv` / `speed_j2.csv` | 并行一致性证据 |
+| `--missing-threshold` | `0.2` | 缺失率标记阈值 |
+| `--seed` / `--n-hist` | `17` / `6` | 直方图抽样，保证可复现 |
+| `--out` | `results/tables/features_qc.md` | 报告路径 |
+
+### 4. 产出
+
+| 文件 | 内容 |
+|---|---|
+| `results/tables/features_qc.md` | 质控报告（含结论与剔除建议） |
+| `results/tables/feature_missing_rate.csv` | 每列缺失率 |
+| `results/tables/feature_zero_variance.csv` | 零方差 / 全缺失列 |
+| `results/tables/qc_missing_patients.csv` | 缺例清单（PatientID + 原因） |
+| `results/figures/qc/hist_random6.png` | 随机 6 特征直方图 |
+
+### 5. 用 35 行残缺表做的验证
+
+| 检查 | 结果 |
+|---|---|
+| 行数 | 应有 422、实际 35 → 缺例 387，**非零退出**（预期行为） |
+| 缺失率 / 零方差 / 非有限值 | 0 列 / 0 列 / 0 |
+| 与 `features_10` 交集 | 10 例 × 537 列，最大相对差 **1.486×10⁻¹¹** |
+| `speed_j1` vs `speed_j2` | 10 例，最大相对差 **0**（并行不改变数值） |
+| 特征构成 | original 73 + wavelet 464 = 537，每例 `n_features` 唯一值 537 |
+| 直方图 | `hist_random6.png` 正常生成（65 KB） |
+
+### 6. 运行方式
+
+```bash
+docker run --rm -u dev -e HOME=/home/dev \
+  -v "$PWD":/work -w /work \
+  intern-radiomics:1.0 \
+  python code/06_qc_features.py
+```
+
+等全量提取结束后再跑，避免与 `--jobs 1` 抢 CPU。届时期望行数自动变为 422、
+缺例为 0；若仍有缺失，报告 §1 会给出每个 PatientID 的原因。
 
 ## 四、结果（首跑未完成，待重跑回填）
 
@@ -352,9 +409,12 @@ D18/D19 使用的数据完全不受影响，只有 `*_timing.csv` 的耗时列�
 | `results/tables/features_all.csv` | 🟡 残缺 | 首跑 35 行（OOM 中断），重跑后覆盖 |
 | `results/tables/features_all_timing.csv` | 🟡 残缺 | 每例耗时与掩膜几何 |
 | `results/tables/features_all_failures.csv` | 🟡 临时 | 首跑 388 例 `BrokenProcessPool` 失败清单 |
-| `code/06_qc_features.py` | ⬜ | 缺失率 / 零方差 / 直方图 |
-| `results/tables/feature_missing_rate.csv` | ⬜ | 缺失率明细 |
-| `results/tables/features_qc.md` | ⬜ | 质控报告（含剔除记录） |
+| `code/06_qc_features.py` | ✅ | 行数 / 缺失率 / 零方差 / 一致性 / 直方图（§三） |
+| `results/tables/feature_missing_rate.csv` | ⬜ | 缺失率明细（06 运行后生成） |
+| `results/tables/feature_zero_variance.csv` | ⬜ | 零方差列（06 运行后生成） |
+| `results/tables/qc_missing_patients.csv` | ⬜ | 缺例清单（06 运行后生成） |
+| `results/figures/qc/hist_random6.png` | ⬜ | 6 特征直方图（06 运行后生成） |
+| `results/tables/features_qc.md` | ⬜ | 质控报告（06 运行后生成） |
 | `logs/extract_2026-11-11.log` | 🟡 | 首跑日志（35 例后 OOM） |
 | `logs/extract-retry.log` | ⬜ | `--jobs 1` 重跑日志 |
 
@@ -375,7 +435,7 @@ D18/D19 使用的数据完全不受影响，只有 `*_timing.csv` 的耗时列�
 2. 用 **`--jobs 1`** 重跑全量：`--all --jobs 1 --expect 422`，
    容器加 `--name extract2`、去掉 `--rm`，日志写 `logs/extract-retry.log`；
    预计约 147 min，中断后重跑会跳过已完成病例；
-3. 重跑期间写 `06_qc_features.py`；
+3. 全量结束后运行已写好的 `code/06_qc_features.py`（§三），生成报告与各明细表；
 4. 跑 QC、抽 5 例 `--jobs 1 --cache-dir results/cache/features_recheck` 复算，
    写 `features_qc.md`，回填本文件 §四/§五/§验收；
 5. 回填 `journal/INDEX.md` 的 D17 行，收尾 commit：`day17: 全量 422 例特征提取与质控报告`。
