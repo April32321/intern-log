@@ -1,0 +1,337 @@
+---
+day: 17
+date: 2026-11-11
+theme: 全量 422 例特征提取与质控
+gate: 无（G4 在 D20）
+status: 进行中
+---
+
+# Day 17｜全量 422 例特征提取
+
+> 今日目标：把 D16 跑通的 10 例管线放大到 422 例，做到可续跑、有质控、结果可复算。
+> 本文件随当天进度更新：开工前先完成「运行环境核对」（§一），提取与 QC 待执行。
+
+## 今日目标
+
+- 把 `code/05_extract_features.py` 从「取前 10 例」扩成「全量 + 并行 + 幂等续跑」；
+- 在 `intern-radiomics:1.0` 内跑完 422 例，产出 `features_all.csv`；
+- 写 `code/06_qc_features.py`：行数校验、缺失率、零方差、分布直方图；
+- 抽 5 例用 `--jobs 1` 复算，证明并行不引入差异；
+- 产出 `features_qc.md` 与 `logs/`，当日 commit。
+
+## 进度快照
+
+| 步骤 | 状态 | 说明 |
+|---|---|---|
+| 0. 运行环境核对 | ✅ | 确认用 `intern-radiomics:1.0`；`Dockerfile.miniforge` 只是调试底座（§一） |
+| 1. 并行化 + 幂等改造 | ✅ | `--all` / `--jobs` / 逐例缓存已实现，2 例小样本验证通过（§二） |
+| 1b. 数据落地 | ✅ | 190 → 本机 `data/raw/full`，26 GiB（排除 SEG），8.0 MB/s、约 56 min |
+| 1c. 并行度定档 | 🟡 | 实测定档 **2 进程**；8 GB VM 下全量首跑仍 OOM，改为 12 GB 重跑（§二.4/§五） |
+| 1d. 容器首跑 | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
+| 2. 全量 422 例提取 | 🟡 | 待 12 GB 内存重跑，缓存可续（35 例已完成） |
+| 3. `code/06_qc_features.py` | ⬜ | 行数、缺失率、零方差、直方图（§三） |
+| 4. 5 例 `--jobs 1` 复算 | ⬜ | 一致性证据 |
+| 5. `results/tables/features_qc.md` | ⬜ | 缺失与剔除记录 |
+| 6. INDEX 回填 + 收尾 commit | 🟡 | 本文件已建，结果待填 |
+
+## 一、运行环境核对：为什么今天只能用 Dockerfile.radiomics
+
+### 1. 结论
+
+今天全量提取与质控的**唯一运行镜像是 `intern-radiomics:1.0`**（由 `env/Dockerfile.radiomics` 构建）。
+`env/Dockerfile.miniforge` 构建出的镜像不能用于今日任何一步，包括 `06_qc_features.py` 这种"只画图"的脚本。
+
+### 2. 两份文件是兄弟，不是父子
+
+两份都 `FROM intern-dev:1.0`，各自独立安装一遍 Miniforge；
+`Dockerfile.radiomics` **不依赖** miniforge 镜像，所以选择 radiomics 不会"少用" miniforge 的任何层：
+
+```mermaid
+graph LR
+  A["intern-dev:1.0<br/>ubuntu 24.04 + dev 用户 + 编译链"] --> B1["Dockerfile.miniforge<br/>Miniforge + 编译链<br/>（实验分支）"]
+  A --> B2["Dockerfile.radiomics<br/>Miniforge + 编译链<br/>+ conda env radiomics<br/>+ 源码编译 pyradiomics"]
+  B1 --> C1["自检：import radiomics<br/>必须失败（miniforge:44-47）"]
+  B2 --> C2["自检：numpy 1.26 + 4 个包<br/>全部通过（radiomics:53-55）"]
+```
+
+`Dockerfile.miniforge` 的 commit `09d087e` 标题即写明"实验用，非交付镜像"，它从未进入交付链。
+
+### 3. 逐层差异
+
+| 层 | `Dockerfile.miniforge` | `Dockerfile.radiomics` | 今日影响 |
+|---|---|---|---|
+| 底座 | `FROM intern-dev:1.0`（17） | 同（8） | 相同 |
+| 编译链 | `gcc g++ make bzip2`（24-26） | 同（14-16） | 相同 |
+| Miniforge | PATH = `/opt/conda/bin`（29-41） | 同（22-34） | 相同 |
+| **conda 环境** | **无** | `conda env create`（36-40）→ python 3.10 / numpy 1.26 / pandas / scipy / sklearn / matplotlib / pydicom / SimpleITK / lifelines / scikit-survival | 缺全部科学栈 |
+| **pyradiomics** | **无** | `versioneer` + `pip --no-build-isolation pyradiomics==3.0.1`（46-47） | 缺 `import radiomics` |
+| **运行时解释器** | base 自带 Python（非项目钉的 3.10） | PATH 前置 `/opt/conda/envs/radiomics/bin`（50） | 版本与 ABI 完全不同 |
+| 自检方向 | 反向：radiomics 不可导入（44-47） | 正向：5 个包 + numpy 1.26（53-55） | 前者绿=空壳，后者绿=可用 |
+
+### 4. 若误用 miniforge 镜像：失败点逐级
+
+构建会**成功且自检通过**（因为自检要求 `import radiomics` 失败），所以"build 绿"不能作为环境就绪的证据。
+
+| 脚本 | 需要 | miniforge 镜像下的结果 |
+|---|---|---|
+| `00_download.py` | 纯标准库 | ✅ 能跑（与镜像无关） |
+| `01_check_dicom.py:21` | pydicom | ❌ `ModuleNotFoundError` |
+| `02_build_index.py:18` | pandas | ❌ |
+| `03_km_baseline.py:1-5` | pandas / matplotlib / lifelines | ❌ |
+| `05_extract_features.py:32-37` | numpy / pandas / pydicom / radiomics / SimpleITK | ❌ **在 `import numpy` 即退出**，不读索引、不算任何一例 |
+| `06_qc_features.py`（今日待写） | pandas / matplotlib | ❌ |
+
+注意 `--jobs` 不是问题所在：多进程的每个子进程都要重新 import radiomics，缺环境时连并发都起不来。
+
+### 5. 手动补装为何不划算
+
+在 miniforge 容器里手工 `conda create` / `pip install`，会依次踩到 D16 已记录的三件事：
+
+1. base 的 Python 不是项目钉的 3.10（`env/environment.docker.yml:7`），换版本后特征数值不再与 D16 基线可比；
+2. base 的 numpy 是 2.x 或缺失，而 pyradiomics 3.0.1 用了 `np.float`（numpy 2 已移除），必须钉 1.26；
+3. pip 默认 build isolation 拿不到 numpy 头文件，源码编译失败，必须 `versioneer` + `--no-build-isolation`（`env/rebuild.sh:11-13`）。
+
+补完这些等于把 `Dockerfile.radiomics:36-50` 手抄一遍，但没有写进文件、没有构建期自检、没有层缓存；
+容器一删环境即失，用 `docker commit` 固化又会产生不可重建的脏层——正好否掉 G4 要的"可复现"。
+
+### 6. 为什么今天必须与 D16 同镜像
+
+1. **可比性**：`features_10.csv` 是 10 行 × 538 列（1 个 `PatientID` + 537 特征），由 `intern-radiomics:1.0` 产出；换 Python / numpy / SimpleITK 版本会改变浮点结果，D16 基线与 D19 的差异归因失去参照。
+2. **验收要求**：今日要抽 5 例用 `--jobs 1` 复算并要求"完全一致"；该检查只在同一镜像内才有意义，否则 diff 会被归因成"镜像差异"而非"并行不确定性"。
+3. **交付与门禁**：G4/D20 的交付镜像就是 `intern-radiomics:1.0`（4.14 GB，`radiomics v3.0.1 | numpy 1.26.4`），日志证据来自它的构建期自检。
+
+### 7. 一个必须避免的顺序陷阱
+
+`Dockerfile.radiomics:2` 的前置是 `docker tag intern-radiomics:1.0 intern-dev:1.0`。
+若把 miniforge 产物误打成 `intern-radiomics:1.0`，再 tag 成 `intern-dev:1.0`，radiomics 镜像会在
+miniforge 之上**再装一遍 Miniforge**：`/opt/conda` 被覆盖安装、层重复、体积更大，
+而且不再是 D16 验收的那个 ID（`f7ee2f9daa9e`）。
+
+### 8. miniforge 镜像的正确用途
+
+只作**调试底座与层缓存**：验证 Miniforge 能否绕过 conda≥25 的 ToS 预检查；试新依赖
+（如给 QC 加 seaborn、试别的 pyradiomics 版本）时在容器里折腾，不污染交付镜像；
+确认后写回 `env/environment.docker.yml` 再重建 `intern-radiomics:1.0`。
+"正式结果生产"不走这条分支。
+
+### 9. 今日运行方式
+
+沿用 D16 验收过的挂载方式（代码与数据都在宿主机，镜像只提供环境）：
+
+```bash
+docker run --rm -u dev -e HOME=/home/dev \
+  -v "$PWD":/work -w /work \
+  intern-radiomics:1.0 \
+  python code/05_extract_features.py --all --jobs 2 \
+    --expect 422
+```
+
+三点补充：
+
+- 今天实际使用的镜像 ID 为 `sha256:2ed4703c1549…`（4.14 GB），与 D16 记录的
+  `f7ee2f9daa9e` 不同——中途重建过；容器内实测版本仍为
+  `radiomics v3.0.1 | numpy 1.26.4`，与 D16 一致，因此结果仍可与 `features_10.csv` 比对；
+- D16 实测容器内单例 22.4 s、本机原生 9.0 s（约 2.4×）；今天实测容器串行 23.9 s/例，
+  全量单进程约 168 min，2 进程约 100 min（§二.4）；
+- 若为省时改用本机 conda，必须先确认版本一致（radiomics 3.0.1 / numpy 1.26.4），
+  且**并行度与一致性复算必须同一平台**，避免把平台差异写进结果；
+- 多进程会同时放大内存：每个 worker 独占一份 CT + 掩膜 + 小波分解中间数组，
+  实测 2 个 worker 峰值已达 7.46 GiB，**并行度由内存决定，不是核数**（§二.4）。
+
+## 二、并行化与幂等实现
+
+### 1. 改造前的差距
+
+`code/05_extract_features.py` 原先只有 `--limit`（默认 10）与 `--patients`，
+无 `--all`、无 `--jobs`、无跳过逻辑；结果在循环结束后一次性写
+`features_10.csv` / `features_10_timing.csv`，中途崩溃则前功尽弃。
+
+### 2. 已实现的改动
+
+| 改动 | 做法 | 目的 |
+|---|---|---|
+| `--all` | 忽略 `--limit`，处理索引中全部本地存在的病例 | 全量入口 |
+| `--jobs N` | `ProcessPoolExecutor`；每个 worker 在 `init_worker()` 里只建一个 extractor | 并行，且 extractor 不跨进程传递 |
+| 逐例缓存 | 成功即原子写 `results/cache/features/{PatientID}.json`（`.tmp` + `replace`）；重跑命中即跳过 | 幂等、可续跑，崩溃只丢一例 |
+| 参数/代码失效 | 缓存记录 `params.yaml` 与脚本自身的 sha256，任一不一致自动重算 | 防止改参数或改提取逻辑后误用旧缓存 |
+| `--force` / `--cache-dir` | 忽略缓存 / 换缓存目录 | 供 5 例 `--jobs 1` 复算使用 |
+| `--out-name` | 默认 `--all` 用 `features_all`，否则 `features_10` | 不覆盖 D16 基线结果 |
+| `--expect N` | 成功例数不符时打印后非零退出 | 防止"本地只有 10 例却静默成功" |
+| ITK 线程 | worker 内 `SetGlobalDefaultNumberOfThreads(1)` | 避免 N 进程 × 多线程过度订阅 |
+| 缓存目录 | `.gitignore` 增 `results/cache/` | 中间产物不入库 |
+
+### 3. 小样本验证（本机 conda，非容器）
+
+用 `LUNG1-001`、`LUNG1-009` 两例，输出写入临时目录：
+
+| 检查 | 结果 |
+|---|---|
+| `--jobs 2` 两例成功 | 537 特征/例，0 NaN，掩膜体积与 D16 一致（156.2 / 98.5 cm³） |
+| 同命令重跑 | 两例均"缓存命中，跳过"，输出 CSV 与首跑**逐值完全相同** |
+| `--jobs 1 --force` 复算 | 与 `--jobs 2` 结果**逐值完全相同**（列顺序也一致） |
+| 与 D16 `features_10.csv` 对照 | 最大相对差 `1.39×10⁻¹²`，即平台浮点差异（D16 容器为 linux-aarch64） |
+
+结论：并行与缓存都不改变数值；`--jobs 1` 复算可作为 D17 的一致性证据。
+按本机原生 10.8 s/例外推，422 例单进程约 76 min；容器实测见 §二.4。
+
+### 4. 并行度定档：为什么最终用 2 进程
+
+#### (1) 容器内实测
+
+同一批病例、同一镜像、同一参数，只改 `--jobs`：
+
+| 配置 | 病例数 | 墙钟 | 加速比 | 单例均值 | 峰值内存 | 外推 422 例 |
+|---|---:|---:|---:|---:|---:|---:|
+| `--jobs 1` | 10 | 243.9 s | 1.00 | 23.9 s | — | 168 min |
+| `--jobs 2` | 10 | 141.5 s | **1.72** | 27.4 s | **7.46 GiB** | **≈ 100 min** |
+| `--jobs 4` | 10 / 4 | 20 s 内全灭 | — | — | > 8 GiB | — |
+
+`--jobs 4` 的 `docker inspect` 结果：`OOMKilled=true`。宿主 16 GB，Docker Desktop 仅分配
+8 GB（`MemTotal=8,319,770,624`）；`--jobs 2` 时 cgroup `memory.peak` 已达
+`8,014,667,776 B ≈ 7.46 GiB`，只剩约 0.3 GiB 余量，4 个 worker 同时加载 CT、建掩膜、
+做 8 组小波分解时直接触发 VM 层 OOM killer。
+
+#### (2) 排除的替代解释
+
+- **不是 fork/ITK 不兼容**：容器内 `fork` 起子进程（`exitcode 0`）与 `spawn` 都正常；
+  `--jobs 2` 走同一条 fork 路径也能跑完。之前"Linux 默认 fork 导致 ITK 段错误"的假设不成立；
+- **不是 `/dev/shm` 太小**：shm 不足会在建池阶段直接抛 `OSError`，而不是任务跑起来后突然
+  `BrokenProcessPool`；`OOMKilled=true` 已给出直接解释；
+- **spawn 不是解法**：spawn 每个 worker 要重新 import numpy/SimpleITK/radiomics，
+  RSS 更高，只会让 OOM 更早发生。
+
+#### (3) 为什么不用 3 进程
+
+- 单 worker 常驻加峰值约 3.5–4 GiB（7.46 GiB / 2）；3 进程预计 10–11 GiB，
+  需要把 VM 提到 12 GB，而宿主只有 16 GB，留给 macOS 的只剩 4 GB，影响交互与稳定性；
+- 单例耗时从 23.9 s（串行）升到 27.4 s（2 进程），说明已经接近内存带宽上限，
+  继续加进程的边际收益递减：3 进程最多再省 ~25 min，却要重启 VM 并承担再 OOM 的风险；
+- 全量跑在后台，100 min 与 75 min 对当天收尾没有差别（14:10 启动 → 约 15:50 结束）。
+
+#### (4) 最终配置
+
+**Docker Desktop 内存调到 10 GB，`--jobs 2` 跑全量**：给 2 个 worker 留约 2.5 GB 余量，
+避免大病例偶发 OOM；单例耗时不变，外推仍约 100 min。
+
+判定规则留给之后复用：`jobs 上限 ≈ (VM 内存 − 1.5 GB) / 单 worker 峰值`，
+其中单 worker 峰值用 `--jobs 1` 或 `--jobs 2` 跑一次、读容器内 `/sys/fs/cgroup/memory.peak`
+测得，不要按核数猜。
+
+### 5. 全量首跑：2 进程在 8 GB 下仍然 OOM
+
+按 §二.4 的配置启动 `--all --jobs 2`（8 GB VM，14:22 开始）：
+
+- 前 10 例为缓存命中，随后正常计算；
+- 前 3.6 分钟完成 9 例（约 2.5 例/分钟），之后降到约 0.7 例/分钟，**越跑越慢**；
+- 第 35 例成功后（日志 `25/412` 完成，`26/412` 起）所有任务瞬间 `BrokenProcessPool`，
+  18 分钟后结束：成功 35、失败 388，`--expect 422` 以非零码退出。
+
+**排除"某个病例特殊"**：第一个失败病例 `LUNG1-031` 只有 79 MB / 153 层，比已成功的
+`LUNG1-002`（359 cm³ 肿瘤）小得多；`LUNG1-032`（61 MB / 117 层）也正常。
+
+**排除"内存泄漏"**：用 `--jobs 1` 重跑 12 例并采样内存，曲线是锯齿状而非单调上升：
+
+```text
+4.29 → 2.43 → 1.26 → 0.98 → 3.53 → 2.47 → 2.48 → 0.88 → 4.04 → 2.93 → 2.35 → 1.76 → 1.57 → 0.83 → 3.87 GiB
+```
+
+单 worker 的瞬态峰值约 **4.3 GiB**（小波分解时的全 bbox 数组），算完即回落。
+2 个 worker 的峰值一旦重叠就超过 7.75 GiB 可用内存 → 整个进程池被 OOM 杀死。
+`--jobs 2` 只跑 10 例时没撞上峰值，所以测速阶段看不出来；跑久了撞上的概率累积，
+同时 page cache 被反复回收导致"越跑越慢"。
+
+**修正配置**：VM 内存提到 **12 GB**，仍用 `--jobs 2`；若 12 GB 仍失败，
+退回 `--jobs 1`（实测 20.9 s/例 → 422 例约 147 min）。进度不会丢，缓存已有 35 例。
+
+**流程教训**：全量运行不要用 `--rm`，加 `--name` 保留容器，事故后可用
+`docker inspect --format 'OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}}'`
+直接定位；本次因 `--rm` 只能事后推断。
+
+## 三、QC 脚本设计（待写 `code/06_qc_features.py`）
+
+核心函数按 Day17 计划要求：**输入特征 DataFrame，输出缺失率 / 零方差 / 异常值报告**。
+
+| 检查 | 判据 | 输出 |
+|---|---|---|
+| 行数 | 成功例数 = 索引中本地存在且 `has_rtstruct` 的例数（目标 422） | 缺例清单（PatientID + 原因） |
+| 缺失率 | 每列 NaN 比例；>20% 标记 | `results/tables/feature_missing_rate.csv` |
+| 零方差 | `nunique <= 1` 或标准差为 0 | 待剔除列清单 |
+| 非有限值 | NaN / inf 计数 | 与 D16 的 0 对照 |
+| 分布 | 随机 6 个特征直方图 | `results/figures/qc/hist_*.png` |
+| 特征构成 | original 73 + wavelet 464 = 537 | 与每例 `n_features` 互校 |
+
+## 四、结果（首跑未完成，待重跑回填）
+
+| 指标 | 数值 |
+|---|---|
+| 首跑成功 / 失败 | 35 / 388（进程池 OOM，`--expect 422` 拦截） |
+| `features_all.csv` 行 × 列 | 35 × 538（残缺，重跑后覆盖） |
+| NaN / inf | 0（35 例样本内） |
+| 单例均值 | 首跑日志 20–30 s；`--jobs 1` 12 例实测 20.9 s |
+| 缺例数及原因 | 待重跑后统计；首跑失败 388 例均为 `BrokenProcessPool` |
+| 零方差列数 / 缺失率 >20% 列数 | 待 06 回填 |
+| 5 例 `--jobs 1` 复算最大相对差 | 待回填 |
+
+## 五、卡点与排查
+
+| # | 现象 | 原因 | 处置 |
+|---|---|---|---|
+| 1 | 容器内 `--jobs 4` 时 10 例在 20 s 内全部 `BrokenProcessPool`，`--jobs 1/2` 正常 | 不是 fork/ITK 问题，而是内存打爆：`docker inspect` → `OOMKilled=true`；Docker VM 仅 8 GB，2 worker 峰值已达 7.46 GiB | 定档 `--jobs 2`，VM 内存提到 10 GB；**不要改用 spawn**（每 worker 重新 import，内存更高） |
+| 2 | 探针命令 `--cache-dir results/cache/probe2` 全命中缓存、未产生内存数据 | 该目录此前已写入同一批病例的缓存；缓存只校验 params/脚本哈希，不区分用途 | 探针统一加 `--force` + 全新缓存目录，并用容器内 `/sys/fs/cgroup/memory.peak` 读峰值 |
+| 3 | 全量 `--jobs 2` 跑 18 分钟后 388 例 `BrokenProcessPool`，成功 35；吞吐从 2.5 降到 0.7 例/分钟 | 单 worker 瞬态峰值 4.3 GiB，2 worker 峰值重叠超过 8 GB VM；page cache 回收导致先变慢、后被 OOM kill。`--rm` 导致无法 `docker inspect` 复核 | VM 提到 12 GB 重跑；全量一律加 `--name`、不用 `--rm`；仍失败则 `--jobs 1`（147 min） |
+
+排查方法沉淀：判断"并行失败"先分三类——**代码/并发 bug**（可复现且与资源无关）、
+**OOM**（`OOMKilled=true` 或退出码 -9）、**段错误**（退出码 -11）。
+本次用"保留容器 + `docker inspect`"一条命令即定位到 OOM，比反复改代码快得多。
+
+## 产出文件
+
+| 文件 | 状态 | 内容 |
+|---|---|---|
+| `journal/day17.md` | ✅ | 本文件 |
+| `code/05_extract_features.py` | ✅ | `--all` / `--jobs` / 逐例缓存 / `--force` / `--expect` |
+| `results/cache/features/*.json` | 🟡 35 例 | 逐例缓存（续跑依据，不入库） |
+| `results/tables/features_all.csv` | 🟡 残缺 | 首跑 35 行（OOM 中断），重跑后覆盖 |
+| `results/tables/features_all_timing.csv` | 🟡 残缺 | 每例耗时与掩膜几何 |
+| `results/tables/features_all_failures.csv` | 🟡 临时 | 首跑 388 例 `BrokenProcessPool` 失败清单 |
+| `code/06_qc_features.py` | ⬜ | 缺失率 / 零方差 / 直方图 |
+| `results/tables/feature_missing_rate.csv` | ⬜ | 缺失率明细 |
+| `results/tables/features_qc.md` | ⬜ | 质控报告（含剔除记录） |
+| `logs/extract_2026-11-11.log` | ⬜ | 全量运行日志 |
+
+## 验收对照（Day 17）
+
+| 验收标准 | 状态 | 证据 |
+|---|---|---|
+| `features_all.csv` 行数 = 成功例数，缺例有解释 | ⬜ | 首跑 35 行，`--expect 422` 拦截；待重跑 |
+| 幂等性已验证（续跑不重复计算） | 🟡 | 首跑已跳过 10 例缓存；重跑将跳过 35 例 |
+| 抽 5 例 `--jobs 1` 复算结果一致 | ⬜ | 待填：最大相对差 |
+| `features_qc.md` 含缺失率、剔除记录、异常值说明 | ⬜ | 待填 |
+
+## 待办
+
+1. 补做数据计数校验：患者目录 422、CT 422、RTSTRUCT 422（SEG 已按计划排除）；
+2. Docker 内存调到 **12 GB** 后重跑全量：`--all --jobs 2 --expect 422`，
+   容器加 `--name extract2`、去掉 `--rm`，日志写 `logs/extract-retry.log`；
+   若 12 GB 仍 OOM，退回 `--jobs 1`（约 147 min）；
+3. 重跑期间写 `06_qc_features.py`；
+4. 跑 QC、抽 5 例 `--jobs 1 --cache-dir results/cache/features_recheck` 复算，
+   写 `features_qc.md`，回填本文件 §四/§五/§验收；
+5. 回填 `journal/INDEX.md` 的 D17 行，收尾 commit：`day17: 全量 422 例特征提取与质控报告`。
+
+## 今日结论（进行中）
+
+- 运行环境不是"二选一"，而是**分层各司其职**：`Dockerfile.miniforge` 负责证明 Miniforge 可用、
+  承担调试与层缓存；`Dockerfile.radiomics` 负责可运行的交付环境；
+- 误用 miniforge 的危险不在报错（报错很直接），而在**构建日志全绿**：
+  它的自检是反向断言，构建成功不代表环境可用；
+- 今日所有结果必须与 D16 的 10 例基线同镜像产生，否则"复算一致"这条验收失去参照系；
+- 全量跑的工程重点是可续跑：逐例缓存比"跑完一次性写表"更重要，
+  因为 422 例是数小时量级，中断概率不低；
+- 并行度不是按核数拍的，而是由**内存**决定：单 worker 瞬态峰值 4.3 GiB，
+  两个 worker 峰值重叠就会超过 8 GB VM；4 进程则必 OOM。实测加速比 1.72，
+  最终定档 **2 进程**，并把 VM 提到 12 GB；
+- 8 GB 下全量首跑在 35 例处被 OOM 杀死，但 `--expect 422` 让失败显式化，
+  缓存让重跑只需补算剩余病例——**失败可见 + 断点续跑** 比一次跑完更重要；
+- 诊断顺序应当是"先分资源问题与代码问题"：`OOMKilled`/退出码 -9 是 OOM，
+  -11 是段错误，`BrokenProcessPool` 本身只是症状，不能直接当作 fork/并发 bug。

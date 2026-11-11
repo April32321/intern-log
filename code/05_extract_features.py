@@ -1,4 +1,4 @@
-"""Day 16：特征提取管线（先跑 10 例）
+"""Day 17：特征提取管线（全量 / 并行 / 幂等续跑）
 
 输入：
   results/tables/index.csv                 # D12 生成的病例索引
@@ -6,27 +6,33 @@
   data/raw/full/{rtstruct_path}            # RTSTRUCT
   code/params.yaml                         # 与论文对齐的参数
 
-输出：
-  results/tables/features_10.csv           # 每例一行，全部特征
-  results/tables/features_10_timing.csv    # 每例耗时 + 掩膜体积（QC 用）
-  results/tables/features_10_failures.csv  # 失败病例及原因（有失败才写）
-  results/tables/unmatched_roi.csv         # 未匹配到 GTV 的病例与候选 ROI 名
+输出（前缀默认 --all 用 features_all，否则 features_10）：
+  results/tables/{prefix}.csv              # 每例一行，全部特征
+  results/tables/{prefix}_timing.csv       # 每例耗时 + 掩膜体积（QC 用）
+  results/tables/{prefix}_failures.csv     # 失败病例及原因（有失败才写）
+  results/tables/{prefix}_unmatched_roi.csv# 未匹配到 GTV 的病例与候选 ROI 名
+  results/cache/features/{PatientID}.json  # 逐例缓存，续跑依据
 
 设计要点：
   - 掩膜来源：RTSTRUCT 轮廓 → 用 even-odd 规则栅格化到 CT 网格；
   - ROI 名容错：normalize_roi() 去掉大小写/连字符/下划线差异；
   - 单例失败不中断整批，记 case_id 与原因；
+  - 幂等：成功即写逐例缓存，重跑跳过；缓存带 params 与脚本哈希，改任一项自动重算；
+  - 并行：--jobs N 起 N 个进程，每进程只建一个 extractor 且 ITK 只用单线程；
   - 打印 4 个 signature 特征与论文 Supplementary Fig. 1 的 Lung1 中位数对照。
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import logging
 import math
 import re
 import time
 from collections import Counter
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -233,6 +239,84 @@ def extract_one(row, extractor, raw_root: Path) -> tuple[dict, dict]:
     return values, qc
 
 
+# ---------------------------------------------------------------- 逐例缓存
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def load_cache(path: Path, params_sha: str, script_sha: str) -> tuple[dict, dict] | None:
+    """读取并校验逐例缓存；文件缺失、损坏、参数或代码已变都返回 None。"""
+    try:
+        with path.open(encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if payload.get("params_sha256") != params_sha:
+        return None
+    if payload.get("script_sha256") != script_sha:
+        return None
+    features, qc = payload.get("features"), payload.get("qc")
+    if not isinstance(features, dict) or not isinstance(qc, dict):
+        return None
+    return features, qc
+
+
+def save_cache(path: Path, case_id: str, features: dict, qc: dict,
+               params_sha: str, script_sha: str) -> None:
+    """原子写入：先写 .tmp 再 replace，避免中断留下半个 JSON。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "PatientID": case_id,
+        "params_sha256": params_sha,
+        "script_sha256": script_sha,
+        "features": features,
+        "qc": qc,
+    }
+    tmp = path.with_suffix(".json.tmp")
+    with tmp.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
+    tmp.replace(path)
+
+
+# ---------------------------------------------------------------- 并行 worker
+_WORKER: dict = {}
+
+
+def init_worker(params: str, raw_root: str, cache_dir: str,
+                params_sha: str, script_sha: str) -> None:
+    """每个子进程只做一次：建 extractor、关多线程、准备路径。"""
+    sitk.ProcessObject_SetGlobalDefaultNumberOfThreads(1)
+    radiomics.setVerbosity(logging.ERROR)
+    _WORKER.update({
+        "extractor": featureextractor.RadiomicsFeatureExtractor(params),
+        "raw_root": Path(raw_root),
+        "cache_dir": Path(cache_dir),
+        "params_sha": params_sha,
+        "script_sha": script_sha,
+    })
+
+
+def process_case(task: tuple[int, dict]) -> dict:
+    """子进程入口：算一例，成功即写缓存（缓存与计算同一进程，崩溃只丢这一例）。"""
+    pos, row = task
+    case_id = str(row["PatientID"])
+    t0 = time.perf_counter()
+    try:
+        values, qc = extract_one(row, _WORKER["extractor"], _WORKER["raw_root"])
+    except Exception as exc:                      # 单例失败不中断整批
+        return {"pos": pos, "status": "failed", "PatientID": case_id,
+                "error_type": type(exc).__name__, "error": str(exc)[:300]}
+    qc["total_seconds"] = round(time.perf_counter() - t0, 2)
+    save_cache(_WORKER["cache_dir"] / f"{case_id}.json",
+               case_id, values, qc, _WORKER["params_sha"], _WORKER["script_sha"])
+    return {"pos": pos, "status": "ok", "PatientID": case_id,
+            "values": values, "qc": qc}
+
+
 # ---------------------------------------------------------------- 汇总打印
 def report_feature_breakdown(columns) -> None:
     """按 (影像类型, 特征类) 统计特征数，用于核对特征数量是否合理。"""
@@ -261,19 +345,35 @@ def report_signature(df: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Day16 特征提取（先 10 例）")
+    ap = argparse.ArgumentParser(description="Day17 特征提取（全量 / 并行 / 幂等续跑）")
     ap.add_argument("--index", default="results/tables/index.csv")
     ap.add_argument("--raw-root", default="data/raw/full")
     ap.add_argument("--params", default="code/params.yaml")
     ap.add_argument("--out-dir", default="results/tables")
-    ap.add_argument("--limit", type=int, default=10)
+    ap.add_argument("--limit", type=int, default=10,
+                    help="只取前 N 例（--all 时忽略）")
+    ap.add_argument("--all", action="store_true", help="处理索引中全部本地存在的病例")
     ap.add_argument("--patients", nargs="*", default=None,
                     help="指定病例（默认按 index 顺序取前 limit 例）")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="并行进程数（经验值：核数一半，内存吃紧再降）")
+    ap.add_argument("--cache-dir", default="results/cache/features",
+                    help="逐例缓存目录；复算时换一个目录即可强制重算")
+    ap.add_argument("--force", action="store_true", help="忽略已有缓存，全部重算")
+    ap.add_argument("--out-name", default=None,
+                    help="输出前缀（默认 --all 时 features_all，否则 features_10）")
+    ap.add_argument("--expect", type=int, default=None,
+                    help="期望成功例数；不符则记录后以非零码退出")
     args = ap.parse_args()
 
     raw_root = Path(args.raw_root)
     out_dir = Path(args.out_dir)
+    cache_dir = Path(args.cache_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    prefix = args.out_name or ("features_all" if args.all else "features_10")
+
+    params_sha = sha256_file(Path(args.params))
+    script_sha = sha256_file(Path(__file__).resolve())
 
     index = pd.read_csv(args.index)
     index = index[index["has_rtstruct"].astype(str).str.lower() == "true"].copy()
@@ -288,77 +388,117 @@ def main() -> None:
 
     if args.patients:
         index = index[index["PatientID"].isin(args.patients)]
-    index = index.head(args.limit)
+    if not args.all:
+        index = index.head(args.limit)
     if index.empty:
         raise SystemExit(f"{raw_root} 下没有可处理的病例")
     print(f"待处理病例: {len(index)} 例（{index['PatientID'].iloc[0]} … "
           f"{index['PatientID'].iloc[-1]}）")
+    print(f"参数: {args.params}（sha256 {params_sha[:12]}）；"
+          f"脚本: {script_sha[:12]}；缓存: {cache_dir}；并行进程: {args.jobs}")
 
-    extractor = featureextractor.RadiomicsFeatureExtractor(args.params)
-    print(f"启用特征类: {sorted(extractor.enabledFeatures)}")
-    print(f"参数: {args.params}")
+    rows: list[tuple[int, dict]] = []
+    qc_rows: list[tuple[int, dict]] = []
+    failures: list[dict] = []
+    tasks: list[tuple[int, dict]] = []
 
-    rows, qc_rows, failures = [], [], []
-    total_cases = len(index)
     for pos, (_, row) in enumerate(index.iterrows(), start=1):
         case_id = str(row["PatientID"])
-        t0 = time.perf_counter()
-        try:
-            values, qc = extract_one(row, extractor, raw_root)
-        except Exception as exc:                      # 单例失败不中断整批
-            failures.append({"PatientID": case_id,
-                             "error_type": type(exc).__name__,
-                             "error": str(exc)[:300]})
-            print(f"[{pos}/{total_cases}] {case_id} 失败: {type(exc).__name__}: {exc}")
+        hit = (None if args.force
+               else load_cache(cache_dir / f"{case_id}.json", params_sha, script_sha))
+        if hit is not None:
+            values, qc = hit
+            rows.append((pos, values))
+            qc_rows.append((pos, qc))
+            print(f"[{pos}/{len(index)}] {case_id} 缓存命中，跳过")
             continue
-        total = time.perf_counter() - t0
-        rows.append(values)
-        qc["total_seconds"] = round(total, 2)
-        qc_rows.append(qc)
-        print(f"[{pos}/{total_cases}] {case_id} 完成 "
-              f"（{qc['roi_name']}，{qc['n_features']} 特征，"
-              f"掩膜 {qc['mask_volume_mm3'] / 1000:.1f} cm³，"
-              f"提取 {qc['seconds']:.1f}s，合计 {total:.1f}s）")
+        tasks.append((pos, row.to_dict()))
 
+    cached_hits = len(index) - len(tasks)
+    print(f"缓存命中 {cached_hits} 例，待计算 {len(tasks)} 例")
+
+    t_start = time.perf_counter()
+    if tasks:
+        with ProcessPoolExecutor(
+            max_workers=max(1, args.jobs),
+            initializer=init_worker,
+            initargs=(args.params, str(raw_root), str(cache_dir), params_sha, script_sha),
+        ) as pool:
+            futures = {pool.submit(process_case, task): task for task in tasks}
+            for done, future in enumerate(as_completed(futures), start=1):
+                task = futures[future]
+                try:
+                    res = future.result()
+                except Exception as exc:          # worker 崩溃也只记一例失败
+                    res = {"pos": task[0], "status": "failed",
+                           "PatientID": str(task[1]["PatientID"]),
+                           "error_type": type(exc).__name__, "error": str(exc)[:300]}
+                if res["status"] == "failed":
+                    failures.append({"PatientID": res["PatientID"],
+                                     "error_type": res["error_type"],
+                                     "error": res["error"]})
+                    print(f"[{done}/{len(tasks)}] {res['PatientID']} 失败: "
+                          f"{res['error_type']}: {res['error']}", flush=True)
+                    continue
+                rows.append((res["pos"], res["values"]))
+                qc_rows.append((res["pos"], res["qc"]))
+                qc = res["qc"]
+                print(f"[{done}/{len(tasks)}] {res['PatientID']} 完成 "
+                      f"（{qc['roi_name']}，{qc['n_features']} 特征，"
+                      f"掩膜 {qc['mask_volume_mm3'] / 1000:.1f} cm³，"
+                      f"提取 {qc['seconds']:.1f}s，合计 {qc['total_seconds']:.1f}s）",
+                      flush=True)
+
+    elapsed = time.perf_counter() - t_start
     if not rows:
         raise SystemExit("没有任何病例提取成功，终止。")
 
-    feats_df = pd.DataFrame(rows)
+    rows.sort(key=lambda item: item[0])
+    qc_rows.sort(key=lambda item: item[0])
+    key_sets = {frozenset(values) for _, values in rows}
+    if len(key_sets) > 1:
+        print(f"\n警告：{len(key_sets)} 种特征集合，表按并集对齐，缺失处为 NaN")
+
+    feats_df = pd.DataFrame([values for _, values in rows])
     cols = ["PatientID"] + [c for c in feats_df.columns if c != "PatientID"]
     feats_df = feats_df[cols]
-    feats_df.to_csv(out_dir / "features_10.csv", index=False)
+    feats_df.to_csv(out_dir / f"{prefix}.csv", index=False)
 
-    qc_df = pd.DataFrame(qc_rows)
-    qc_df.to_csv(out_dir / "features_10_timing.csv", index=False)
+    qc_df = pd.DataFrame([qc for _, qc in qc_rows])
+    qc_df.to_csv(out_dir / f"{prefix}_timing.csv", index=False)
 
     if failures:
-        pd.DataFrame(failures).to_csv(out_dir / "features_10_failures.csv", index=False)
+        pd.DataFrame(failures).to_csv(out_dir / f"{prefix}_failures.csv", index=False)
 
     unmatched = [{"PatientID": f["PatientID"], "error": f["error"]}
                  for f in failures if f["error_type"] == "LookupError"]
     pd.DataFrame(unmatched, columns=["PatientID", "error"]).to_csv(
-        out_dir / "unmatched_roi.csv", index=False)
+        out_dir / f"{prefix}_unmatched_roi.csv", index=False)
 
     # ---------------- QC 汇总 ----------------
     numeric = feats_df.drop(columns=["PatientID"]).apply(pd.to_numeric, errors="coerce")
     n_bad = int((~np.isfinite(numeric.to_numpy())).sum())
     print("\n==== QC ====")
-    print(f"成功 {len(feats_df)} 例，失败 {len(failures)} 例")
+    print(f"成功 {len(feats_df)} 例（缓存 {cached_hits}，新算 {len(tasks) - len(failures)}），"
+          f"失败 {len(failures)} 例")
     print(f"特征数/例: {numeric.shape[1]}"
           "（论文口径 440；本项目按 PyRadiomics 实际计数，含 1 个补算的 Compactness2）")
     print("特征构成：")
     report_feature_breakdown(feats_df.columns)
     print(f"非有限值（NaN/inf）总数: {n_bad}")
-    print(f"总耗时: {qc_df['total_seconds'].sum():.1f}s，"
+    print(f"本批计算耗时: {elapsed:.1f}s，"
           f"单例均值 {qc_df['total_seconds'].mean():.1f}s"
           f"（外推 422 例约 {qc_df['total_seconds'].mean() * 422 / 60:.0f} 分钟）")
     report_signature(feats_df)
     print("\n输出：")
-    for name in ["features_10.csv", "features_10_timing.csv",
-                 "features_10_failures.csv", "unmatched_roi.csv"]:
+    for name in [f"{prefix}.csv", f"{prefix}_timing.csv",
+                 f"{prefix}_failures.csv", f"{prefix}_unmatched_roi.csv"]:
         p = out_dir / name
         if p.exists():
             print(f"  {p}")
+
+    if args.expect is not None and len(feats_df) != args.expect:
+        raise SystemExit(f"成功例数 {len(feats_df)} != --expect {args.expect}")
 
 
 if __name__ == "__main__":

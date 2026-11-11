@@ -27,6 +27,8 @@ logs/download_failed.txt
 *.pth
 *.h5
 models/
+results/cache/
+results/tables/speedtest/
 
 # 敏感
 .env
