@@ -28,6 +28,7 @@ status: 进行中
 | 1b. 数据落地 | ✅ | 190 → 本机 `data/raw/full`，26 GiB（排除 SEG），8.0 MB/s、约 56 min |
 | 1c. 并行度定档 | 🟡 | 实测定档 **2 进程**；8 GB VM 下全量首跑仍 OOM，改为 12 GB 重跑（§二.4/§五） |
 | 1d. 容器首跑 | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
+| 1e. Docker Desktop 启动失败 | ❌ | 内存改 12 GB 后图标无响应，重跑被阻塞（§五 卡点 4） |
 | 2. 全量 422 例提取 | 🟡 | 待 12 GB 内存重跑，缓存可续（35 例已完成） |
 | 3. `code/06_qc_features.py` | ⬜ | 行数、缺失率、零方差、直方图（§三） |
 | 4. 5 例 `--jobs 1` 复算 | ⬜ | 一致性证据 |
@@ -210,8 +211,9 @@ docker run --rm -u dev -e HOME=/home/dev \
 
 #### (4) 最终配置
 
-**Docker Desktop 内存调到 10 GB，`--jobs 2` 跑全量**：给 2 个 worker 留约 2.5 GB 余量，
-避免大病例偶发 OOM；单例耗时不变，外推仍约 100 min。
+**Docker Desktop 内存改为 12 GB，`--jobs 2`**。定档时的初值是 10 GB，但那次设置
+并未生效（`MemTotal` 一直是 8 GB），首跑因此仍在 8 GB 下运行并被 OOM 杀死；
+之后按同一组峰值数据把上限提到 12 GB，失败经过与推导见 §二.6。
 
 判定规则留给之后复用：`jobs 上限 ≈ (VM 内存 − 1.5 GB) / 单 worker 峰值`，
 其中单 worker 峰值用 `--jobs 1` 或 `--jobs 2` 跑一次、读容器内 `/sys/fs/cgroup/memory.peak`
@@ -247,6 +249,36 @@ docker run --rm -u dev -e HOME=/home/dev \
 `docker inspect --format 'OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}}'`
 直接定位；本次因 `--rm` 只能事后推断。
 
+### 6. 为什么会升到 12 GB：失败经过倒推
+
+升到 12 GB 不是优化，是被两次 OOM 和一次未生效的设置逼出来的。按发生顺序：
+
+| 尝试 | 配置 | 结果 | 暴露的问题 |
+|---|---|---|---|
+| 1 | 8 GB，`--jobs 4` | 20 s 内全灭，`OOMKilled=true` | 4 个 worker 同时加载 CT 就超限 |
+| 2 | 8 GB，`--jobs 2`，10 例测速 | 通过（141.5 s） | **短程测速是假象**，没撞上两个 worker 的峰值重叠 |
+| 3 | 8 GB，`--jobs 2`，全量 | 35 例后 388 例 `BrokenProcessPool` | 跑久了必然撞上峰值重叠，8 GB 不够 |
+| 4 | 尝试改 10 GB | `MemTotal` 仍是 `8,319,770,624` | **设置没生效**，全量首跑实际仍在 8 GB 下进行 |
+
+第 4 条是关键：改过 10 GB 后没有验证，`docker info` 一直显示 8 GB，所以首跑并不是
+"10 GB 不够"，而是"根本没跑在 10 GB 上"。真正被测到的失败只有 8 GB 这一档。
+
+**从失败数据反推需要多少**：
+
+- 单 worker 瞬态峰值实测 4.29 GiB（`--jobs 1` 12 例采样）；
+- 2 个 worker 峰值重叠 = 8.6 GiB，而 8 GB VM 只有 7.75 GiB 可用 → 必死；
+- 10 GB 减去 8.6 GiB 只剩约 0.4 GiB，而 4.29 只是采样峰值，真实瞬时峰值更高，
+  等于把失败点从第 35 例往后推几十例，**并没有解决问题**；
+- 任务要求一次跑完 422 例，不能接受"可能在第 200 例挂掉再续跑"。
+
+宿主 16 GB 上可调的只有 VM 内存：8 GB 已证伪，10 GB 余量不足，往上是 12 GB
+（给 macOS 留 4 GB）。所以选择 12 GB，理由不是"余量大更好"，而是**10 GB 无法消除
+已经观察到的失败模式**。
+
+12 GB 目前尚未验证（Docker Desktop 起不来，见 §五 卡点 4）。起来后先确认
+`MemTotal ≈ 12.9e9` 再重跑；若仍 OOM，说明峰值比采样更高，只能退回 `--jobs 1`
+（单 worker 4.3 GiB，8 GB 也放得下，全量约 147 min）。
+
 ## 三、QC 脚本设计（待写 `code/06_qc_features.py`）
 
 核心函数按 Day17 计划要求：**输入特征 DataFrame，输出缺失率 / 零方差 / 异常值报告**。
@@ -279,6 +311,11 @@ docker run --rm -u dev -e HOME=/home/dev \
 | 1 | 容器内 `--jobs 4` 时 10 例在 20 s 内全部 `BrokenProcessPool`，`--jobs 1/2` 正常 | 不是 fork/ITK 问题，而是内存打爆：`docker inspect` → `OOMKilled=true`；Docker VM 仅 8 GB，2 worker 峰值已达 7.46 GiB | 定档 `--jobs 2`，VM 内存提到 10 GB；**不要改用 spawn**（每 worker 重新 import，内存更高） |
 | 2 | 探针命令 `--cache-dir results/cache/probe2` 全命中缓存、未产生内存数据 | 该目录此前已写入同一批病例的缓存；缓存只校验 params/脚本哈希，不区分用途 | 探针统一加 `--force` + 全新缓存目录，并用容器内 `/sys/fs/cgroup/memory.peak` 读峰值 |
 | 3 | 全量 `--jobs 2` 跑 18 分钟后 388 例 `BrokenProcessPool`，成功 35；吞吐从 2.5 降到 0.7 例/分钟 | 单 worker 瞬态峰值 4.3 GiB，2 worker 峰值重叠超过 8 GB VM；page cache 回收导致先变慢、后被 OOM kill。`--rm` 导致无法 `docker inspect` 复核 | VM 提到 12 GB 重跑；全量一律加 `--name`、不用 `--rm`；仍失败则 `--jobs 1`（147 min） |
+| 4 | 内存从 10 GB 改到 12 GB 并 Apply & restart 后，点击 Docker Desktop 图标无反应，`docker` 命令不可用 | 未定。候选：① 12 GB 分配在 16 GB 宿主上启动失败；② 虚拟机框架卡死（本机 uptime 已 11 天）；③ 旧进程残留占用 socket | 进行中：`docker version` 判断引擎是否起来；看 `~/Library/Group Containers/group.com.docker/log/host/com.docker.backend.log` 的 `memory`/`hypervisor` 关键字；`pkill` 残留后 `open -a Docker`；必要时把 `settings-store.json` 的 `memoryMiB` 改回 10240 或重启 macOS。**不做 Reset to factory defaults**——会删掉 `intern-radiomics:1.0`，重新编译 pyradiomics 至少要半小时 |
+
+> 卡点 4 记录时仍未解决。它是**工具阻塞**，不是数据或代码问题；解决后用
+> `--name extract2` 重跑即可，35 例缓存已在。若最终只能给 10 GB，就必须用
+> `--jobs 1`（单 worker 峰值 4.3 GiB 可容纳），全量约 147 min。
 
 排查方法沉淀：判断"并行失败"先分三类——**代码/并发 bug**（可复现且与资源无关）、
 **OOM**（`OOMKilled=true` 或退出码 -9）、**段错误**（退出码 -11）。
@@ -310,6 +347,9 @@ docker run --rm -u dev -e HOME=/home/dev \
 
 ## 待办
 
+0. **先恢复 Docker Desktop**：`docker version` 判断引擎；看 backend 日志；`pkill` 残留后
+   `open -a Docker`；12 GB 起不来则改回 `memoryMiB=10240` 或重启 macOS。
+   确认 `MemTotal` 后再继续；
 1. 补做数据计数校验：患者目录 422、CT 422、RTSTRUCT 422（SEG 已按计划排除）；
 2. Docker 内存调到 **12 GB** 后重跑全量：`--all --jobs 2 --expect 422`，
    容器加 `--name extract2`、去掉 `--rm`，日志写 `logs/extract-retry.log`；
@@ -334,4 +374,6 @@ docker run --rm -u dev -e HOME=/home/dev \
 - 8 GB 下全量首跑在 35 例处被 OOM 杀死，但 `--expect 422` 让失败显式化，
   缓存让重跑只需补算剩余病例——**失败可见 + 断点续跑** 比一次跑完更重要；
 - 诊断顺序应当是"先分资源问题与代码问题"：`OOMKilled`/退出码 -9 是 OOM，
-  -11 是段错误，`BrokenProcessPool` 本身只是症状，不能直接当作 fork/并发 bug。
+  -11 是段错误，`BrokenProcessPool` 本身只是症状，不能直接当作 fork/并发 bug；
+- 工具层故障（Docker Desktop 起不来）与任务层失败要分开处理：前者不产生也不破坏结果，
+  只是挡住执行；判断依据是"数据和缓存是否完好"，而不是"能不能马上跑"。
