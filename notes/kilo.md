@@ -164,3 +164,115 @@ AI 编程助手 CLI 工具，帮助完成软件开发任务。
 - **差一位的 DOI 格式合法、`doi.org` 也能解析**，是最难自查的错误类型；引用前先 `curl -sI https://doi.org/<doi>` 解析一次。
 - 三个易混数字：**1,019** 是论文里肺 + 头颈合计队列；本 collection **422** 例；其中 LUNG1-128 为术后病例、无 GTV-1，可做 GTV-1 特征的是 **421** 例（官方 Version 3 说明，推断值）。
 - 数据集 DOI 可直接引用；论文 DOI 必须写 `10.1038/ncomms5006`。
+
+## VS Code 扩展：远程 SSH 主机安装（2026-11-12 实测，t12ub / pvmed-190）
+
+### 1. 两个东西别混
+
+| 形态 | 装法 | 落点 |
+|---|---|---|
+| Kilo **CLI**（`kilo` 命令） | `npm install -g @kilocode/cli` | `~/.npm-global/bin/kilo`（D6 已装 7.8.18） |
+| Kilo Code **VS Code 扩展** | 扩展市场，ID `kilocode.kilo-code` | 本地 `~/.vscode/extensions/`；远程 `~/.vscode-server/extensions/` |
+
+问「怎么装 kilo」先确认要哪个，两者互不替代。
+
+### 2. 远程窗口必须装在「远程扩展宿主」
+
+扩展声明为 workspace 类型，SSH 窗口里本机那份会被禁用：
+
+> 此扩展在此工作区中被禁用，因为其被定义为在远程扩展主机中运行。请在 'SSH: t12ub' 中安装扩展以进行启用。
+
+即扩展跑在服务器上，装到 `~/.vscode-server/extensions/`，本机那份不参与该窗口。
+
+### 3. 平台专用包
+
+7.8.x 的包按平台分发（内含 Playwright/Chromium 二进制，500 MB 量级）：
+
+```text
+darwin-arm64  darwin-x64  linux-x64  linux-arm64  alpine-x64  alpine-arm64  win32-x64  win32-arm64
+```
+
+| 主机 | 需要 | 实测 |
+|---|---|---|
+| Mac（Apple Silicon） | `darwin-arm64` | `kilocode.kilo-code-7.8.27-darwin-arm64` |
+| t12ub / pvmed-190（Ubuntu 24.04, x86_64） | `linux-x64` | `kilocode.kilo-code-7.8.28`（手动 VSIX 无后缀） |
+
+市场 API 里每个平台是 `versions[]` 的**独立条目**，`versions[0]` 不等于「最新版」。
+
+### 4. 报错排查：四层证据
+
+现象（t12ub）：
+
+- UI 点「在 SSH: t12ub 中安装」→ `无法安装“kilocode.kilo-code”扩展，因为它不兼容。`
+- 集成终端跑 `remote-cli/code --install-extension` → `No extension gallery service configured.`
+
+逐层实测：
+
+| 层 | 命令 | 结果 | 判断 |
+|---|---|---|---|
+| 版本 | 扩展 `engines.vscode` vs server | `^1.105.1` vs `1.145.1` | 满足 |
+| 架构 | `uname -m` | `x86_64`，市场有 `linux-x64` | 满足 |
+| 两端一致性 | client / server `product.json` 的 `commit` | 都是 `6bab64e2…` | 一致 |
+| server gallery 配置 | `grep -A8 extensionsGallery <server>/product.json` | `serviceUrl` 完整 | 未损坏 |
+| client gallery 配置 | 本机 `product.json` | 同上 | 未损坏 |
+| 市场 API | POST `extensionquery` | `200` + 返回 Kilo 元数据 | 通 |
+| 控制配置 | `main.vscode-cdn.net/extensions/marketplace.json` | `200` | 通 |
+| 误导项 | GET `/_apis/public/gallery`、`www.vscode-unpkg.net` | `404` | **正常**，POST-only / 无根路径，不能当失败证据 |
+
+结论：两处报错都不是字面原因；同一窗口的扩展视图还显示「登录以访问扩展市场」，说明**该远程窗口的 gallery 服务状态异常**（排除法结论，未从源码坐实）。`Reload Window` / `Kill VS Code Server on Host` 可尝试恢复，不保证。
+
+方法论：报错文案不能直接当归因——先证伪「版本/架构」，再证伪「配置」，最后用真实 API 调用证伪「网络」，剩下的才是窗口状态。
+
+### 5. 离线安装 VSIX（确定性路径）
+
+市场 `vspackage` 直链返回 **gzip 流**，必须先解压：
+
+```bash
+curl -L -o kilo.gz "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/kilocode/vsextensions/kilo-code/7.8.28/vspackage?targetPlatform=linux-x64"
+file kilo.gz              # gzip compressed data（正常）
+gunzip -c kilo.gz > kilo.vsix
+file kilo.vsix            # Zip archive data（必须是这个）
+unzip -l kilo.vsix | tail -2
+```
+
+实测 7.8.28 `linux-x64`：磁盘 144 MB，解压后 578,547,266 B / 1399 个文件。
+
+安装：远程窗口 `Cmd+Shift+P` → **扩展: 从 VSIX 安装…** → 文件框浏览的是**远端**文件系统 → 输入 `/home/<user>/kilo.vsix` → `Developer: Reload Window`。
+
+验证：
+
+```bash
+ls -d ~/.vscode-server/extensions/kilocode.kilo-code-*
+jq -r '.version, .__metadata.targetPlatform' ~/.vscode-server/extensions/kilocode.kilo-code-7.8.28/package.json
+```
+
+### 6. 踩坑
+
+| 现象 | 根因 | 处置 |
+|---|---|---|
+| 远端 `code --install-extension` 报 `No installation of Visual Studio Code stable was found` | PATH 里的 `code` 是 `~/.local/bin/code`（微软独立 CLI），不是远程 CLI | 用 `~/.vscode-server/bin/<commit>/bin/remote-cli/code`，且必须在**集成终端**里跑 |
+| 把路径填进扩展搜索框 | 搜索框只做市场关键词搜索 | 用命令面板 `扩展: 从 VSIX 安装…` |
+| 选的 `.vsix` 其实是 gzip | 市场直链返回 gzip 流 | `gunzip -c` 后装解压出来的 zip |
+| `.../extension/package.json` 不存在 | 安装时剥掉 VSIX 内的 `extension/` 层，目录是扁平结构 | 读 `~/.vscode-server/extensions/<id>-<ver>/package.json`；只有 VSIX **包内**才有 `extension/` 前缀 |
+| `.__metadata.targetPlatform` 为 `undefined` | 手动安装不写市场元数据 | 不影响运行；用 `file bin/*` 确认 `ELF 64-bit x86-64` |
+| 目录名有的带 `-linux-x64` 有的不带 | 手动 VSIX 安装不按平台改名 | 匹配目录别写死后缀 glob |
+
+### 7. 升级 SOP（任意 linux 远端）
+
+```bash
+# 1) 查最新 linux-x64 版本
+curl -sS -X POST 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery' \
+  -H 'Content-Type: application/json' -H 'Accept: application/json;api-version=7.2-preview.1' \
+  -d '{"filters":[{"criteria":[{"filterType":7,"value":"kilocode.kilo-code"}]}],"flags":914}' -o /tmp/q.json
+jq -r '.results[0].extensions[0].versions[] | select(.targetPlatform=="linux-x64") | .version' /tmp/q.json | head -3
+
+# 2) 下载 → 解压 → 校验
+V=<版本>
+curl -L -o kilo.gz "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/kilocode/vsextensions/kilo-code/$V/vspackage?targetPlatform=linux-x64"
+gunzip -c kilo.gz > kilo.vsix && unzip -l kilo.vsix | tail -2
+
+# 3) 远程窗口：扩展: 从 VSIX 安装 → Reload Window → 验证目录
+```
+
+- 扩展不会自动更新，直到该窗口的市场通道恢复；恢复办法是 `Remote-SSH: Kill VS Code Server on Host` 后重连，让它重拉与客户端同 commit 的 server。
+- 本机（Mac）保留 `darwin-arm64` 版本，与远端并存，不冲突，不必卸载。
