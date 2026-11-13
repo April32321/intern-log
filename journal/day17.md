@@ -3,13 +3,14 @@ day: 17
 date: 2026-11-11
 theme: 全量 422 例特征提取与质控
 gate: 无（G4 在 D20）
-status: 进行中
+status: 已完成（190 收尾）
 ---
 
 # Day 17｜全量 422 例特征提取
 
 > 今日目标：把 D16 跑通的 10 例管线放大到 422 例，做到可续跑、有质控、结果可复算。
-> 本文件随当天进度更新：开工前先完成「运行环境核对」（§一），提取与 QC 待执行。
+> 本文件保留 2026-11-11 在 Mac（8 GB Docker VM）上的 OOM 排查过程；
+> 2026-11-13 已在 190（40 核 / 128 GB，conda 环境）完成全量提取与质控，收尾记录见 §六。
 
 ## 今日目标
 
@@ -30,11 +31,11 @@ status: 进行中
 | 1d. 容器首跑（2 进程） | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
 | 1e. Docker Desktop 启动失败 | ✅ | 已恢复（Docker Desktop 4.97.0，linux/arm64）；`MemTotal` 仍 8 GB，决定不再调内存 |
 | 1f. 第二跑（1 进程）仍 OOM | ❌ | 62 例后死在 LUNG1-058；单例探针确认该例单独就会 OOM（151 MB / 297 层）（§二.7） |
-| 2. 全量 422 例提取 | 🟡 | 待"分块重建进程池"后重跑，缓存可续（62 例已完成） |
-| 3. `code/06_qc_features.py` | ✅ | 已实现并用 35 行残缺表验证（§三）；待全量后正式运行 |
-| 4. 5 例 `--jobs 1` 复算 | ⬜ | 一致性证据 |
-| 5. `results/tables/features_qc.md` | ⬜ | 缺失与剔除记录 |
-| 6. INDEX 回填 + 收尾 commit | 🟡 | 本文件已建，结果待填 |
+| 2. 全量 422 例提取 | ✅ | 190 上 `--jobs 4 --chunk 80` 一次跑完 422/422，942.6 s（§六.1） |
+| 3. `code/06_qc_features.py` | ✅ | 已实现；190 上用全量表正式运行，0 缺例 / 0 零方差 / 0 非有限值（§六.3） |
+| 4. 5 例 `--jobs 1` 复算 | ✅ | 独立缓存重算，537 列最大相对差 0.000e+00（§六.3） |
+| 5. `results/tables/features_qc.md` | ✅ | 已生成并入库（0 高缺失、0 零方差） |
+| 6. INDEX 回填 + 收尾 commit | ✅ | D17 行已更新，日志与结果已提交 |
 
 ## 一、运行环境核对：为什么今天只能用 Dockerfile.radiomics
 
@@ -424,19 +425,34 @@ docker run --rm -u dev -e HOME=/home/dev \
 等全量提取结束后再跑，避免与 `--jobs 1` 抢 CPU。届时期望行数自动变为 422、
 缺例为 0；若仍有缺失，报告 §1 会给出每个 PatientID 的原因。
 
-## 四、结果（两次首跑均未完成，待分块重跑回填）
+## 四、结果
+
+> 下表分两部分：Mac 8 GB 环境的历史结果（保留，用于说明 OOM 排查），
+> 以及 190（40 核 / 128 GB）的最终结果。最终交付以 190 为准。
+
+### 4.1 最终结果（190，2026-11-13）
+
+| 指标 | 数值 |
+|---|---|
+| 配置 | `--all --jobs 4 --chunk 80`，`preCrop: true` |
+| 成功 / 失败 | **422 / 0** |
+| `features_all.csv` 行 × 列 | **422 × 538**（`PatientID` + 537 特征） |
+| 非有限值（NaN / inf） | 0 |
+| 缺例数及原因 | 0 |
+| 缺失率 > 20% 的列 | 0 |
+| 零方差列 | 0 |
+| 本批耗时 / 单例均值 | 942.6 s / 8.7 s |
+| 5 例 `--jobs 1` 复算最大相对差 | **0.000e+00**（537 列，含 0.8 / 661.3 cm³ 掩膜） |
+| 逐例缓存 | 422 个 JSON（不入库） |
+
+### 4.2 Mac 8 GB 环境历史结果（未完成，已由 190 接替）
 
 | 指标 | 数值 |
 |---|---|
 | 首跑（2 进程）成功 / 失败 | 35 / 388（OOM，`--expect 422` 拦截） |
 | 第二跑（1 进程）成功 / 失败 | **62 / 360**（OOM 于 `LUNG1-058`） |
-| `features_all.csv` 行 × 列 | 62 × 538（残缺，重跑后覆盖） |
-| NaN / inf | 0（62 例样本内） |
-| 单例均值 | 20–30 s（`--jobs 1` 12 例实测 20.9 s） |
-| 最终计划配置 | `--jobs 1` + **分块重建进程池**（`--chunk 10`），预计约 140 min |
-| 缺例数及原因 | 待重跑后统计；两次失败均为 `BrokenProcessPool`（OOM） |
-| 零方差列数 / 缺失率 >20% 列数 | 待 06 回填 |
-| 5 例 `--jobs 1` 复算最大相对差 | 待回填 |
+| `features_all.csv` 行 × 列 | 62 × 538（残缺，后被 190 结果覆盖） |
+| 单例均值 | 20–30 s（容器 23.9 s；本机 9.0 s） |
 
 ## 五、卡点与排查
 
@@ -457,57 +473,161 @@ docker run --rm -u dev -e HOME=/home/dev \
 **OOM**（`OOMKilled=true` 或退出码 -9）、**段错误**（退出码 -11）。
 本次用"保留容器 + `docker inspect`"一条命令即定位到 OOM，比反复改代码快得多。
 
+## 六、190 收尾记录（2026-11-13）
+
+Mac 端受 8 GB Docker VM 限制，全量始终未跑完。2026-11-13 改在 190 服务器上完成，
+不再使用容器，直接用已验证的 conda 环境 `radiomics`。
+
+### 6.1 环境与最终命令
+
+| 项 | 值 |
+|---|---|
+| 机器 | 190，40 逻辑核 / 125.8 GiB 内存 |
+| Python | `/home/jiaqiwang/miniconda3/envs/radiomics/bin/python` |
+| 关键版本 | Python 3.10.22、PyRadiomics 3.0.1、SimpleITK 2.5.6、numpy 1.26.4 |
+| 数据根目录 | `/home/jiaqiwang/tcia/full`（422 个病例目录） |
+| 参数文件 | `code/params.yaml`，与 Mac 版的功能差异只有 `preCrop: true` |
+| 最终配置 | `--all --jobs 4 --chunk 80`，无 `--exclude` |
+
+```bash
+cd /home/jiaqiwang/nsclc-cox
+
+python code/05_extract_features.py \
+  --all --jobs 4 --chunk 80 \
+  --raw-root /home/jiaqiwang/tcia/full \
+  --expect 422
+```
+
+`preCrop` 在 D16 之后由 `2acda87` 引入，用于压大 CT 的峰值内存；已在 `LUNG1-111`
+验证与全图提取等价（最大相对差 `3.8e-14`）。`LUNG1-058`（151 MB / 297 层）在 190
+上一次通过，不再需要 Mac 方案里的 `--exclude` + 单独补算。
+
+### 6.2 并行度与缓存
+
+- 4 个 worker × 每 80 例重建进程池：422 例分 6 块；
+- 每 worker 仍由 `init_worker()` 把 ITK 线程设为 1，避免线程超订；
+- 成功 422、失败 0，本批 942.6 s，单例均值 8.7 s；
+- 逐例缓存 422 个 JSON，重跑全部命中；
+- `05_extract_features_v2.py` 的 4 进程/80 分块默认值后来合并回标准的
+  `05_extract_features.py`，v2 文件删除。因为缓存校验的是**文件内容哈希**，
+  合并后脚本哈希不变（`5f0fc4d436a7`），已有缓存继续有效。
+
+### 6.3 QC 与复现性
+
+对 5 例（`LUNG1-001`、`LUNG1-023`、`LUNG1-027`、`LUNG1-128`、`LUNG1-422`）
+用独立缓存目录、`--jobs 1` 重算，再与全量表比对：
+
+```bash
+python code/05_extract_features.py \
+  --patients LUNG1-001 LUNG1-023 LUNG1-027 LUNG1-128 LUNG1-422 \
+  --jobs 1 --raw-root /home/jiaqiwang/tcia/full \
+  --cache-dir results/cache/features_repro_j1 \
+  --out-dir results/repro --out-name features_repro_j1 \
+  --expect 5
+```
+
+```bash
+python code/06_qc_features.py \
+  --raw-root /home/jiaqiwang/tcia/full \
+  --parallel-a results/tables/features_all.csv \
+  --parallel-b results/repro/features_repro_j1.csv \
+  > logs/qc_2026-11-13_1435.log 2>&1
+```
+
+结果：
+
+| 检查 | 结果 |
+|---|---|
+| 行数 / 缺例 | 422 / 0 |
+| 缺失率 > 20% 的列 | 0 |
+| 零方差列 | 0 |
+| NaN / inf | 0 |
+| 5 例 × 537 列最大相对差 | **0.000e+00** |
+| `features_qc.md` | 已生成，§9 结论为“已执行检查通过；未执行：基准表一致性” |
+
+`features_10.csv` 在 190 上不存在，所以 §5 基准表比对跳过；190 的“0 差异”证明的是
+**同一平台内并行度不改变结果**（j4 全量 vs j1 重算），不是与 Mac 容器结果的跨平台一致性。
+Mac D16 记录的跨平台最大相对差为 `1.39e-12`，本次未在 190 重验。
+
+### 6.4 QC 脚本修正
+
+在 190 的实际运行中发现 `06_qc_features.py` 有两处报告逻辑问题，已修复：
+
+1. §5/§6 的比对标原本写死为 `features_10` / `speed_j1`，改为使用实际传入的文件路径；
+2. 跳过的比对不再被结论当作“通过”，改为“已执行的检查通过；未执行：…”；
+   `parallel` 的最大相对差超过 `1e-6` 时也会进入“需要复核”。
+
+对应 `nsclc-cox` 提交：`69631bf fix: report QC consistency checks against actual inputs`。
+
+### 6.5 相关提交（nsclc-cox）
+
+| commit | 内容 |
+|---|---|
+| `cfd28b9` | 新增 4 进程 / 80 分块的提取脚本变体 |
+| `1ff9f77` | 422 例特征表与 timing 表 |
+| `39d8791` | 把 422 例表提升为标准名（删除 v2 副本） |
+| `068ad6e` | 4 进程 / 80 分块默认值合并回标准 05 脚本 |
+| `343f00e` | 新增 06 质控脚本 |
+| `510f665` | 引入 00–04 上游脚本与 `cohort.csv` |
+| `559f7be` | Day 17 质控报告与图表 |
+| `69631bf` | 修正 QC 比对标与“跳过即通过”的结论问题 |
+
+### 6.6 尚未覆盖
+
+- 跨平台（Mac 容器 vs 190 conda）一致性未重新验证，`features_10.csv` 不在 190；
+- 4 个 signature 特征的中位数与论文仍有差异（Energy ×0.03、wavelet-HLH ×1.88），
+  留待建模阶段判断是 HU/重采样/ROI 口径差异还是数据本身差异。
+
 ## 产出文件
 
 | 文件 | 状态 | 内容 |
 |---|---|---|
 | `journal/day17.md` | ✅ | 本文件 |
 | `code/05_extract_features.py` | ✅ | `--all` / `--jobs` / `--chunk` / `--exclude` / 逐例缓存 / `--cache-ignore-script`（§二.7） |
-| `results/cache/features/*.json` | 🟡 62 例 | 逐例缓存（续跑依据，不入库） |
-| `results/tables/features_all.csv` | 🟡 残缺 | 第二跑 62 行（OOM 中断），重跑后覆盖 |
-| `results/tables/features_all_timing.csv` | 🟡 残缺 | 每例耗时与掩膜几何 |
-| `results/tables/features_all_failures.csv` | 🟡 临时 | 第二跑 360 例 `BrokenProcessPool` 失败清单 |
-| `code/06_qc_features.py` | ✅ | 行数 / 缺失率 / 零方差 / 一致性 / 直方图（§三） |
-| `results/tables/feature_missing_rate.csv` | ⬜ | 缺失率明细（06 运行后生成） |
-| `results/tables/feature_zero_variance.csv` | ⬜ | 零方差列（06 运行后生成） |
-| `results/tables/qc_missing_patients.csv` | ⬜ | 缺例清单（06 运行后生成） |
-| `results/figures/qc/hist_random6.png` | ⬜ | 6 特征直方图（06 运行后生成） |
-| `results/tables/features_qc.md` | ⬜ | 质控报告（06 运行后生成） |
-| `logs/extract_2026-11-11.log` | 🟡 | 首跑日志（35 例后 OOM） |
-| `logs/extract-retry.log` | 🟡 | 第二跑日志（62 例后 OOM，`LUNG1-058`） |
-| `logs/extract-chunk.log` | ⬜ | 分块重跑日志 |
+| `results/cache/features/*.json` | ✅ 422 例 | 逐例缓存（续跑依据，不入库） |
+| `results/tables/features_all.csv` | ✅ 完整 | 422 行 × 538 列（190） |
+| `results/tables/features_all_timing.csv` | ✅ | 每例耗时与掩膜几何 |
+| `results/tables/features_all_failures.csv` | — 不适用 | 190 上 0 失败，无失败清单 |
+| `code/06_qc_features.py` | ✅ | 行数 / 缺失率 / 零方差 / 一致性 / 直方图（§三、§六.4） |
+| `results/tables/feature_missing_rate.csv` | ✅ | 缺失率明细（0 列 > 20%） |
+| `results/tables/feature_zero_variance.csv` | ✅ | 零方差列（仅表头，0 列） |
+| `results/tables/qc_missing_patients.csv` | ✅ | 缺例清单（仅表头，0 例） |
+| `results/figures/qc/hist_random6.png` | ✅ | 6 特征直方图 |
+| `results/tables/features_qc.md` | ✅ | 质控报告（§1–§9） |
+| `logs/extract_2026-11-11.log` | 🟡 历史 | Mac 首跑日志（35 例后 OOM） |
+| `logs/extract-retry.log` | 🟡 历史 | Mac 第二跑日志（62 例后 OOM） |
+| `logs/extract_2026-11-13_1133.log` | ✅ | 190 全量提取日志（422 例） |
+| `logs/qc_2026-11-13_1435.log` | ✅ | 190 QC 运行日志 |
 
 ## 验收对照（Day 17）
 
 | 验收标准 | 状态 | 证据 |
 |---|---|---|
-| `features_all.csv` 行数 = 成功例数，缺例有解释 | ⬜ | 首跑 35 行，`--expect 422` 拦截；待重跑 |
-| 幂等性已验证（续跑不重复计算） | 🟡 | 两次重跑分别跳过 10 / 35 例缓存；分块重跑将跳过 62 例 |
-| 抽 5 例 `--jobs 1` 复算结果一致 | ⬜ | 待填：最大相对差 |
-| `features_qc.md` 含缺失率、剔除记录、异常值说明 | ⬜ | 待填 |
+| `features_all.csv` 行数 = 成功例数，缺例有解释 | ✅ | 190：422 行、缺例 0，`--expect 422` 通过（§六.1） |
+| 幂等性已验证（续跑不重复计算） | ✅ | 422 个逐例缓存；5 例复算使用独立缓存，主缓存不参与（§六.3） |
+| 抽 5 例 `--jobs 1` 复算结果一致 | ✅ | 5 例 × 537 列，最大相对差 `0.000e+00`（§六.3） |
+| `features_qc.md` 含缺失率、剔除记录、异常值说明 | ✅ | §1–§9 全量生成；0 高缺失、0 零方差、0 NaN/inf |
 
 ## 待办
 
 0. ~~恢复 Docker Desktop~~：已完成，引擎 `linux/arm64` 正常；`MemTotal` 仍 8 GB，
    **不再调整内存**，直接进入第 1 条；
-1. 补做数据计数校验：患者目录 422、CT 422、RTSTRUCT 422（SEG 已按计划排除）；
+1. ~~补做数据计数校验~~：190 上 `index.csv` 中 `has_rtstruct=True` 422 例、本地目录 422 个，
+   QC 缺例 0（有 1 例 `has_seg=False`，不影响 CT/RTSTRUCT 与 GTV 提取）；
 2. ~~给 `code/05_extract_features.py` 加 `--chunk`~~：已完成，并在本机用
    `--chunk 2` vs `--chunk 0` 验证逐值相同；同时新增 `--cache-ignore-script`
    与 `--exclude`（跳过内存超限的大病例）；
 3. ~~容器内验证分块~~：已由 `--limit 100 --chunk 10` 验证——chunk 1（058–067）全灭、
    chunk 2（068–077）全成功，据此定位到 `LUNG1-058` 单例超限；
-4. 容器内跑其余病例：`--all --exclude LUNG1-058 --jobs 1 --chunk 10
-   --cache-ignore-script --expect 421`，容器加 `--name extract3`、去掉 `--rm`，
-   日志写 `logs/extract-no058.log`；中断后重跑会跳过已完成病例；
-5. `LUNG1-058` 单独补算（本机 conda，或调大 VM 内存后用容器），写入
-   `results/cache/features/LUNG1-058.json`；
-6. 缓存齐后再跑 `--all --expect 422` 汇总，生成完整的 422 行 `features_all.csv`；
-7. 运行 `code/06_qc_features.py`（§三），生成报告与各明细表；
-8. 抽 5 例 `--jobs 1 --cache-dir results/cache/features_recheck` 复算，
-   回填本文件 §四/§五/§验收；
-9. 回填 `journal/INDEX.md` 的 D17 行，收尾 commit：`day17: 全量 422 例特征提取与质控报告`。
+4. ~~容器内跑其余病例~~：190 上直接 `--all --jobs 4 --chunk 80` 一次跑完 422 例，
+   未使用 `--exclude`；
+5. ~~`LUNG1-058` 单独补算~~：190 上正常完成（`preCrop` + 128 GB），无需补算；
+6. ~~缓存齐后汇总~~：422 个缓存，`features_all.csv` 422 行；
+7. ~~运行 `code/06_qc_features.py`~~：已运行，0 缺例 / 0 零方差 / 0 非有限值；
+8. ~~抽 5 例 `--jobs 1` 复算~~：独立缓存 + `--expect 5`，最大相对差 0；
+9. ~~回填 `journal/INDEX.md` 的 D17 行~~：已更新，日志已提交。
 
-## 今日结论（进行中）
+## 今日结论
 
 - 运行环境不是"二选一"，而是**分层各司其职**：`Dockerfile.miniforge` 负责证明 Miniforge 可用、
   承担调试与层缓存；`Dockerfile.radiomics` 负责可运行的交付环境；
@@ -529,3 +649,19 @@ docker run --rm -u dev -e HOME=/home/dev \
   -11 是段错误，`BrokenProcessPool` 本身只是症状，不能直接当作 fork/并发 bug；
 - 工具层故障（Docker Desktop 起不来）与任务层失败要分开处理：前者不产生也不破坏结果，
   只是挡住执行；判断依据是"数据和缓存是否完好"，而不是"能不能马上跑"。
+
+### 190 收尾补充
+
+- **同一套代码，资源决定可行性**：Mac 8 GB VM 下 `LUNG1-058` 单例就 OOM，
+  190 的 128 GB + `preCrop` 下 4 进程一次跑完。并行度上限应由内存实测决定，
+  不应从核数推断；
+- **最终交付结果**：422/422 成功、`features_all.csv` 422 × 538、0 NaN/inf、
+  0 缺例、0 高缺失、0 零方差；本批 942.6 s，单例均值 8.7 s；
+- **复现性证据**：5 例用 `--jobs 1` + 独立缓存重算，与 `--jobs 4` 全量结果
+  在 537 列上最大相对差 `0.000e+00`，说明本平台内并行不改变数值；
+- **缓存哈希的实用细节**：把 v2 脚本内容合并回标准文件名不会改变内容哈希，
+  因此 422 个缓存继续有效；反之，改参数或改提取逻辑会使缓存整体失效；
+- **质控报告要区分“通过”和“跳过”**：`06` 早期版本把跳过的比对写成了“均通过”，
+  已修正为显式列出未执行项，并把并行比对的超差纳入结论；
+- **仍未覆盖**：跨平台（Mac 容器 vs 190 conda）一致性未重验；4 个 signature 特征
+  与论文中位数的差异（Energy ×0.03、wavelet ×1.88）留待 D18/D19 判断。
