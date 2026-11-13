@@ -24,18 +24,21 @@ status: 已完成（190 收尾）
 
 | 步骤 | 状态 | 说明 |
 |---|---|---|
-| 0. 运行环境核对 | ✅ | 确认用 `intern-radiomics:1.0`；`Dockerfile.miniforge` 只是调试底座（§一） |
-| 1. 并行化 + 幂等改造 | ✅ | `--all` / `--jobs` / 逐例缓存已实现，2 例小样本验证通过（§二） |
-| 1b. 数据落地 | ✅ | 190 → 本机 `data/raw/full`，26 GiB（排除 SEG），8.0 MB/s、约 56 min |
-| 1c. 并行度定档 | ✅ | 实测 2 进程在 8 GB 下必 OOM；12 GB 调整失败，**改用 1 进程**（§二.4/§二.6）；1 进程仍 OOM，见 1f |
-| 1d. 容器首跑（2 进程） | ❌ | 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
-| 1e. Docker Desktop 启动失败 | ✅ | 已恢复（Docker Desktop 4.97.0，linux/arm64）；`MemTotal` 仍 8 GB，决定不再调内存 |
-| 1f. 第二跑（1 进程）仍 OOM | ❌ | 62 例后死在 LUNG1-058；单例探针确认该例单独就会 OOM（151 MB / 297 层）（§二.7） |
-| 2. 全量 422 例提取 | ✅ | 190 上 `--jobs 4 --chunk 80` 一次跑完 422/422，942.6 s（§六.1） |
-| 3. `code/06_qc_features.py` | ✅ | 已实现；190 上用全量表正式运行，0 缺例 / 0 零方差 / 0 非有限值（§六.3） |
-| 4. 5 例 `--jobs 1` 复算 | ✅ | 独立缓存重算，537 列最大相对差 0.000e+00（§六.3） |
-| 5. `results/tables/features_qc.md` | ✅ | 已生成并入库（0 高缺失、0 零方差） |
-| 6. INDEX 回填 + 收尾 commit | ✅ | D17 行已更新，日志与结果已提交 |
+| 0. 运行环境核对 | ✅ | [Mac] 确认用 `intern-radiomics:1.0`；`Dockerfile.miniforge` 只是调试底座（§一） |
+| 1. 并行化 + 幂等改造 | ✅ | [共享] `--all` / `--jobs` / 逐例缓存已实现，2 例小样本验证通过（§二） |
+| 1b. 数据落地 | ✅ | [Mac] 190 → 本机 `data/raw/full`，26 GiB（排除 SEG），8.0 MB/s、约 56 min |
+| 1c. 并行度定档 | ✅ | [Mac] 实测 2 进程在 8 GB 下必 OOM；12 GB 调整失败，**改用 1 进程**（§二.4/§二.6）；1 进程仍 OOM，见 1f |
+| 1d. 容器首跑（2 进程） | ❌ | [Mac] 35 例成功后进程池被 OOM 杀死，388 例标记失败；`--expect` 拦截（§二.5） |
+| 1e. Docker Desktop 启动失败 | ✅ | [Mac] 已恢复（Docker Desktop 4.97.0，linux/arm64）；`MemTotal` 仍 8 GB，决定不再调内存 |
+| 1f. 第二跑（1 进程）仍 OOM | ❌ | [Mac] 62 例后死在 LUNG1-058；单例探针确认该例单独就会 OOM（151 MB / 297 层）（§二.7） |
+| 2. 全量 422 例提取 | ✅ | [190] `--jobs 4 --chunk 80` 一次跑完 422/422，942.6 s（§六.1） |
+| 3. `code/06_qc_features.py` | ✅ | [190] 用全量表正式运行，0 缺例 / 0 零方差 / 0 非有限值（§六.3） |
+| 4. 5 例 `--jobs 1` 复算 | ✅ | [190] 独立缓存重算，537 列最大相对差 0.000e+00（§六.3） |
+| 5. `results/tables/features_qc.md` | ✅ | [190] 已生成并入库（0 高缺失、0 零方差） |
+| 6. INDEX 回填 + 收尾 commit | ✅ | [190] D17 行已更新，日志与结果已提交 |
+
+> 1c–1f 为 Mac 8 GB 环境的历史排查；2–6 为 190（40 核 / 128 GB）的收尾结果。
+> Mac 上的失败没有被 190 的成功“覆盖”，两者一起保留，便于复盘资源边界。
 
 ## 一、运行环境核对：为什么今天只能用 Dockerfile.radiomics
 
@@ -82,7 +85,7 @@ graph LR
 | `02_build_index.py:18` | pandas | ❌ |
 | `03_km_baseline.py:1-5` | pandas / matplotlib / lifelines | ❌ |
 | `05_extract_features.py:32-37` | numpy / pandas / pydicom / radiomics / SimpleITK | ❌ **在 `import numpy` 即退出**，不读索引、不算任何一例 |
-| `06_qc_features.py`（今日待写） | pandas / matplotlib | ❌ |
+| `06_qc_features.py`（当时待写） | pandas / matplotlib | ❌ |
 
 注意 `--jobs` 不是问题所在：多进程的每个子进程都要重新 import radiomics，缺环境时连并发都起不来。
 
