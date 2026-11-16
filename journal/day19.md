@@ -2,7 +2,7 @@
 
 - 日期：2026-11-16
 - 主题：固定折上的四模型全量评估
-- 状态：5×10 全量运行完成；性能表、逐折结果、系数表与图形已产出并提交；**本日志按要求暂未提交**
+- 状态：5×10 全量运行完成；性能表、逐折结果、系数表与图形已产出并提交；本日志已随 D19 收尾提交（`3fc85f2`）；特征方向核对见 §12
 
 ## 1. 今日目标
 
@@ -195,14 +195,49 @@ cd /home/jiaqiwang/nsclc-cox
 | KM / 森林图 / C-index 箱线图 | 完成 |
 | 过拟合解释（train−test gap） | 完成 |
 | LASSO 稳定性报告 | 完成 |
-| 与论文数字并排对比 | 未完成（缺 `target.md`） |
-| 结果提交 | 已完成（`12c00bf`、`92f7342`）；本日志未提交 |
+| 与论文数字并排对比 | 已完成（`target.md` v1.6 §5.1–5.2；见 §11） |
+| 特征方向核对（§6.6-3） | 完成（4/4 一致，见 §12） |
+| 结果提交 | 已完成（`12c00bf`、`92f7342`、`d8d9a01`、`5157c77`、`3fc85f2`） |
 
 ## 10. 当日结论
 
 在固定分析集、固定 5×10 折和固定流程下，第一次得到了可复现的四模型性能：临床 0.530 ± 0.026，固定签名 0.581 ± 0.038，LASSO 0.583 ± 0.035，联合 0.581 ± 0.034。影像特征相对临床有约 0.05 的提升，但三条影像路线没有分出高下；LASSO 的特征选择高度不稳定，固定签名与 LASSO 选出的特征几乎不重叠却性能相当。
 
 因此，后续报告应把“影像有信号”和“某个 signature 稳定”分开陈述：前者有证据，后者目前没有。下一步优先补 `target.md` 和核对临床/分期口径，而不是调整 seed、折或筛选阈值去追求更高的 C-index。
+
+## 11. 补记：森林图 CI 口径变更与逐字节复现（2026-11-16 16:25）
+
+任务 5 要求森林图展示“HR + 95% CI”；原实现（`forest_*.png`，见附录 A.6.3）用的是跨折 HR 的 10–90 分位（80% 经验区间），不是 95% CI。据此修改 `code/09_cv_models.py` 并在固定折上完整重跑：
+
+- 每折最终 Cox 额外记录 `se(coef)` 与 Wald 95% CI，写入 `cv_coefficients.csv` 的 `se / hr_lower95 / hr_upper95`；
+- `coefficient_summary.csv` 新增 `coef_pooled / coef_pooled_lo / coef_pooled_hi / hr_pooled / hr_pooled_lo / hr_pooled_hi`；
+- 森林图改用跨折逆方差合并：`w_i = 1/se_i²`，`beta_pooled = Σw_iβ_i / Σw_i`，`var_pooled = 1/Σw_i`，CI = `exp(beta_pooled ± 1.96·sqrt(var_pooled))`。
+
+重跑配置与耗时：完整 5×10 四模型，`2917.6 s`，日志 `logs/cv_models_rerun_2026-11-16.log`。
+
+**复现性**：`perf.csv`、`cv_folds.csv`、`oof_predictions.csv`、`selection_stability.csv`、`cindex_boxplot.png`、`km_oof_*.png` 与本日志上一版逐字节一致；发生变化的只有 `cv_coefficients.csv`、`coefficient_summary.csv`、`perf.md` 和四张 `forest_*.png`。说明本次改动只影响系数报告口径，不影响模型性能。
+
+**口径限制（必须保留）**：50 折共享病人、Cox 带 0.1 惩罚，逆方差合并把折当成独立样本，CI 偏窄（例如 `radiomics_score` 由 1.51 [1.39–1.69] 变为 1.51 [1.49–1.54]）。该 CI 不能替代病人层面 bootstrap，也**不是** `target.md` §6.6-4 所指的“C-index 95% CI 不含 0.5”判据。
+
+**对前文状态的两点更正**：
+
+1. §3.5 / §3.6 的 `HR [10–90 pct]` 表保留为上一口径的历史记录；新的 pooled HR 以 `perf.md` §3 为准。
+2. `results/repro/target.md` 已于 v1.4 建立并回填；§5-8、§7-7、§9 中“`target.md` 未建立 / 并排对比未完成”的旧表述由本补记取代。但 §6.6-4 的 C-index CI 判据仍未完成，仍需 bootstrap。
+
+## 12. 补记：四特征方向核对（2026-11-16）
+
+依据补充材料 `ncomms5006_supplementary.pdf` 第 2 页的 Supplementary Fig. 1（单特征 KM，面板 a–d），对固定签名的 4 个特征做方向核对：
+
+| 面板 | 特征 | 论文方向 | 预期 HR | D19 pooled HR | 结论 |
+|---|---|---|---|---|---|
+| a | `Stats_energy` | 高值更差 | >1 | 1.09 [1.07–1.10] | 一致（Supp. Fig. 1a 目测） |
+| b | `Shape_compactness2` | 更紧凑/球形→更好 | <1 | 0.95 [0.93–0.96] | 一致 |
+| c | `RLGL_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.09 [1.06–1.13] | 一致 |
+| d | `Wavelet_HLH_rlgl_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.06 [1.03–1.10] | 一致 |
+
+正文 Results 原句：“Features describing heterogeneity in the primary tumour were associated with worse survival in all four data sets. Also, patients with more compact/spherical tumours had better survival probability.” b/c/d 可直接判定；a（Energy）正文未单列方向，按 Supp. Fig. 1a 中 `> Median` 组曲线更低判定，与 pooled HR 1.09 一致。
+
+结论：**4/4 方向一致**，`target.md` §6.6-3 记为“满足（定性）”。注意这是定性方向核对，不是效应量复现；Energy 仍受 §4 的 HU/存储值量纲问题影响，量纲核对后再定稿相关表述。
 
 ---
 

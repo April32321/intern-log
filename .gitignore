@@ -49,3 +49,6 @@ data/paper/
 *.pdf
 .vscode/
 logs/*.log
+
+# 嵌套子仓库（独立 repo，结果以 nsclc-cox 为准）
+/nsclc-cox/

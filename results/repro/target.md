@@ -1,8 +1,8 @@
 # 复现目标（Aerts et al. 2014）
 
-> 版本 **v1.3**（2026-11-10）｜初版 v1.0（2026-11-06）｜上版 v1.2（2026-11-10）
-> 本文件只记录**论文原始目标值 + 出处 + 复现协议**。
-> 复现结果由 D18 填写；未核实的数字一律标「未报告」，**不使用推测值**。
+> 版本 **v1.6**（2026-11-16）｜初版 v1.0（2026-11-06）｜上版 v1.5（2026-11-16）
+> 本文件记录**论文原始目标值 + 出处 + 复现协议 + D19 实际执行状态**。
+> 复现结果由 D18/D19 填写；未核实的数字一律标「未报告」，**不使用推测值**。
 >
 > 对应附录 B 模板：§1 ↔ 模板§1；§2.1/§2.2 ↔ 模板§2；§4 ↔ 模板§3；§8 ↔ 模板§4。
 > 其余章节（§0/§3/§5/§6/§7/§9）是复现协议与证据，属模板之外的自愿补充。
@@ -16,6 +16,13 @@
 >   §6.1 补队列画像核对；§2.4 删除无法证实的推测解释。
 > - v1.3：按附录 B 模板补齐——§2.2 增加「队列规模」行；§1 说明页码缺失原因；
 >   §7 回填版本与实测特征数（两条 D16 项已关闭）；§8 补「差异在报告第 6 章归因」。
+> - v1.4（D19）：回填四模型 5×10 实测结果（§5.1）与协议对齐表（§5.2）；
+>   §6.2 增加 D19 临床基线口径；修正 wavelet 列名（`glrlm-GrayLevel` →
+>   `glrlm_GrayLevel`）；记录 5×5→5×10、422/399、signature 标准化/惩罚三项偏离。
+> - v1.5（D19）：森林图 HR 改为跨折逆方差合并 + 解析 95% CI（§5.3）；
+>   说明该 CI 偏窄且不等于 §6.6-4 的 C-index CI 判据；主结果（C-index）逐字节复现。
+> - v1.6（D19）：四特征方向核对完成（Supplementary Fig. 1，4/4 一致，§5.4）；
+>   b/c/d 由正文明确表述，a（Energy）由 Supp. Fig. 1a 目测且与 pooled HR 一致。
 
 ## 0. 范围
 
@@ -80,7 +87,7 @@ H&N1 的样本量在论文内部不一致：正文写 136，Supplementary Table 
 | 队列规模 | 训练 **Lung1 = 422**；验证 225 / 136 / 95（合计 **1,019**） | Abstract；Methods「Datasets」；§2.3 Table 1 | **422**（仅 Lung1） | D16 已确认 | 无外部队列，不进入 Difference |
 | 特征数 | **440**（四类） | Abstract；Methods「Radiomics features」 | PyRadiomics 按启用类别的实际计数（不追求 440） | D16 实测记录 | 见 2.4：440 无法逐项复原 |
 | signature 特征数 | **4** | Results + Fig. 3 + Supplementary Table 1 | **4**（固定，不做特征选择） | D18 | — |
-| 训练集 C-index | **未报告** | 正文与 Supplementary Table 1 均无 | apparent 与 5-fold×5 测试折 CV **分行报**，各标口径与 n | D18 | **N/A，不计算 Difference** |
+| 训练集 C-index | **未报告** | 正文与 Supplementary Table 1 均无 | apparent 与 5-fold×10 测试折 CV **分行报**，各标口径与 n（D19 实际；v1.3 原计划 5×5） | D18/D19 | **N/A，不计算 Difference** |
 | 验证集 C-index | 0.65 / 0.69 / 0.69 | Results + Fig. 4a | 无外部数据 | **N/A** | 不计算 |
 | 分组方式 | Lung1 训练集内算**中位数**，锁定后直接用于验证集，不重选阈值 | Methods「Data analysis」+ Supplementary Fig. 1 | 内部 CV 不分箱；若作 KM 分层图，用**训练折内**中位数（见 6.3） | D18 | 口径差异（CV 无"锁定阈值"概念） |
 | 重采样 / spacing | **未重采样**，用原始体素（Lung1 层厚 3 mm；Lung3 1.5–5 mm） | Supplementary Methods 全文无 resampling 描述；Lung1 数据集段 | **不重采样**（参数文件中省略 `resampledPixelSpacing`，默认即 None） | D16 参数 | 无（按论文） |
@@ -120,7 +127,7 @@ PyRadiomics 各类特征更多且含论文没有的类别），数量天然不�
 | Statistics Energy | 1 / **#1** Energy | Group 1 第 1 项，ΣX² | `original_firstorder_Energy` |
 | Shape Compactness | 16 / **#16 Compactness 2** | Group 2 第 16 项 | `original_shape_Compactness2`（**PyRadiomics 3.x 已移除该特征**，由 `36π·V²/A³` 现算，列名后缀 `_derived`） |
 | Grey Level Nonuniformity | 48 / **#47 GLN（GLRLM）** | Group 3 GLRLM 灰度不均匀性 | `original_glrlm_GrayLevelNonUniformity` |
-| wavelet GLNU HLH | Group 4 / **Group 4** | Coiflet 1 非降采样小波 HLH 分解上的 GLRLM GLN | `wavelet-HLH_glrlm-GrayLevelNonUniformity` |
+| wavelet GLNU HLH | Group 4 / **Group 4** | Coiflet 1 非降采样小波 HLH 分解上的 GLRLM GLN | `wavelet-HLH_glrlm_GrayLevelNonUniformity` |
 
 必须注意的三点：
 
@@ -168,6 +175,8 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 - 论文的 β 未公开，本项目一律标注「自拟合」；
 - 分层作图时，阈值只用训练折内中位数，不在测试折或全量上重算（见 6.3）。
 
+**D19 实际偏离**：本次 `09_cv_models.py` 的 signature 路线先用训练折 `StandardScaler`，再用带 0.1 惩罚的 Cox 拟合；这与上文「不对特征做标准化」不一致。无惩罚 Cox 的 C-index 对特征线性缩放不变，但有惩罚时惩罚施加在标准化后的系数上，结果可能略有差异。该偏离需在正式报告的方法节声明；若要做严格的论文口径，应补一次「原始尺度 + 无惩罚」的敏感性分析。
+
 ## 4. 方法细节对照
 
 | 项 | 文献值 | 我们的做法 | 是否可对齐 |
@@ -182,8 +191,8 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 | 归一化 | **未做任何归一化**，直接用 DICOM 原始值 | `normalize: false` | 是 |
 | 指标定义 | Harrell's C；模型间显著性用 bootstrap（100 次重采样）+ Wilcoxon 检验 | `lifelines.utils.concordance_index`（Harrell's C），不做 bootstrap 显著性检验 | 部分（C-index 可比，显著性检验不可比） |
 | 特征筛选 | 稳定性（ICC + Friedman）→ 前 100 → 四类各选 1 | Track A 不筛选，固定 4 特征 | 否（D18 不需要） |
-| 模型 | 多变量 Cox，权重在 Lung1 拟合 | lifelines Cox（惩罚系数待定） | 部分（权重自拟合） |
-| 验证方式 | 3 个独立外部队列 | Lung1 内部 5-fold × 5 次重复 CV | 否（无外部数据） |
+| 模型 | 多变量 Cox，权重在 Lung1 拟合 | lifelines Cox（D19 实际惩罚 0.1；论文未公开惩罚） | 部分（权重自拟合，惩罚口径不同） |
+| 验证方式 | 3 个独立外部队列 | Lung1 内部 5-fold × 10 次重复 CV（D18 改；原计划 5×5） | 否（无外部数据） |
 
 残余差异（D20 归因时需写明）：
 
@@ -200,21 +209,85 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
   LUNG1-001 的 ΣX² 从 2.28×10⁹ 变为 5.29×10¹⁰，量级进入 10¹⁰
   （该例体积 156 cm³ 偏大，绝对值高于论文中位数属正常），
   提示论文是在**未转为 HU 的存储像素值**上计算 Energy。
-  待 D19 用全量 422 例确认后写入差异表。
+  **D19 状态：尚未完成**——仍需用全量 422 例确认后写入差异表；当前只有 10 例预跑。
 
 ## 5. 复现范围与可比性
 
 | Dataset | 论文 C-index | 本项目结果 | 可比性 |
 |---|---:|---|---|
-| Lung1 | **未报告**（正文 + 补充材料均无） | apparent（全量拟合）+ 5-fold×5 CV 均值 ± SD | **否（无数值可对照）**；只能评价"协议同口径"与"量级合理性" |
+| Lung1 | **未报告**（正文 + 补充材料均无） | 5×10 CV：`signature` 0.581 ± 0.038；`clinical` 0.530 ± 0.026；`lasso` 0.583 ± 0.035；`combined` 0.581 ± 0.034（399 例）；apparent 未做 | **否（无数值可对照）**；只能评价"协议同口径"与"量级合理性" |
 | Lung2 | 0.65 | **N/A（无数据）** | 否 |
 | H&N1 | 0.69 | **N/A（无数据）** | 否 |
 | H&N2 | 0.69 | **N/A（无数据）** | 否 |
 
 `Difference = Reproduced − Paper` 只在可比性不为「否」的格子计算；
-本项目**没有一格满足条件**，因此 D18 不产出数值差异，
+本项目**没有一格满足条件**，因此 D18/D19 不产出数值差异，
 只做「协议对齐情况 + 量级判断 + 差异来源归因」。
 其余写 `N/A`，不得用 `TBD` 暗示以后能补。
+
+### 5.1 D19 四模型实测结果（399 例，5×10，seed=42）
+
+来源：`results/tables/perf.csv`、`journal/day19.md` §3；完整逐折记录见 `results/tables/cv_folds.csv`。
+
+| 模型 | C-index (mean ± SD) | median | train−test gap | log-rank p<0.05 的折 | 特征数 mean [min–max] | fallback 折 |
+|---|---:|---:|---:|---:|---:|---:|
+| `clinical` | 0.530 ± 0.026 | 0.524 | 0.026 | 10% | 7.0 [7–7] | 0 |
+| `signature` | 0.581 ± 0.038 | 0.583 | 0.003 | 20% | 4.0 [4–4] | 0 |
+| `lasso` | 0.583 ± 0.035 | 0.589 | 0.049 | 18% | 11.3 [2–42] | 1 |
+| `combined` | 0.581 ± 0.034 | 0.585 | 0.057 | 28% | 8.0 [8–8] | 1 |
+
+限制：50 折共享病人，`mean ± SD` 描述折间波动，**不是 95% CI**；`log-rank p<0.05 的折` 是 50 折中显著的比例，不是合并 p 值；所有模型均为 Lung1 内部 CV，不是外部验证。
+
+### 5.2 D19 实际协议与 target 的对齐表
+
+| 项目 | target / v1.3 | D19 实际 | 状态 | 处理 |
+|---|---|---|---|---|
+| 数据角色 | Lung1 = training；Lung2 / H&N1 / H&N2 = 外部验证 | 仅 Lung1，无外部队列 | 不可对齐 | 只做方法级复现；不声称 0.65 / 0.69 / 0.69 |
+| 分析集 | 影像主分析 422；临床对比 399 / 395 | 四模型统一 399 | **有意偏离** | 399 用于跨模型同集比较；422 signature-only 待补 |
+| 外层 CV | 5 折 × 5 次重复 | 5 折 × 10 次重复 | **有意偏离**（D18 建模前改） | 主结果 5×10；5×5 仅作可选敏感性 |
+| signature 拟合 | 不标准化；论文权重未公开，自拟合 | 训练折 `StandardScaler` + 0.1 惩罚 Cox | **偏离** | 方法节声明；可选「原始尺度 + 无惩罚」敏感性 |
+| 临床基线 | v1 0.5459 ± 0.0301（n=395，5×5） | v1 0.530 ± 0.026（n=399，5×10） | 口径不同 | 同集比较成立；并列时标 n 与 CV，不把差值当复现差 |
+| 特征数 | 论文 440（按编号复原 431） | PyRadiomics 537 | 不可比 | §2.4 已记录；只做方法与量级比较 |
+| Lung1 C-index（论文训练集值） | 未报告 | apparent 未计算；仅有 5×10 测试折 CV 0.530–0.583 | 无数值可对照 | 不做 Difference |
+| 验证集 C-index | 0.65 / 0.69 / 0.69（外部） | N/A | 不可对齐 | 不做 Difference |
+| Compactness | Compactness 2（#16） | `original_shape_Compactness2_derived`（36πV²/A³） | 已映射 | 方法一致；实现差异见 §4 |
+| wavelet 列名 | GLRLM GLN，HLH 分解 | `wavelet-HLH_glrlm_GrayLevelNonUniformity` | 已修正 | 修正 v1.3 的连字符笔误 |
+| binWidth / 重采样 | 25 HU；不重采样 | 25；不重采样 | 对齐 | — |
+| 方向核对 | 以 Supplementary Fig. 1 为准 | Energy 1.09 / GLN 1.09 / Compactness 0.95 / wavelet GLN 1.06（pooled） | **已核对（4/4 一致）** | 见 §5.4；heterogeneity↑→差、compactness↑→好；Energy 为 Supp. Fig. 1a 目测 |
+| 95% CI | 判据要求不含 0.5 | 仅有 50 折 SD | **未完成** | C-index CI 仍需病人层面 bootstrap；森林图 HR 的 pooled 95% CI 见 §5.3，不用于本判据 |
+| 差异归因 | `report.md` 第 6 章 | 未开始 | **未完成** | D19 之后补 |
+
+方向核对说明：表中 HR 为 399 例 / 5×10 的跨折逆方差合并 pooled HR（§5.3），仅作线索；最终判据以 Supplementary Fig. 1 的分组方向为准（§5.4）。
+
+### 5.3 D19 森林图 HR 的 95% CI 口径
+
+任务 5 要求森林图展示“HR + 95% CI”。D19 重跑后，森林图不再使用跨折 HR 的 10–90 分位，而是把每折最终 Cox 的 `coef` 与 `se(coef)` 做逆方差合并：
+
+```
+w_i         = 1 / se_i²
+beta_pooled = Σ w_i·beta_i / Σ w_i
+var_pooled  = 1 / Σ w_i
+95% CI      = exp(beta_pooled ± 1.96·sqrt(var_pooled))
+```
+
+- 产物：`coefficient_summary.csv` 的 `*_pooled*` 列；`cv_coefficients.csv` 的 `se / hr_lower95 / hr_upper95`。
+- 限制：50 折共享病人、Cox 带 0.1 惩罚，逆方差合并把折当独立样本，CI 偏窄
+  （如 `radiomics_score` 1.51 [1.39–1.69] → 1.51 [1.49–1.54]）；不能替代病人层面 bootstrap。
+- 与判据的关系：该 CI 是 **HR 的近似 CI**，**不是** §6.6-4 所指的 C-index 95% CI；后者仍未完成。
+- 主结果（C-index）与上一版逐字节一致，详见 `journal/day19.md` §11 补记。
+
+### 5.4 D19 四特征方向核对（Supplementary Fig. 1）
+
+来源：`ncomms5006_supplementary.pdf` 第 2 页的单特征 Kaplan–Meier（面板 a–d），按 Lung1 中位数分 `<= Median` / `> Median` 两组。正文 Results 的表述为：“Features describing heterogeneity in the primary tumour were associated with worse survival in all four data sets. Also, patients with more compact/spherical tumours had better survival probability.”
+
+| 面板 | 特征 | 论文方向 | 预期 HR | D19 pooled HR | 结论 |
+|---|---|---|---|---|---|
+| a | `Stats_energy` | 高值组预后更差 | >1 | 1.09 [1.07–1.10] | 一致 |
+| b | `Shape_compactness2` | 更紧凑/球形→更好 | <1 | 0.95 [0.93–0.96] | 一致 |
+| c | `RLGL_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.09 [1.06–1.13] | 一致 |
+| d | `Wavelet_HLH_rlgl_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.06 [1.03–1.10] | 一致 |
+
+结论：**4/4 方向一致**，§6.6-3 记为“满足（定性）”。其中 b/c/d 的方向由正文明确表述；a（Energy）正文未单列方向，依据 Supp. Fig. 1a 中 `> Median` 组曲线更低，且与 pooled HR 1.09 一致，记为“Supp. Fig. 1a 目测一致”。注意这是定性方向核对，不是效应量复现；Energy 仍受 §4 的 HU/存储值量纲问题影响，相关表述待量纲核对后定稿。
 
 ## 6. 评估协议（先定后跑）
 
@@ -228,6 +301,8 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 
 跨模型比较（临床基线 vs 影像 vs 联合模型）**必须使用同一分析集**，
 并在结果表中注明 n；不得用 422 的影像结果去对比 399/395 的临床结果。
+
+**D19 实际执行**：四个模型统一使用 399 例（完整病例），以满足跨模型同集比较；v1.3 表中的 422「影像主分析」与 395「临床 v2 对比」未作为 D19 主分析。422 的 signature-only 分析尚未运行，列为待补敏感性；不得把 399 的结果写成 422 的结果。
 
 数据一致性核对（论文 Table 4 vs `results/tables/cohort.csv`）：
 
@@ -244,7 +319,7 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 **结论：索引表与论文 Lung1 队列一致，不存在接错队列的风险。**
 
-### 6.2 临床基线决策（D16 定，D18 执行）
+### 6.2 临床基线决策（D16 定，D19 执行）
 
 - 主对照：**v1**（age + gender + stage 二分 + histology，n=399）。
 - v2（age 样条 + T/N + stage 四水平 + histology，n=395）为**事后探索**，
@@ -252,18 +327,21 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 - **口径风险（必须处理）**：现有 v1 的 CV 值 0.5459 ± 0.0301
   是在 **395 例共同集**上测得的（`results/tables/cox_cv_comparison.csv`），
   而 v1 的分析集是 399 例。若 D18 直接拿 399 例的影像模型对比该值，两者不同集。
-  处理方式二选一，并在 D18 日志写明：
-  1. 在 399 例上重跑 v1 的 5×5 CV，用新值作主对照；
+  处理方式二选一，并在 D18/D19 日志写明：
+  1. 在 399 例上重跑 v1 的 5×5 CV，用新值作主对照（D19 实际采用 5×10，见下表）；
   2. 主对照统一改用 395 例共同集（影像模型也只在 395 上评估）。
   未处理前，不得把 399 的影像结果与 395 的临床 CV 值并列。
 
-现有临床基线三口径（均为实测值，n=395，见 `results/tables/`）：
+现有临床基线口径（除注明外为 D16 实测值，n=395，见 `results/tables/`）：
 
 | 模型 | 口径 | n | C-index | 可否用于跨模型比较 |
 |---|---|---:|---:|---|
 | 临床 v2 | apparent（全量拟合，仅描述） | 395 | 0.5909 | **否**（样本内，偏乐观） |
 | 临床 v2 | 5×5 CV 测试折 | 395 | 0.5706 ± 0.0244 | 是（敏感性分析用） |
-| 临床 v1 | 5×5 CV 测试折 | 395 | 0.5459 ± 0.0301 | 是（主对照，须先解决上面的口径问题） |
+| 临床 v1 | 5×5 CV 测试折 | 395 | 0.5459 ± 0.0301 | 是（D16 值；D19 同集值见下行） |
+| 临床 v1 | 5×10 CV 测试折（D19） | 399 | 0.530 ± 0.026 | 是（与 D19 四模型同集） |
+
+**D19 处理结果**：D19 选择在 399 例上重跑临床 v1，以满足与四模型的同集比较；CV 采用 5×10，因此 0.530 ± 0.026 与上表 395/5×5 的 0.5459 ± 0.0301 不能直接相减。两者并列时必须标 n 与 CV。
 
 **apparent 与 CV 不得并列比较**：前者在同一批病人上拟合并打分，系统性高于后者
 （上表 0.5909 vs 0.5706 即为例证）。影像 signature 同样规则——apparent 与 CV
@@ -271,10 +349,12 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 
 ### 6.3 Track A（主分析，对标论文）
 
+> **口径变更（D18，建模前）**：v1.3 原写 5×5；D18 为提高折间稳定性改为 5×10，并在建模前固定。D19 按 5×10 报告。此处保留变更记录，不把 5×10 写成 v1.3 的原计划。
+
 - 固定论文 4 个特征（§3 的 PyRadiomics 映射）；
 - **不做特征选择**；
 - 权重在训练折内重新拟合（论文权重未公开，见 §3.2）；
-- 报告 5-fold × 5 次重复的测试折 C-index 均值 ± SD（规则见 6.5）；
+- 报告 5-fold × 10 次重复的测试折 C-index 均值 ± SD（规则见 6.5）；
 - 次要输出：按 training fold 内的 signature 中位数分层画 KM 曲线
   （阈值只在训练折确定，不在测试折或全量上重算）。
 
@@ -286,10 +366,10 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 
 ### 6.5 共同规则
 
-- **内部验证**：Lung1 上 5-fold 交叉验证 × 5 次重复，按事件分层；
+- **内部验证**：Lung1 上 5-fold 交叉验证 × 10 次重复，按事件分层（D18 改；原计划 5×5，见 §6.3 变更说明）；
 - **主指标**：测试折 C-index 的均值 ± SD（保留 3 位小数）；
-- **另报表观 C-index**：全量拟合后在 Lung1 上计算，明确标注 `apparent`；
-- 校准图与 IBS 作为次要指标，具体时间点在 D18 再定；
+- **另报表观 C-index**：全量拟合后在 Lung1 上计算，明确标注 `apparent`（D19 未做，待补）；
+- 校准图与 IBS 作为次要指标，D19 未做；如报告需要，另定时间点；
 - 不因结果好坏更换划分、指标或特征集；任何偏离都要在日志中写明理由。
 
 ### 6.6 复现成功判据（可验收）
@@ -301,7 +381,8 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
    （不要求逐位相同，但不得差一个数量级）；
 3. 方向一致：4 个特征的风险方向与 Supplementary Fig. 1 的 KM 曲线一致
    （正文明确"更紧凑/更球形 → 生存更好"；两处 GLN 属异质性描述，
-   方向以图中分组标注为准；Energy 方向需从图中读取后在 D18 核对）；
+   方向以图中分组标注为准；Energy 方向需从图中读取后在 D18 核对；
+   D19 已完成，4/4 一致，见 §5.4）；
 4. Track A 的 CV C-index 95% CI 不含 0.5（即优于随机）；
 5. 与临床基线的比较使用同一分析集（见 6.1 / 6.2）；
 6. 所有差异按"特征实现 / 预处理参数 / 队列版本 / 切分方式 / 指标定义"
@@ -333,7 +414,12 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
       （original 73 + wavelet 464），容器内 22.4 s/例、422 例外推约 158 min；
       与论文 440 / 按编号复原的 431 不可比，原因见 §2.4；
 - [ ] D18｜确认 399 与 395 两种分析集的病人清单一致可追溯；
-- [ ] D18｜按 6.2 处理 v1 CV 口径问题。
+- [x] D18｜按 6.2 处理 v1 CV 口径问题：D19 已在 399 例上重跑 v1（0.530 ± 0.026，5×10）；与 v1.3 的 395/5×5 口径差异见 §5.2，正式报告需标 n 与 CV；
+- [x] D19｜四模型 5×10 结果回填（§5.1）与协议对齐表（§5.2）；
+- [ ] D19｜全量 422 例确认 Energy 量纲（§4）；
+- [x] D19｜4 个特征方向与 Supplementary Fig. 1 核对（§5.2、§5.4、§6.6-3）；4/4 一致；
+- [ ] D19｜Track A 的 95% CI 不含 0.5（§6.6-4；需折内归一化或 repeat-level/patient bootstrap；森林图 HR 的 pooled 95% CI 见 §5.3，不满足本项）；
+- [ ] D19｜在 `report.md` 第 6 章完成差异归因（§6.6-6）。
 
 已核实的历史口径：545 = 225 + 136 + 95（生存验证 456）+ 89（Lung3，基因关联）。
 
