@@ -33,11 +33,13 @@ Results: Extracted 537 features for all 422 patients with zero non-finite values
 GLRLM GLN matched the paper's reported Lung1 medians in scale (×1.00, ×0.97), while Energy (×0.03) and
 wavelet HLH GLN (×1.88) exposed pixel-value and implementation differences. On the fixed 399-patient
 set, the paper's 4-feature signature reached a 5×10 CV C-index of 0.581 ± 0.038, versus 0.530 ± 0.026
-for clinical variables alone and 0.583 ± 0.035 for in-fold LASSO-Cox. LASSO kept 11.3 features per
-fold (range 2–42; 99 features selected at least once, only one above 80%) and barely overlapped the
-4 signature features yet matched its performance, so the work is scoped as a method-level reproduction
-— Lung1 C-index and Cox weights are unpublished — and supports "radiomics carries signal", not
-"this signature is stable".
+for clinical variables alone and 0.583 ± 0.035 for in-fold LASSO-Cox. All four signature features
+showed the paper-consistent direction of effect (pooled HR 1.09 for Energy, 1.09 for GLN, 0.95 for
+Compactness 2, 1.06 for wavelet GLN), a qualitative check only. LASSO kept 11.3 features per fold
+(range 2–42; 99 features selected at least once, only one above 80%) and selected only one of the
+4 signature features (8% of folds) yet matched its performance, so the work is scoped as a method-level
+reproduction — Lung1 C-index and Cox weights are unpublished — and supports "radiomics carries signal",
+not "this signature is stable".
 ```
 
 ## 2. 中文版（投国内岗位）
@@ -66,10 +68,12 @@ CT 影像组学 → Cox 生存分析流程，在 422 例 Lung1 队列上量化�
 结果：422 例全部完成 537 维特征提取，非有限值为 0；Compactness 2 与 GLRLM GLN 的中位数与论文
 报告的 Lung1 中位数同量级（×1.00、×0.97），Energy（×0.03）与小波 HLH GLN（×1.88）则反映
 像素值口径与实现差异。在固定 399 例分析集上，论文 4 特征签名的 5×10 CV C-index 为
-0.581 ± 0.038，仅临床变量为 0.530 ± 0.026，折内 LASSO-Cox 为 0.583 ± 0.035。LASSO 每折
-平均选 11.3 个特征（范围 2–42；99 个特征至少入选一次，仅 1 个超过 80%），与 4 个签名特征
-几乎不重叠却性能相当；因此工作定位为方法级复现（论文未报告 Lung1 C-index、未公开 Cox 权重），
-结论只支持"影像携带预后信号"，不支持"某个签名稳定"。
+0.581 ± 0.038，仅临床变量为 0.530 ± 0.026，折内 LASSO-Cox 为 0.583 ± 0.035。4 个签名特征的风险
+方向均与论文 Supplementary Fig. 1 一致（pooled HR：Energy 1.09、GLN 1.09、Compactness 2 0.95、
+小波 GLN 1.06），但仅为定性核对。LASSO 每折平均选 11.3 个特征（范围 2–42；99 个特征至少入选
+一次，仅 1 个超过 80%），4 个签名特征中只有 1 个被选中（8% 的折）却性能相当；因此工作定位为
+方法级复现（论文未报告 Lung1 C-index、未公开 Cox 权重），结论只支持"影像携带预后信号"，
+不支持"某个签名稳定"。
 ```
 
 ## 3. 待确认
@@ -93,9 +97,11 @@ CT 影像组学 → Cox 生存分析流程，在 422 例 Lung1 队列上量化�
 | 5 折 × 10 次、seed 42、50 测试折 | `results/tables/cv_design.md`、`cv_audit.csv` |
 | 四模型 0.530 / 0.581 / 0.583 / 0.581 ± SD | `results/tables/perf.csv`、`journal/day19.md` §3.1 |
 | LASSO 11.3 [2–42]、99 特征、1 个 >80% | `results/tables/selection_stability.csv`、`journal/day19.md` §3.3 |
-| 2936 s（约 49 分钟） | `journal/day19.md` §2 |
+| 4 签名特征中仅 1 个被 LASSO 选中（4/50 折 = 8%） | `results/tables/selection_stability.csv` |
+| 4 特征方向 4/4 一致、pooled HR 1.09 / 1.09 / 0.95 / 1.06 | `results/repro/target.md` §5.4、`journal/day19.md` §12 |
+| 2936 s（约 49 分钟）；系数口径重跑 2917.6 s | `journal/day19.md` §2、§11；`results/tables/perf.md` §1 |
 | signature 中位数 ×1.00 / ×0.97 / ×0.03 / ×1.88 | `logs/extract_2026-11-13_1133.log` 末尾 |
-| 三个特征定义陷阱（Compactness 2、GLN off-by-one、Energy） | `target.md` §3 |
+| 三个特征定义陷阱（Compactness 2、GLN off-by-one、Energy） | `results/repro/target.md` §3 |
 
 ## 5. 提交前提醒
 
