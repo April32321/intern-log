@@ -1,0 +1,400 @@
+PatientID,Survival.time,deadstatus.event,age,gender,gender_num,Overall.Stage,stage_bin,Histology,histology
+LUNG1-001,2165,1,78.7515,male,1,IIIb,1,large cell,large
+LUNG1-002,155,1,83.8001,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-003,256,1,68.1807,male,1,IIIb,1,large cell,large
+LUNG1-004,141,1,70.8802,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-005,353,1,80.4819,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-006,173,1,73.8864,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-007,137,1,81.5288,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-008,77,1,71.666,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-009,131,1,56.1342,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-010,2119,0,71.0554,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-011,515,1,64.3313,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-012,85,1,71.2553,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-013,3614,1,65.3635,male,1,I,0,nos,nos
+LUNG1-014,1247,1,66.7707,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-015,1238,1,71.7235,male,1,I,0,large cell,large
+LUNG1-016,101,1,79.1129,male,1,I,0,nos,nos
+LUNG1-017,220,1,73.9001,male,1,IIIb,1,large cell,large
+LUNG1-018,1926,1,82.9925,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-019,336,1,74.82,male,1,I,0,nos,nos
+LUNG1-020,139,1,76.9692,male,1,IIIb,1,,unknown
+LUNG1-021,326,1,54.6475,male,1,IIIb,1,,unknown
+LUNG1-022,442,1,78.601,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-023,245,1,53.7221,male,1,IIIa,1,,unknown
+LUNG1-024,1141,1,75.7782,female,0,I,0,adenocarcinoma,adeno
+LUNG1-025,1883,1,68.1314,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-026,25,1,70.3518,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-027,1972,0,70.1684,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-028,479,1,78.6776,male,1,I,0,,unknown
+LUNG1-029,257,1,68.9966,female,0,IIIa,1,large cell,large
+LUNG1-030,303,1,62.4476,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-031,999,1,71.7153,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-032,543,1,75.6934,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-033,456,1,70.601,male,1,IIIb,1,large cell,large
+LUNG1-034,597,1,55.4305,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-035,98,1,82.4066,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-036,366,1,54.0068,female,0,IIIa,1,large cell,large
+LUNG1-037,464,1,74.7543,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-038,370,1,52.2491,female,0,IIIb,1,large cell,large
+LUNG1-039,342,1,71.4168,male,1,I,0,,unknown
+LUNG1-040,558,1,58.6274,female,0,IIIa,1,large cell,large
+LUNG1-041,136,1,74.6092,female,0,I,0,adenocarcinoma,adeno
+LUNG1-042,134,1,72.0684,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-043,183,1,74.0561,male,1,IIIb,1,large cell,large
+LUNG1-044,170,1,50.1958,female,0,IIIb,1,,unknown
+LUNG1-045,1070,1,72.6982,female,0,II,0,squamous cell carcinoma,squamous
+LUNG1-046,73,1,80.2245,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-047,1810,0,46.5024,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-048,4328,0,64.8378,female,0,IIIb,1,large cell,large
+LUNG1-049,1670,1,80.7228,male,1,I,0,large cell,large
+LUNG1-050,208,1,53.5743,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-051,210,1,51.6906,male,1,I,0,nos,nos
+LUNG1-052,73,1,62.2313,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-053,78,1,78.7105,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-054,1076,1,79.2197,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-055,192,1,59.2334,male,1,IIIb,1,large cell,large
+LUNG1-057,98,1,74.9076,male,1,IIIa,1,nos,nos
+LUNG1-058,673,1,82.2779,male,1,I,0,large cell,large
+LUNG1-059,670,1,49.2594,male,1,IIIa,1,nos,nos
+LUNG1-060,51,1,83.5154,male,1,I,0,large cell,large
+LUNG1-061,1573,0,62.1218,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-062,220,1,52.7118,female,0,IIIb,1,nos,nos
+LUNG1-063,1630,0,72.3477,female,0,II,0,squamous cell carcinoma,squamous
+LUNG1-064,632,1,78.7789,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-065,131,1,76.3395,male,1,IIIb,1,nos,nos
+LUNG1-066,498,1,64.1615,male,1,IIIb,1,,unknown
+LUNG1-067,1596,0,75.9671,male,1,IIIa,1,nos,nos
+LUNG1-068,916,1,79.2827,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-069,325,1,56.8214,female,0,IIIb,1,nos,nos
+LUNG1-070,457,1,79.6632,male,1,I,0,nos,nos
+LUNG1-071,2059,1,64.846,female,0,IIIb,1,large cell,large
+LUNG1-072,377,1,71.4743,male,1,IIIb,1,nos,nos
+LUNG1-073,287,1,60.6872,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-074,939,1,55.6934,male,1,IIIb,1,nos,nos
+LUNG1-075,128,1,54.7242,female,0,IIIb,1,large cell,large
+LUNG1-076,2481,1,70.2177,male,1,IIIa,1,nos,nos
+LUNG1-077,58,1,76.794,female,0,II,0,large cell,large
+LUNG1-078,1599,1,87.1266,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-079,255,1,68.7912,male,1,IIIa,1,nos,nos
+LUNG1-080,1657,1,66.3409,male,1,I,0,,unknown
+LUNG1-081,1540,0,62.141,male,1,IIIb,1,nos,nos
+LUNG1-082,456,1,73.4209,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-083,1391,1,65.6345,male,1,I,0,,unknown
+LUNG1-084,1531,1,61.7769,female,0,IIIa,1,large cell,large
+LUNG1-085,223,1,53.6591,female,0,IIIb,1,nos,nos
+LUNG1-086,911,1,62.5955,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-087,2798,1,72.7748,male,1,I,0,,unknown
+LUNG1-088,159,1,65.3963,male,1,IIIb,1,nos,nos
+LUNG1-089,1517,0,63.3183,female,0,IIIb,1,adenocarcinoma,adeno
+LUNG1-090,512,1,60.2793,male,1,I,0,,unknown
+LUNG1-091,258,1,76.397,male,1,IIIa,1,nos,nos
+LUNG1-092,1002,1,64.9555,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-093,132,1,49.3443,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-094,303,1,78.7105,female,0,I,0,,unknown
+LUNG1-095,70,1,60.7036,female,0,I,0,adenocarcinoma,adeno
+LUNG1-096,704,1,85.6263,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-097,79,1,75.4935,male,1,I,0,nos,nos
+LUNG1-098,391,1,86.141,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-099,493,1,87.0308,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-100,1474,0,67.3785,female,0,I,0,,unknown
+LUNG1-101,261,1,62.4011,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-102,1990,1,66.8665,female,0,I,0,nos,nos
+LUNG1-103,886,1,59.2936,male,1,IIIa,1,large cell,large
+LUNG1-104,465,1,84.5722,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-105,209,1,70.4723,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-106,265,1,43.384,female,0,IIIb,1,nos,nos
+LUNG1-107,197,1,74.4504,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-108,1460,0,58.6256,male,1,IIIb,1,nos,nos
+LUNG1-109,539,1,77.5441,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-110,1399,0,61.64,female,0,IIIa,1,large cell,large
+LUNG1-111,426,1,69.3525,male,1,I,0,,unknown
+LUNG1-112,1295,1,71.8439,male,1,I,0,nos,nos
+LUNG1-113,646,1,83.499,male,1,IIIa,1,large cell,large
+LUNG1-114,1359,1,79.6906,female,0,IIIa,1,adenocarcinoma,adeno
+LUNG1-115,98,1,68.961,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-116,1636,1,60.7283,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-117,280,1,70.5106,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-118,1686,1,82.5298,male,1,I,0,large cell,large
+LUNG1-119,2380,1,56.5969,female,0,IIIb,1,large cell,large
+LUNG1-120,1368,1,64.6188,male,1,IIIb,1,large cell,large
+LUNG1-121,476,1,65.0979,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-122,1994,1,61.2485,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-123,201,1,77.5989,female,0,IIIb,1,adenocarcinoma,adeno
+LUNG1-124,87,1,79.039,female,0,IIIb,1,large cell,large
+LUNG1-125,379,1,64.5722,male,1,IIIb,1,large cell,large
+LUNG1-126,524,1,68.2601,female,0,IIIb,1,nos,nos
+LUNG1-127,182,1,52.7748,female,0,IIIb,1,large cell,large
+LUNG1-128,335,0,64.5859,female,0,IIIa,1,nos,nos
+LUNG1-129,1315,0,70.7762,male,1,IIIb,1,large cell,large
+LUNG1-130,4202,0,59.7919,female,0,IIIb,1,adenocarcinoma,adeno
+LUNG1-131,543,1,71.1376,male,1,I,0,adenocarcinoma,adeno
+LUNG1-132,4208,0,60.4709,male,1,IIIb,1,nos,nos
+LUNG1-133,3653,1,75.2663,male,1,I,0,,unknown
+LUNG1-134,639,1,67.5866,male,1,I,0,large cell,large
+LUNG1-135,2010,1,57.063,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-136,50,1,79.4333,male,1,I,0,,unknown
+LUNG1-137,308,1,74.6064,male,1,IIIb,1,nos,nos
+LUNG1-138,1000,1,54.9952,female,0,I,0,,unknown
+LUNG1-139,1210,0,80.7036,male,1,IIIb,1,large cell,large
+LUNG1-140,128,1,73.2047,female,0,IIIb,1,large cell,large
+LUNG1-141,244,1,81.0787,male,1,II,0,nos,nos
+LUNG1-142,1520,1,69.8946,male,1,IIIa,1,large cell,large
+LUNG1-143,4118,0,49.0404,female,0,IIIb,1,adenocarcinoma,adeno
+LUNG1-144,271,1,53.525,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-145,685,1,85.4949,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-146,87,1,67.4771,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-147,1067,1,64.7255,male,1,IIIa,1,large cell,large
+LUNG1-148,71,1,73.9877,male,1,IIIa,1,large cell,large
+LUNG1-150,1853,1,64.0137,female,0,I,0,squamous cell carcinoma,squamous
+LUNG1-151,166,1,72.9199,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-152,1076,1,82.4093,male,1,I,0,nos,nos
+LUNG1-153,703,1,78.0589,female,0,I,0,large cell,large
+LUNG1-154,1723,1,67.2745,female,0,I,0,,unknown
+LUNG1-155,446,1,51.1595,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-156,1802,1,74.0808,male,1,IIIb,1,large cell,large
+LUNG1-157,4067,0,57.295,female,0,I,0,,unknown
+LUNG1-158,143,1,43.2827,female,0,IIIa,1,nos,nos
+LUNG1-159,515,1,79.6523,male,1,I,0,nos,nos
+LUNG1-160,1351,0,76.4928,male,1,I,0,nos,nos
+LUNG1-161,754,1,65.1143,male,1,I,0,,unknown
+LUNG1-162,928,1,76.1561,male,1,IIIb,1,nos,nos
+LUNG1-163,547,1,64.5859,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-164,625,1,66.1875,male,1,IIIa,1,nos,nos
+LUNG1-165,4019,0,48.627,female,0,IIIa,1,large cell,large
+LUNG1-166,4013,0,61.0924,male,1,II,0,nos,nos
+LUNG1-167,1357,1,74.9295,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-168,317,1,75.1075,male,1,IIIb,1,nos,nos
+LUNG1-169,642,1,69.1828,male,1,IIIb,1,nos,nos
+LUNG1-170,334,1,59.4853,male,1,IIIb,1,large cell,large
+LUNG1-171,232,1,85.4511,male,1,I,0,,unknown
+LUNG1-172,130,1,47.989,male,1,IIIa,1,large cell,large
+LUNG1-173,492,1,58.3518,female,0,II,0,squamous cell carcinoma,squamous
+LUNG1-175,409,1,80.1999,male,1,I,0,nos,nos
+LUNG1-176,52,1,77.4949,female,0,I,0,adenocarcinoma,adeno
+LUNG1-177,706,1,65.0212,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-178,635,1,61.1937,male,1,IIIb,1,large cell,large
+LUNG1-179,249,1,79.0965,male,1,IIIb,1,large cell,large
+LUNG1-180,1263,1,59.3566,female,0,IIIa,1,nos,nos
+LUNG1-181,151,1,70.7077,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-182,575,1,42.5133,male,1,IIIb,1,large cell,large
+LUNG1-183,2472,1,61.7084,male,1,IIIa,1,large cell,large
+LUNG1-184,1525,1,74.5654,male,1,I,0,large cell,large
+LUNG1-185,728,1,69.6701,male,1,II,0,,unknown
+LUNG1-186,2036,1,67.4661,male,1,IIIb,1,nos,nos
+LUNG1-187,756,1,58.809,female,0,I,0,nos,nos
+LUNG1-188,907,1,62.6639,male,1,IIIa,1,large cell,large
+LUNG1-189,65,1,64.1916,male,1,IIIb,1,large cell,large
+LUNG1-190,555,1,81.2594,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-191,1018,1,70.1602,male,1,IIIb,1,large cell,large
+LUNG1-192,39,1,76.7201,male,1,IIIb,1,large cell,large
+LUNG1-193,3858,0,66.9733,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-194,508,1,61.5852,male,1,IIIb,1,,unknown
+LUNG1-195,2706,1,63.8713,female,0,IIIa,1,nos,nos
+LUNG1-196,33,1,85.1116,female,0,IIIa,1,large cell,large
+LUNG1-197,312,1,60.0383,female,0,IIIb,1,adenocarcinoma,adeno
+LUNG1-198,349,1,69.8727,male,1,IIIb,1,large cell,large
+LUNG1-199,3814,0,58.1656,female,0,IIIa,1,nos,nos
+LUNG1-200,468,1,66.8337,male,1,II,0,adenocarcinoma,adeno
+LUNG1-201,1098,1,76.4216,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-202,82,1,69.674,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-203,1628,1,79.8877,female,0,I,0,adenocarcinoma,adeno
+LUNG1-204,192,1,76.4846,female,0,I,0,large cell,large
+LUNG1-205,96,1,76.7283,male,1,IIIb,1,large cell,large
+LUNG1-206,448,1,66.9158,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-207,357,1,91.7043,male,1,I,0,large cell,large
+LUNG1-208,689,1,64.7584,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-209,756,1,83.4004,male,1,IIIa,1,large cell,large
+LUNG1-210,267,1,82.5791,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-211,1200,1,54.694,male,1,IIIb,1,large cell,large
+LUNG1-212,1661,1,78.9021,male,1,I,0,large cell,large
+LUNG1-213,944,1,57.2402,female,0,IIIa,1,large cell,large
+LUNG1-214,415,1,68.1068,female,0,IIIb,1,large cell,large
+LUNG1-215,491,1,81.7084,male,1,IIIb,1,large cell,large
+LUNG1-216,211,1,74.7433,male,1,IIIb,1,large cell,large
+LUNG1-217,132,1,63.4689,female,0,IIIb,1,large cell,large
+LUNG1-218,1286,1,79.102,female,0,IIIb,1,large cell,large
+LUNG1-219,1329,1,55.9151,female,0,IIIa,1,large cell,large
+LUNG1-220,508,1,59.4141,male,1,IIIa,1,nos,nos
+LUNG1-221,515,1,63.1567,male,1,IIIb,1,nos,nos
+LUNG1-222,926,1,78.7488,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-223,3017,1,71.9425,female,0,I,0,large cell,large
+LUNG1-224,799,1,71.6578,female,0,IIIa,1,adenocarcinoma,adeno
+LUNG1-225,298,1,85.7221,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-226,374,1,54.8556,male,1,IIIb,1,large cell,large
+LUNG1-227,405,1,69.1034,male,1,IIIa,1,large cell,large
+LUNG1-228,1020,1,46.3409,female,0,IIIa,1,large cell,large
+LUNG1-229,311,1,56.8241,male,1,IIIb,1,large cell,large
+LUNG1-230,816,1,75.2088,male,1,II,0,adenocarcinoma,adeno
+LUNG1-231,1850,1,70.2368,male,1,IIIb,1,nos,nos
+LUNG1-232,2521,1,73.2868,male,1,IIIb,1,large cell,large
+LUNG1-233,196,1,53.0842,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-234,3661,0,64.7283,male,1,IIIb,1,large cell,large
+LUNG1-235,632,1,50.1958,female,0,IIIa,1,large cell,large
+LUNG1-236,714,1,73.0897,female,0,IIIa,1,large cell,large
+LUNG1-237,2490,1,58.1985,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-238,3642,0,70.7433,male,1,IIIb,1,nos,nos
+LUNG1-239,3632,0,45.7276,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-240,3551,0,65.117,male,1,IIIb,1,large cell,large
+LUNG1-242,342,1,45.0787,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-243,1543,1,75.9233,male,1,IIIa,1,large cell,large
+LUNG1-244,301,1,53.2293,female,0,IIIb,1,large cell,large
+LUNG1-245,601,1,68.0931,male,1,IIIb,1,large cell,large
+LUNG1-246,3521,0,48.3532,female,0,IIIb,1,,unknown
+LUNG1-247,3583,0,62.9185,female,0,IIIa,1,large cell,large
+LUNG1-248,316,1,64.8214,female,0,IIIb,1,large cell,large
+LUNG1-250,1956,1,65.7851,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-251,1236,1,53.4593,female,0,IIIb,1,nos,nos
+LUNG1-252,104,1,80.9637,male,1,I,0,adenocarcinoma,adeno
+LUNG1-253,257,1,68.4736,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-254,3494,1,71.6988,female,0,IIIa,1,large cell,large
+LUNG1-255,433,1,73.8658,male,1,I,0,,unknown
+LUNG1-256,291,1,53.0842,male,1,IIIb,1,large cell,large
+LUNG1-257,660,1,77.2567,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-258,753,1,78.6886,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-259,3535,0,59.8549,female,0,IIIb,1,large cell,large
+LUNG1-260,529,1,68.4356,male,1,I,0,,unknown
+LUNG1-261,857,1,56.9391,female,0,IIIb,1,nos,nos
+LUNG1-262,134,1,60.6959,female,0,IIIb,1,large cell,large
+LUNG1-263,2572,1,59.4223,male,1,II,0,adenocarcinoma,adeno
+LUNG1-264,573,1,66.0452,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-265,3040,1,67.9644,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-266,485,1,81.5524,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-267,3528,0,63.3977,male,1,IIIb,1,large cell,large
+LUNG1-268,161,1,64.1697,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-269,193,1,73.0595,male,1,IIIa,1,large cell,large
+LUNG1-271,1490,1,77.399,male,1,IIIa,1,large cell,large
+LUNG1-273,618,1,77.8836,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-274,439,1,72.783,male,1,IIIa,1,large cell,large
+LUNG1-276,2730,1,63.1923,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-277,733,1,62.5654,female,0,IIIb,1,large cell,large
+LUNG1-278,527,1,76.5452,male,1,II,0,,unknown
+LUNG1-279,3435,1,62.8528,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-280,3402,0,49.3415,male,1,IIIb,1,nos,nos
+LUNG1-281,1235,1,59.0329,male,1,II,0,large cell,large
+LUNG1-282,1285,1,68.7474,male,1,IIIb,1,large cell,large
+LUNG1-283,3480,0,61.7194,female,0,IIIb,1,large cell,large
+LUNG1-284,412,1,61.4593,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-285,303,1,63.5318,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-286,113,1,78.9213,male,1,IIIa,1,large cell,large
+LUNG1-288,154,1,62.2505,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-289,666,1,52.8569,female,0,IIIb,1,large cell,large
+LUNG1-290,321,1,60.0986,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-291,3460,0,65.4839,female,0,IIIa,1,large cell,large
+LUNG1-292,232,1,66.2149,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-293,720,1,59.9808,male,1,I,0,nos,nos
+LUNG1-294,3451,0,59.8439,male,1,IIIa,1,large cell,large
+LUNG1-295,385,1,61.6947,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-296,177,1,72.2026,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-297,3383,0,71.2936,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-298,699,1,53.0513,female,0,I,0,large cell,large
+LUNG1-300,741,1,64.5859,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-301,217,1,81.9192,male,1,IIIa,1,large cell,large
+LUNG1-302,2894,1,67.4059,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-304,3408,0,55.447,male,1,II,0,large cell,large
+LUNG1-306,638,1,49.5113,female,0,I,0,,unknown
+LUNG1-310,109,1,44.397,male,1,IIIb,1,nos,nos
+LUNG1-311,583,1,70.0151,male,1,I,0,nos,nos
+LUNG1-312,392,1,65.5058,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-313,1841,1,67.0363,male,1,I,0,large cell,large
+LUNG1-314,609,1,76.8296,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-316,1463,1,69.963,female,0,IIIb,1,large cell,large
+LUNG1-317,3362,0,72.8761,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-318,100,1,63.7454,male,1,IIIb,1,adenocarcinoma,adeno
+LUNG1-319,663,1,72.961,female,0,IIIb,1,large cell,large
+LUNG1-320,544,1,66.1191,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-321,340,1,69.41,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-322,1508,1,72.4408,male,1,I,0,adenocarcinoma,adeno
+LUNG1-323,361,1,78.9049,male,1,I,0,squamous cell carcinoma,squamous
+LUNG1-324,1963,1,76.7721,male,1,IIIb,1,large cell,large
+LUNG1-325,741,1,76.293,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-326,195,1,83.989,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-327,261,1,54.7351,male,1,IIIb,1,large cell,large
+LUNG1-329,208,1,64.0247,female,0,I,0,squamous cell carcinoma,squamous
+LUNG1-330,1634,1,72.345,male,1,IIIb,1,large cell,large
+LUNG1-331,549,1,69.8645,male,1,IIIa,1,nos,nos
+LUNG1-333,2985,1,63.6988,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-334,2847,1,68.0164,female,0,I,0,squamous cell carcinoma,squamous
+LUNG1-335,744,1,77.5606,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-336,60,1,69.3443,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-337,3208,0,65.2895,female,0,IIIb,1,large cell,large
+LUNG1-338,118,1,74.4203,male,1,IIIa,1,,unknown
+LUNG1-340,859,1,83.6824,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-342,166,1,74.1437,male,1,IIIa,1,large cell,large
+LUNG1-343,337,1,74.8118,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-344,587,1,67.7837,male,1,IIIb,1,nos,nos
+LUNG1-345,3185,0,66.0534,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-346,1967,1,52.5777,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-347,1586,1,51.6331,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-348,1672,1,62.4641,female,0,IIIb,1,nos,nos
+LUNG1-350,444,1,77.4018,female,0,IIIb,1,nos,nos
+LUNG1-351,463,1,52.6434,female,0,IIIb,1,nos,nos
+LUNG1-352,446,1,71.1513,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-353,182,1,78.308,male,1,I,0,,unknown
+LUNG1-355,1362,1,71.4493,female,0,I,0,squamous cell carcinoma,squamous
+LUNG1-356,278,1,54.8904,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-357,1738,1,50.2247,male,1,II,0,large cell,large
+LUNG1-358,492,1,60.1945,female,0,II,0,squamous cell carcinoma,squamous
+LUNG1-359,220,1,66.7205,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-360,1581,1,75.4329,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-361,166,1,88.2658,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-362,1130,1,75.4466,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-363,107,1,68.3178,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-364,595,1,51.0767,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-365,284,1,80.326,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-366,330,1,79.726,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-367,615,1,66.589,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-368,1013,1,75.589,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-369,522,1,54.3616,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-370,502,1,48.1753,male,1,IIIa,1,large cell,large
+LUNG1-371,2129,1,76.5781,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-372,715,1,77.0986,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-373,367,1,57.9123,female,0,IIIa,1,adenocarcinoma,adeno
+LUNG1-374,10,1,78.2274,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-375,120,1,60.1589,female,0,IIIb,1,adenocarcinoma,adeno
+LUNG1-376,140,1,83.589,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-377,417,1,61.7945,male,1,IIIa,1,large cell,large
+LUNG1-378,2891,0,70.5397,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-379,2040,1,67.2164,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-380,2879,0,72.8877,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-381,18,1,83.0548,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-382,1358,1,57.5288,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-383,457,1,67.2822,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-384,906,1,88.3863,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-386,381,1,33.6849,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-387,301,1,88.3479,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-388,1188,1,77.1808,male,1,II,0,adenocarcinoma,adeno
+LUNG1-389,371,1,78.3425,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-390,2017,1,71.2904,male,1,II,0,adenocarcinoma,adeno
+LUNG1-391,256,1,60.0822,female,0,I,0,squamous cell carcinoma,squamous
+LUNG1-392,672,1,85.6055,male,1,I,0,adenocarcinoma,adeno
+LUNG1-393,806,1,72.2849,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-394,344,1,72.2219,male,1,I,0,,unknown
+LUNG1-395,249,1,78.4164,female,0,II,0,adenocarcinoma,adeno
+LUNG1-396,1059,1,59.1616,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-397,249,1,66.674,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-398,1731,1,79.7014,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-399,2835,0,77.7973,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-400,423,1,67.7288,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-401,203,1,58.274,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-402,1617,1,68.6932,male,1,IIIb,1,,unknown
+LUNG1-403,2098,1,57.1096,female,0,IIIa,1,adenocarcinoma,adeno
+LUNG1-404,280,1,74.2356,male,1,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-405,882,1,68.7342,female,0,I,0,squamous cell carcinoma,squamous
+LUNG1-406,314,0,82.1534,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-407,340,1,73.2877,female,0,II,0,squamous cell carcinoma,squamous
+LUNG1-408,194,1,73.1726,female,0,II,0,squamous cell carcinoma,squamous
+LUNG1-409,2802,0,71.7096,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-410,303,1,72.7616,male,1,IIIa,1,adenocarcinoma,adeno
+LUNG1-411,583,1,61.8932,female,0,IIIa,1,adenocarcinoma,adeno
+LUNG1-412,243,1,67.2247,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-413,246,1,60.5315,female,0,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-414,292,1,50.8274,female,0,IIIa,1,adenocarcinoma,adeno
+LUNG1-415,2517,1,79.8712,female,0,I,0,adenocarcinoma,adeno
+LUNG1-416,409,1,69.9918,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-417,648,1,65.5616,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-418,346,1,53.6712,male,1,I,0,adenocarcinoma,adeno
+LUNG1-419,2772,0,66.5096,male,1,IIIb,1,squamous cell carcinoma,squamous
+LUNG1-420,2429,1,73.3808,male,1,II,0,squamous cell carcinoma,squamous
+LUNG1-421,369,1,61.7041,female,0,IIIa,1,squamous cell carcinoma,squamous
+LUNG1-422,1590,1,68.126,female,0,I,0,,unknown

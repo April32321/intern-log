@@ -1,0 +1,24 @@
+PatientID,age,gender,Overall.Stage,Histology,Survival.time,deadstatus.event,exclude_reason
+LUNG1-056,,female,IIIa,,4454,0,age
+LUNG1-149,,male,IIIb,nos,179,1,age
+LUNG1-174,,male,I,nos,865,1,age
+LUNG1-241,,male,IIIb,,164,1,age
+LUNG1-249,,male,IIIb,,896,1,age
+LUNG1-270,,male,IIIa,nos,300,1,age
+LUNG1-272,60.1396,male,,large cell,288,1,Overall.Stage
+LUNG1-275,,male,IIIb,large cell,173,1,age
+LUNG1-287,,male,IIIb,,76,1,age
+LUNG1-299,,male,IIIb,squamous cell carcinoma,1005,1,age
+LUNG1-303,,male,I,large cell,24,1,age
+LUNG1-305,,female,I,,454,1,age
+LUNG1-307,,female,I,nos,687,1,age
+LUNG1-308,,female,II,large cell,213,1,age
+LUNG1-309,,male,I,,375,1,age
+LUNG1-315,,female,I,,313,1,age
+LUNG1-328,,male,I,,3247,0,age
+LUNG1-332,,male,I,,1208,1,age
+LUNG1-339,,male,IIIb,squamous cell carcinoma,120,1,age
+LUNG1-341,,male,I,squamous cell carcinoma,1157,1,age
+LUNG1-349,,male,II,adenocarcinoma,183,1,age
+LUNG1-354,,female,IIIa,large cell,617,1,age
+LUNG1-385,,male,II,adenocarcinoma,936,1,age
