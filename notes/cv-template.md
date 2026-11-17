@@ -97,3 +97,5 @@ B.S. in Applied Mathematics | Overall GPA: 3.64/4.0
 ## Skills & Awards
 
 **Programming Languages:** Python, R, LaTeX, conda, -cuda-, dicom, docker, linux, agent(试用codex, cluade code, dsh)
+
+**Awards:** Meritorious Winner in 2021 HiMCM | November 2021
