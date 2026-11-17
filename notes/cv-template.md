@@ -38,9 +38,9 @@ B.S. in Applied Mathematics | Overall GPA: 3.64/4.0
 
 ## Research Experience
 
-### Method-Level Reproduction of a CT Radiomics Survival Model (Aerts et al., 2014) | 10/2026–Present
+### Reproducible CT Radiomics–Cox Modeling for NSCLC Survival Prediction | 10/2026–11/2026
 
-*Research Internship Project, [Company / Lab] · Mentor: [Name]*
+*Research Internship Project, Perception Vision · Algorithm Department, Clinical Division · Mentor: [Name]*
 
 **Innovation Points:** Tested whether an open-source PyRadiomics pipeline can reproduce the CT-radiomics → Cox survival workflow of Aerts et al. (Nature Communications, 2014) on the Lung1 cohort (422 patients; 399 analyzed), and quantified the signature's prognostic signal relative to routine clinical variables.
 

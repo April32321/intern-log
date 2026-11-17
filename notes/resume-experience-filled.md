@@ -1,7 +1,7 @@
 # 简历「Research Experience」已填写版
 
 > 基于 2026-11-17 report v2.0 的仓库数据；数字均可在 `results/` 与 `logs/` 中找到出处。
-> 仅剩两处待确认且无法从仓库信息补齐：实习单位、导师姓名（保留占位符，填好再投）。
+> 仅剩一处待确认且无法从仓库信息补齐：导师姓名（保留占位符，填好再投）。
 > 空白模板仍保留在 `notes/resume-experience-template.md`，未改动。
 
 ## 1. 英文版（当前可投）
@@ -9,8 +9,8 @@
 ```text
 Research Experience
 
-Method-Level Reproduction of a CT Radiomics Survival Model (Aerts et al., 2014)       10/2026–Present
-Research Internship Project, [Company / Lab]                                Mentor: [Name]
+Reproducible CT Radiomics–Cox Modeling for NSCLC Survival Prediction                 10/2026–11/2026
+Research Internship Project, Perception Vision · Algorithm Department, Clinical Division    Mentor: [Name]
 
 Objective: Test whether an open-source PyRadiomics pipeline can reproduce the CT-radiomics → Cox
 survival workflow of Aerts et al. (Nature Communications, 2014) on the Lung1 cohort (422 patients;
@@ -50,8 +50,8 @@ stable".
 ```text
 研究经历
 
-CT 影像组学生存模型的方法级复现                                              2026.10–至今
-研究实习项目，[单位]                                                     导师：[姓名]
+面向 NSCLC 生存预测的可复现 CT 影像组学–Cox 建模                              2026.10–2026.11
+研究实习项目，Perception Vision 临床部 · 算法部                                 导师：[姓名]
 
 研究问题：用开源 PyRadiomics 管线复现 Aerts et al.（Nature Communications, 2014）的
 CT 影像组学 → Cox 生存分析流程，在 Lung1 队列（422 例，主分析 399 例）上量化其与原始
@@ -84,9 +84,9 @@ Cox 权重），结论只支持"影像携带预后信号"，不支持"某个签�
 
 | 位置 | 当前写法 | 怎么处理 |
 |---|---|---|
-| 单位 | `[Company / Lab]` / `[单位]` | 换成实习单位；仓库里没有该信息，不要编造 |
+| 单位 | Perception Vision · 临床部 · 算法部 | 已填；如公司有官方中文名，替换成中文名 |
 | 导师 | `[Name]` / `[姓名]` | 有则填；没有导师就把 `Mentor: [Name]` 与 `导师：[姓名]` 整段删掉，不留空括号 |
-| 时间 | `10/2026–Present` / `2026.10–至今` | 实习结束时改成具体结束月，中英同步 |
+| 时间 | `10/2026–11/2026` / `2026.10–2026.11` | 已填；如实习证明有具体日期，按证明改 |
 
 ## 4. 数字出处（面试前自查）
 
@@ -109,7 +109,7 @@ Cox 权重），结论只支持"影像携带预后信号"，不支持"某个签�
 
 ## 5. 提交前提醒
 
-- 单位、导师占位符填好再投；没有导师就整段删掉右半边，不要留空括号。
+- 导师占位符填好再投；没有导师就整段删掉右半边，不要留空括号。
 - 中英文两版数字必须同步，面试时两种语言的口径要能对上。
 - 不要把论文在 Lung2 / H&N1 / H&N2 上的外部验证 C-index（本项目无这些队列，数值见 `target.md`
   §2.1）、`improved` / `outperformed`、`numerical reproduction` 写进去。
