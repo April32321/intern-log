@@ -306,25 +306,25 @@ OOM 是标准范例：`--chunk 10` 把"并发问题"与"单例问题"分离，�
 
 训练折 C-index 均值分别为 0.556 / 0.584 / 0.632 / 0.637（`nsclc-cox/journal/day19.md:62`）。三条影像路线测试 C-index 相差 ≤0.002，箱线图大幅重叠（`nsclc-cox/report.md` §5.1）；LASSO 与联合模型的 gap 明显更大，说明它们在训练折上更"贴合"，但没转化成折外收益。**联合模型没有带来增量**，这是本项目最实的一个负面结果。
 
-![图 1 输入数据形态（上：LUNG1-001，GTV-1 156.2 cm³；下：LUNG1-003，34.8 cm³；左轴位、右冠状位）](nsclc-cox/results/figures/report/data_preview_ct_gtv.png)
+![图 1 输入数据形态（上：LUNG1-001，GTV-1 156.2 cm³；下：LUNG1-003，34.8 cm³；左轴位、右冠状位）](images/radar/data_preview_ct_gtv.png)
 
 *图 1 怎么读*：红线是 GTV-1 轮廓在 CT 上的位置与范围，左轴位、右冠状位，窗宽窗位 −1000…400 HU，坐标单位 mm，层厚 3.0 mm。它回答的是"输入长什么样、掩膜落在哪里"，不代表模型输出。
 
 图 2 为生存时间质控分布，图 3 为固定签名在 repeat 0 的折外 KM（含风险表），图 4 为 50 折 C-index 箱线图，图 5 为联合模型森林图（跨折逆方差合并）。
 
-![图 2 生存时间分布（n=399；events 352，删失 47；中位 OS 555 天）](nsclc-cox/results/figures/report/qc_survival_time.png)
+![图 2 生存时间分布（n=399；events 352，删失 47；中位 OS 555 天）](images/radar/qc_survival_time.png)
 
 *图 2 怎么读*：A 是随访时间直方图，按结局分层，看删失是否集中在短随访；B 是累积死亡曲线（1 − KM），点线落在 555 天。A 用计数、B 用点估计，都**没有误差线**——这不是区间图，别把曲线读成"估计 ± 不确定度"。
 
-![图 3 固定签名折外 KM（repeat 0，按该折训练集风险中位数分高低危，低危 199 / 高危 200）](nsclc-cox/results/figures/report/km_risktable_signature.png)
+![图 3 固定签名折外 KM（repeat 0，按该折训练集风险中位数分高低危，低危 199 / 高危 200）](images/radar/km_risktable_signature.png)
 
 *图 3 怎么读*：两组曲线在这个 repeat 下的 log-rank p=0.060，是**单次划分的描述值**，不是合并检验；报告正文的判别力证据是 50 折 C-index，不是这张图的 p 值。下方风险表要跟着看——随访后期剩余人数少，曲线尾部的抖动不代表趋势。
 
-![图 4 四个模型各 50 个外层测试折的 C-index 分布（虚线 0.5）](nsclc-cox/results/figures/cv/cindex_boxplot.png)
+![图 4 四个模型各 50 个外层测试折的 C-index 分布（虚线 0.5）](images/cv/cindex_boxplot.png)
 
 *图 4 怎么读*：箱体为 IQR、红线中位数、蓝菱形均值、散点为单折。**SD 描述折间波动，不是 95% CI**；箱体大范围压在 0.5 以上的只有三条影像路线，clinical 的箱体跨过 0.5。
 
-![图 5 联合模型森林图（跨折逆方差合并 HR）](nsclc-cox/results/figures/cv/forest_combined.png)
+![图 5 联合模型森林图（跨折逆方差合并 HR）](images/cv/forest_combined.png)
 
 *图 5 怎么读*：`radiomics_score` HR 1.51 的单位是"每增加 1 个训练折标准差"，不是原始特征单位；误差条是合并后的解析 CI，因 50 折共享病人且带惩罚而**偏窄**，不能替代 §8.3 的 bootstrap；`hist_unknown` HR 1.24 [1.16–1.33] 需要结合其 8.3% 的占比谨慎解读。
 
@@ -384,11 +384,11 @@ OOM 是标准范例：`--chunk 10` 把"并发问题"与"单例问题"分离，�
 
 结论：**性能稳健 ≠ 某个 signature 稳健**。这与 §8.1"三条影像路线打平"、D19 "固定签名与 LASSO 特征集几乎不重叠"完全一致（`nsclc-cox/journal/day19.md:98-103`）。
 
-![图 6 1 年 / 2 年校准（固定签名，10 个 repeat 平均预测，n=399，十分位分组）](nsclc-cox/results/figures/report/calibration_1y_2y.png)
+![图 6 1 年 / 2 年校准（固定签名，10 个 repeat 平均预测，n=399，十分位分组）](images/radar/calibration_1y_2y.png)
 
 *图 6 怎么读*：横轴组内平均预测生存率、纵轴 KM 观测值，误差线为 Greenwood 95% CI，灰虚线为理想校准，每组 39–40 例。ICI = 0.076（1 年）/ 0.050（2 年）；1 年预测值域仅 0.49–0.71，与 C-index≈0.58 的低判别力一致。不是外部校准，**不据此声称临床可用**；LASSO 路线未做校准。
 
-![图 7 binWidth 敏感性（10 / 25 / 50 HU，左路线 1、右路线 2）](nsclc-cox/results/figures/report/binwidth_sensitivity.png)
+![图 7 binWidth 敏感性（10 / 25 / 50 HU，左路线 1、右路线 2）](images/radar/binwidth_sensitivity.png)
 
 *图 7 怎么读*：点与折线为 50 折均值，误差线为**折间 SD 而非 95% CI**，淡色散点为各折，虚线为 0.5。左图三点几乎重合（全距 0.0009）；右图第三点略高但偏离不到 0.2 SD，且非单调，不足以支持"bw50 更好"。
 
