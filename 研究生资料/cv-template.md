@@ -2,9 +2,9 @@
 
 Tel: +1 (626)-491-1103 | Email: jiaqi32321@gmail.com
 
-> 由 `Jiaqi Wang_CV(2).pdf` 提取整理；Research Experience 已并入 `notes/resume-experience-filled.md` 的 NSCLC 条目（中英两版内容一致，此处取英文汇总版，按时间倒序置首）。方括号 `[ ]` 为可替换占位符。
+> 由 `Jiaqi Wang_CV(2).pdf` 提取整理；Research Experience 已并入 `研究生资料/resume-experience-filled.md` 的 NSCLC 条目（中英两版内容一致，此处取英文汇总版，按时间倒序置首）。方括号 `[ ]` 为可替换占位符。
 >
-> 导出：`pandoc` + `xelatex`，Times New Roman 10pt，0.6in 边距，US Letter，成品 `notes/cv.pdf`（2 页）。
+> 导出：`pandoc` + `xelatex`，Times New Roman 10pt，0.6in 边距，US Letter，成品 `研究生资料/cv.pdf`（2 页）。
 
 ## Education
 

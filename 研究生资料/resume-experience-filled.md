@@ -2,7 +2,7 @@
 
 > 基于 2026-11-17 report v2.0 的仓库数据；数字均可在 `results/` 与 `logs/` 中找到出处。
 > 仅剩一处待确认且无法从仓库信息补齐：导师姓名（保留占位符，填好再投）。
-> 空白模板仍保留在 `notes/resume-experience-template.md`，未改动。
+> 空白模板仍保留在 `研究生资料/resume-experience-template.md`，未改动。
 
 ## 1. 英文版（当前可投）
 
