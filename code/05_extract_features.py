@@ -18,8 +18,8 @@
   - ROI 名容错：normalize_roi() 去掉大小写/连字符/下划线差异；
   - 单例失败不中断整批，记 case_id 与原因；
   - 幂等：成功即写逐例缓存，重跑跳过；缓存带 params 与脚本哈希，改任一项自动重算；
-  - 并行：--jobs N 起 N 个进程，每进程只建一个 extractor 且 ITK 只用单线程；
-  - 分块：--chunk N 每 N 例销毁并重建进程池，worker 退出即释放内存；某块崩溃只影响该块；
+  - 并行：--jobs N 起 N 个进程（默认 4），每进程只建一个 extractor 且 ITK 只用单线程；
+  - 分块：--chunk N 每 N 例销毁并重建进程池（默认 80），worker 退出即释放内存；某块崩溃只影响该块；
   - 排除：--exclude 跳过指定病例（如单例峰值超过容器的内存上限，例如 297 层的大 CT），其余照常处理；
   - 打印 4 个 signature 特征与论文 Supplementary Fig. 1 的 Lung1 中位数对照。
 """
@@ -364,10 +364,10 @@ def main() -> None:
                     help="指定病例（默认按 index 顺序取前 limit 例）")
     ap.add_argument("--exclude", nargs="*", default=None,
                     help="排除的病例 ID（例如内存峰值超限的大病例，后续单独补算）")
-    ap.add_argument("--jobs", type=int, default=1,
-                    help="并行进程数（经验值：核数一半，内存吃紧再降）")
-    ap.add_argument("--chunk", type=int, default=10,
-                    help="每处理 N 例重建一次进程池以释放累积内存（<=0 表示不分块）")
+    ap.add_argument("--jobs", type=int, default=4,
+                    help="并行进程数（默认 4；经验值：核数一半，内存吃紧再降）")
+    ap.add_argument("--chunk", type=int, default=80,
+                    help="每处理 N 例重建一次进程池以释放累积内存（默认 80；<=0 表示不分块）")
     ap.add_argument("--cache-dir", default="results/cache/features",
                     help="逐例缓存目录；复算时换一个目录即可强制重算")
     ap.add_argument("--force", action="store_true", help="忽略已有缓存，全部重算")

@@ -1,6 +1,6 @@
 # 实习汇报（2 页版）
 
-> 配图（路径相对 `report.md` 所在目录）：图 1 管线（见 `report.md` §3.2）、图 2 `results/figures/km_by_stage.png`、图 3 `nsclc-cox/results/figures/cv/cindex_boxplot.png`、图 4 `nsclc-cox/results/figures/report/binwidth_sensitivity.png`
+> 配图（路径相对 `report.md` 所在目录）：图 1 管线（见 `report.md` §3.2）、图 2 `results/figures/km_by_stage.png`、图 3 `images/radar/cv/cindex_boxplot.png`、图 4 `images/radar/report/binwidth_sensitivity.png`
 >
 > 全文只使用已审计数字；所有口径限定：**内部 5×10 交叉验证**、**399 例分析集**、**SD 不是 95% CI**、**bootstrap CI 不是折间波动**。
 

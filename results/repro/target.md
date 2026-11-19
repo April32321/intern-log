@@ -1,6 +1,6 @@
 # 复现目标（Aerts et al. 2014）
 
-> 版本 **v1.6**（2026-11-16）｜初版 v1.0（2026-11-06）｜上版 v1.5（2026-11-16）
+> 版本 **v1.11**（2026-11-17）｜初版 v1.0（2026-11-06）｜上版 v1.10（2026-11-17）
 > 本文件记录**论文原始目标值 + 出处 + 复现协议 + D19 实际执行状态**。
 > 复现结果由 D18/D19 填写；未核实的数字一律标「未报告」，**不使用推测值**。
 >
@@ -23,6 +23,17 @@
 >   说明该 CI 偏窄且不等于 §6.6-4 的 C-index CI 判据；主结果（C-index）逐字节复现。
 > - v1.6（D19）：四特征方向核对完成（Supplementary Fig. 1，4/4 一致，§5.4）；
 >   b/c/d 由正文明确表述，a（Energy）由 Supp. Fig. 1a 目测且与 pooled HR 一致。
+> - v1.7（D19）：Energy 量纲全量核对完成（统一 HU+1024，中位数 1.03× 论文，§4/§5.5）；
+>   方向核对改用单变量 HR/SD（4/4 一致，§5.4）；新增 Energy 基准敏感性（§5.5），
+>   并把「Energy 基准 HU vs HU+1024」列入 §5.2 偏离表。
+> - v1.8（D19）：补病人层面 bootstrap 95% CI（§5.6）；signature/lasso/combined 下限 > 0.5，
+>   clinical 的 CI 含 0.5；§6.6-4 满足（Track A）。
+> - v1.9（D19）：核对 399/395 病人清单（395⊂399，差 4 例）；完成 `report.md` 第 6 章五类差异归因；
+>   §6.6 六条判据全部满足（方法级复现成立）。
+> - v1.10（D19）：完成 stage_bin 编码核对（§6.2）；映射正确，分期在 399 分析集中
+>   无显著预后效应；同步 §5.3 的 CI 表述指向 §5.6。
+> - v1.11（D20）：补 binWidth 敏感性（10/25/50 HU，两条路线，§5.7）；§5.2 增加对应行；
+>   量纲锚点仍只对 bw25 成立（GLN 随级数变化，不可跨 binWidth 比较）。
 
 ## 0. 范围
 
@@ -209,7 +220,12 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
   LUNG1-001 的 ΣX² 从 2.28×10⁹ 变为 5.29×10¹⁰，量级进入 10¹⁰
   （该例体积 156 cm³ 偏大，绝对值高于论文中位数属正常），
   提示论文是在**未转为 HU 的存储像素值**上计算 Energy。
-  **D19 状态：尚未完成**——仍需用全量 422 例确认后写入差异表；当前只有 10 例预跑。
+  **D19 状态：已完成**（`code/10_energy_scale_check.py`，全量 422 例）：
+  按各例 DICOM intercept 时中位数 5.03×10⁹（0.41× 论文，被 97 例 intercept=0 拉低）；
+  统一 HU+1024（论文实际口径）时中位数 1.249×10¹⁰，为论文的 **1.03×**，§6.6-2 通过。
+  intercept：−1024 共 325 例、0 共 97 例（均为 CT，slope=1）；LUNG1-001 复现 2.28×10⁹ → 5.29×10¹⁰。
+  **注意**：`features_all` 现为 HU 口径，论文为 HU+1024，属特征定义偏离（§5.2）；
+  对 signature C-index 的影响见 §5.5（无实质影响）。
 
 ## 5. 复现范围与可比性
 
@@ -243,9 +259,10 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 | 项目 | target / v1.3 | D19 实际 | 状态 | 处理 |
 |---|---|---|---|---|
 | 数据角色 | Lung1 = training；Lung2 / H&N1 / H&N2 = 外部验证 | 仅 Lung1，无外部队列 | 不可对齐 | 只做方法级复现；不声称 0.65 / 0.69 / 0.69 |
-| 分析集 | 影像主分析 422；临床对比 399 / 395 | 四模型统一 399 | **有意偏离** | 399 用于跨模型同集比较；422 signature-only 待补 |
+| 分析集 | 影像主分析 422；临床对比 399 / 395 | 四模型统一 399 | **有意偏离** | 399 用于跨模型同集比较；395⊂399 已核对（差 4 例：LUNG1-085 T 缺失、LUNG1-167/232/292 N=4）；422 signature-only 待补 |
 | 外层 CV | 5 折 × 5 次重复 | 5 折 × 10 次重复 | **有意偏离**（D18 建模前改） | 主结果 5×10；5×5 仅作可选敏感性 |
 | signature 拟合 | 不标准化；论文权重未公开，自拟合 | 训练折 `StandardScaler` + 0.1 惩罚 Cox | **偏离** | 方法节声明；可选「原始尺度 + 无惩罚」敏感性 |
+| Energy 基准 | HU+1024（存储像素值） | HU（`features_all`） | **偏离** | 量级校验见 §4；敏感性见 §5.5（C-index 不变，多元系数重分配） |
 | 临床基线 | v1 0.5459 ± 0.0301（n=395，5×5） | v1 0.530 ± 0.026（n=399，5×10） | 口径不同 | 同集比较成立；并列时标 n 与 CV，不把差值当复现差 |
 | 特征数 | 论文 440（按编号复原 431） | PyRadiomics 537 | 不可比 | §2.4 已记录；只做方法与量级比较 |
 | Lung1 C-index（论文训练集值） | 未报告 | apparent 未计算；仅有 5×10 测试折 CV 0.530–0.583 | 无数值可对照 | 不做 Difference |
@@ -253,9 +270,10 @@ risk = β₁·Energy + β₂·Compactness2 + β₃·GLN + β₄·wavelet-HLH-GLN
 | Compactness | Compactness 2（#16） | `original_shape_Compactness2_derived`（36πV²/A³） | 已映射 | 方法一致；实现差异见 §4 |
 | wavelet 列名 | GLRLM GLN，HLH 分解 | `wavelet-HLH_glrlm_GrayLevelNonUniformity` | 已修正 | 修正 v1.3 的连字符笔误 |
 | binWidth / 重采样 | 25 HU；不重采样 | 25；不重采样 | 对齐 | — |
-| 方向核对 | 以 Supplementary Fig. 1 为准 | Energy 1.09 / GLN 1.09 / Compactness 0.95 / wavelet GLN 1.06（pooled） | **已核对（4/4 一致）** | 见 §5.4；heterogeneity↑→差、compactness↑→好；Energy 为 Supp. Fig. 1a 目测 |
-| 95% CI | 判据要求不含 0.5 | 仅有 50 折 SD | **未完成** | C-index CI 仍需病人层面 bootstrap；森林图 HR 的 pooled 95% CI 见 §5.3，不用于本判据 |
-| 差异归因 | `report.md` 第 6 章 | 未开始 | **未完成** | D19 之后补 |
+| 方向核对 | 以 Supplementary Fig. 1 为准 | 单变量 HR/SD：Energy 1.13 / GLN 1.20 / Compactness 0.90 / wavelet GLN 1.21（§5.4） | **已核对（4/4 一致）** | 见 §5.4；heterogeneity↑→差、compactness↑→好；多元 HR 不作判据（§5.5） |
+| 95% CI | 判据要求不含 0.5 | 病人层面 bootstrap：signature 0.576 [0.543–0.608] | **完成** | 见 §5.6；clinical [0.495–0.558] 含 0.5，如实报告；森林图 HR 的 pooled CI 见 §5.3，不用于本判据 |
+| binWidth 敏感性 | 论文口径 25 HU（§2.2） | 10/25/50 HU 各重提特征并重跑两条路线 | **完成** | 见 §5.7；路线 1 全距 0.0009、路线 2 全距 0.007；选择不稳定且非单调 |
+| 差异归因 | `report.md` 第 6 章 | 已完成 | **完成** | 见 `report.md` §6（五类归因 + §6.6 汇总表）；敏感性见 §5.4 |
 
 方向核对说明：表中 HR 为 399 例 / 5×10 的跨折逆方差合并 pooled HR（§5.3），仅作线索；最终判据以 Supplementary Fig. 1 的分组方向为准（§5.4）。
 
@@ -273,21 +291,93 @@ var_pooled  = 1 / Σ w_i
 - 产物：`coefficient_summary.csv` 的 `*_pooled*` 列；`cv_coefficients.csv` 的 `se / hr_lower95 / hr_upper95`。
 - 限制：50 折共享病人、Cox 带 0.1 惩罚，逆方差合并把折当独立样本，CI 偏窄
   （如 `radiomics_score` 1.51 [1.39–1.69] → 1.51 [1.49–1.54]）；不能替代病人层面 bootstrap。
-- 与判据的关系：该 CI 是 **HR 的近似 CI**，**不是** §6.6-4 所指的 C-index 95% CI；后者仍未完成。
+- 与判据的关系：该 CI 是 **HR 的近似 CI**，**不是** §6.6-4 所指的 C-index 95% CI；后者见 §5.6（病人层面 bootstrap，已完成）。
 - 主结果（C-index）与上一版逐字节一致，详见 `journal/day19.md` §11 补记。
 
 ### 5.4 D19 四特征方向核对（Supplementary Fig. 1）
 
 来源：`ncomms5006_supplementary.pdf` 第 2 页的单特征 Kaplan–Meier（面板 a–d），按 Lung1 中位数分 `<= Median` / `> Median` 两组。正文 Results 的表述为：“Features describing heterogeneity in the primary tumour were associated with worse survival in all four data sets. Also, patients with more compact/spherical tumours had better survival probability.”
 
-| 面板 | 特征 | 论文方向 | 预期 HR | D19 pooled HR | 结论 |
-|---|---|---|---|---|---|
-| a | `Stats_energy` | 高值组预后更差 | >1 | 1.09 [1.07–1.10] | 一致 |
-| b | `Shape_compactness2` | 更紧凑/球形→更好 | <1 | 0.95 [0.93–0.96] | 一致 |
-| c | `RLGL_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.09 [1.06–1.13] | 一致 |
-| d | `Wavelet_HLH_rlgl_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.06 [1.03–1.10] | 一致 |
+方向判据采用**单变量 Cox（每 1 SD，399 例）**，不用多元系数（多元 HR 会随 Energy 基准重分配，见 §5.5）。
 
-结论：**4/4 方向一致**，§6.6-3 记为“满足（定性）”。其中 b/c/d 的方向由正文明确表述；a（Energy）正文未单列方向，依据 Supp. Fig. 1a 中 `> Median` 组曲线更低，且与 pooled HR 1.09 一致，记为“Supp. Fig. 1a 目测一致”。注意这是定性方向核对，不是效应量复现；Energy 仍受 §4 的 HU/存储值量纲问题影响，相关表述待量纲核对后定稿。
+| 面板 | 特征 | 论文方向 | 预期 HR | 单变量 HR/SD [95% CI] (p) | 结论 |
+|---|---|---|---|---|---|
+| a | `Stats_energy` | 高值组预后更差 | >1 | 1.13 [1.04–1.22] (0.0025) | 一致 |
+| b | `Shape_compactness2` | 更紧凑/球形→更好 | <1 | 0.90 [0.81–1.00] (0.047) | 一致（边界） |
+| c | `RLGL_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.20 [1.09–1.32] (1.3e-4) | 一致 |
+| d | `Wavelet_HLH_rlgl_grayLevelNonuniformity` | 异质性高→更差 | >1 | 1.21 [1.10–1.33] (8.5e-5) | 一致 |
+
+结论：**4/4 单变量方向与论文一致**，§6.6-3 记为“满足（定性）”。其中 b/c/d 由正文明确表述；a（Energy）正文未单列方向，依据 Supp. Fig. 1a 中 `> Median` 组曲线更低。Compactness 的 p=0.047、CI 上界 1.00，属边界证据，报告需如实标注。**多元 Cox 的 HR 不作为方向判据**（理由见 §5.5）。
+
+### 5.5 D19 Energy 基准敏感性（HU vs HU+1024）
+
+§4 已确认论文 Energy 基准为 `HU+1024`，而 `features_all` 的 `original_firstorder_Energy` 为 HU 口径。把 Energy 替换为 `HU+1024` 后只重跑 signature（`--models signature`，固定折）：
+
+| 指标 | HU 口径（主结果） | stored = HU+1024（敏感性） |
+|---|---:|---:|
+| signature C-index | 0.5808 ± 0.0377 | 0.5813 ± 0.0390 |
+| Energy pooled HR | 1.09 [1.07–1.10] | 1.23 [1.18–1.28] |
+| GLN pooled HR | 1.09 [1.06–1.13] | 0.98 [0.95–1.02] |
+| Compactness2 pooled HR | 0.95 [0.93–0.96] | 0.94 [0.93–0.96] |
+| wavelet-HLH GLN pooled HR | 1.06 [1.03–1.10] | 1.00 [0.96–1.04] |
+| log-rank p<0.05 折数占比 | 20% | 24% |
+
+- **C-index 无实质影响**（差 0.0005，远小于 SD），主结论不依赖 Energy 基准；
+- **多元系数重分配**：Energy 变强、GLN/wavelet 变中性（CI 含 1），说明相关特征间权重不稳，**特征级多元 HR 不应作为方向或显著性判据**；
+- 主结果保持 HU 口径，stored 作为敏感性；该偏离列入 §5.2；
+- 产物：`results/cache/sens_energy_hu`、`results/cache/sens_energy_stored`（gitignore）。
+
+### 5.6 D19 C-index bootstrap 95% CI（病人层面）
+
+数据：`results/tables/oof_predictions.csv`（每 model × repeat 的 399 例折外预测）。
+方法：病人层面有放回重采样 399 例（B=2000，seed=42），同一组重采样用于所有
+model/repeat；每个 model 取 10 个 repeat 的 C-index 均值作为一个 bootstrap 复制；
+取 2.5/97.5 分位。
+
+| model | pooled OOF C-index | 95% CI | 是否排除 0.5 |
+|---|---:|---|---|
+| clinical | 0.527 | [0.495, 0.558] | **否** |
+| signature | 0.576 | [0.543, 0.608] | 是 |
+| lasso | 0.579 | [0.551, 0.608] | 是 |
+| combined | 0.577 | [0.548, 0.605] | 是 |
+
+- §6.6-4（Track A = signature）满足：下限 0.543 > 0.5。
+- **clinical 的 CI 包含 0.5**：本样本量下临床基线不能排除随机，报告需如实写。
+- 该 CI 只反映病人抽样不确定性，不含模型拟合/折划分变异性；
+  与 `perf.md` 的 50 折 `mean ± SD` 是两种口径，不能互相替代。
+- `cindex_obs` 为“每 repeat 的 399 例 OOF C-index 均值”，与 50 折折均值
+  （0.530/0.581/0.583/0.581）略有差异，属聚合方式不同。
+- 产物：`results/repro/cindex_bootstrap.csv`。
+
+### 5.7 D20 binWidth 敏感性（10 / 25 / 50 HU）
+
+固定分析集（399 例）、固定 5×10 折与 seed=42，只改 `params*.yaml` 的 `binWidth`
+（其余参数逐行 diff 确认只差第 24 行），重提 422 例特征后重跑两条路线。
+**这是敏感性分析，不是与论文对齐的协议**（论文口径为 25 HU，§2.2）。
+
+| binWidth | 路线 1 signature | 路线 2 lasso | 路线 2 特征数 mean [min–max] | 路线 2 log-rank p<0.05 |
+|---:|---|---:|---|---:|
+| 10 | 0.5803 ± 0.0372 | 0.5830 ± 0.0328 | 11.6 [2–47] | 24% |
+| 25（主结果） | 0.5808 ± 0.0377 | 0.5831 ± 0.0348 | 11.3 [2–42] | 18% |
+| 50 | 0.5812 ± 0.0384 | 0.5901 ± 0.0328 | 11.5 [2–53] | 30% |
+
+- 路线 1 全距 **0.0009**，路线 2 全距 **0.007**（约 0.2 个折间 SD，且非单调）；
+  两者均远小于折间 SD（0.033–0.038）→ 判别力对 binWidth 不敏感。
+- 路线 1 四个特征的 pooled HR 方向三档一致；最大变动 0.033（wavelet-HLH GLN
+  1.056→1.093），Energy 与 wavelet GLN 间存在轻微系数重分配（同 §5.5 现象）。
+- **选择不稳定且非单调**：`wavelet-LHL_glcm_MCC` 入选率 0.08 / 0.60 / 0.76，
+  `wavelet-LHH_glcm_Correlation` 0.44 / 0.56 / 0.76，`wavelet-HHH_glcm_Idn`
+  0 / 0.32 / 0.04；三个小波一阶特征稳定（`HHL_TotalEnergy` 0.90/0.86/0.84、
+  `LHL_Skewness` 0.82/0.78/0.88、`LLH_Variance` 0.74/0.68/0.60）。
+  "掉下去又跳回来"说明中频 GLCM 的选择接近随机，不是分箱的单调函数。
+- **量纲锚点只对 bw25 成立**：GLN 中位数 bw10 499.2 / bw25 953.7 / bw50 1225
+  （论文 984.7）。GLN 是计数类量，灰度级数越少越集中，不能用跨 binWidth 的
+  "偏离论文几倍"评价实现正确性。
+- 产物：`results/cache/features_bw10|features_bw50`（逐例缓存，gitignore）、
+  `results/tables/features_all_bw10.csv|features_all_bw50.csv`、
+  `results/cache/sens_bw10|sens_bw10_sig|sens_bw50|sens_bw50_sig`（gitignore）、
+  `results/figures/report/binwidth_sensitivity.png`。
+- 报告位置：`report.md` §5.4（图 7）。
 
 ## 6. 评估协议（先定后跑）
 
@@ -347,6 +437,20 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 （上表 0.5909 vs 0.5706 即为例证）。影像 signature 同样规则——apparent 与 CV
 分行报，各自标注口径与 n。
 
+**D19 stage_bin 编码核对（day19 §7-1 / §8-2）**：在 399 例上核对：
+
+- 映射：I/II → 0、IIIa/IIIb → 1，与 `Overall.Stage` 一一对应，无错配；
+- 分布（399）：I 84 / II 37 / IIIa 109 / IIIb 169，与论文 422 的
+  I 93 / II 40 / IIIa 112 / IIIb 176 同形（差异来自 age/stage 缺失的 23 例）；
+- 单变量：log-rank p=0.528；stage_bin HR 0.93 [0.74–1.16]；
+  4 水平 Cox（参考 I 期）LRT p=0.574；
+- 多变量（D19 clinical pooled）：stage_bin HR 1.04 [1.00–1.08]（CI 含 1）；
+- 反向 sanity check：age HR 1.20 / 10 岁（p=0.0018）、male HR 1.29（p=0.032），方向正常。
+
+结论：**stage_bin 编码无误**；本分析集中分期本身缺乏判别力。
+clinical 的 0.530（bootstrap CI 0.495–0.558）不是编码问题，报告应写
+"本队列分期判别力弱"，而不是"分期编码错误"。
+
 ### 6.3 Track A（主分析，对标论文）
 
 > **口径变更（D18，建模前）**：v1.3 原写 5×5；D18 为提高折间稳定性改为 5×10，并在建模前固定。D19 按 5×10 报告。此处保留变更记录，不把 5×10 写成 v1.3 的原计划。
@@ -378,12 +482,12 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 
 1. 4 个特征在 PyRadiomics 中均可提取，且与 §3 的映射一致；
 2. 量纲校验：4 个特征在 Lung1 上的中位数与 §3.1 的论文值同数量级
-   （不要求逐位相同，但不得差一个数量级）；
+   （不要求逐位相同，但不得差一个数量级；D19 已完成：Energy 统一 HU+1024 中位数 1.03× 论文）；
 3. 方向一致：4 个特征的风险方向与 Supplementary Fig. 1 的 KM 曲线一致
    （正文明确"更紧凑/更球形 → 生存更好"；两处 GLN 属异质性描述，
    方向以图中分组标注为准；Energy 方向需从图中读取后在 D18 核对；
-   D19 已完成，4/4 一致，见 §5.4）；
-4. Track A 的 CV C-index 95% CI 不含 0.5（即优于随机）；
+   D19 已完成：单变量 HR/SD 4/4 一致，见 §5.4）；
+4. Track A 的 CV C-index 95% CI 不含 0.5（即优于随机；D19 已完成：signature 0.576 [0.543–0.608]，见 §5.6）；
 5. 与临床基线的比较使用同一分析集（见 6.1 / 6.2）；
 6. 所有差异按"特征实现 / 预处理参数 / 队列版本 / 切分方式 / 指标定义"
    五类归因，写进 `report.md`。
@@ -413,13 +517,14 @@ stage 缺失 1 例；IIIb 的 0.2pp 差异由此解释。
 - [x] D16｜实测 PyRadiomics 特征数与每例耗时：**537 特征/例**
       （original 73 + wavelet 464），容器内 22.4 s/例、422 例外推约 158 min；
       与论文 440 / 按编号复原的 431 不可比，原因见 §2.4；
-- [ ] D18｜确认 399 与 395 两种分析集的病人清单一致可追溯；
+- [x] D18｜确认 399 与 395 两种分析集的病人清单一致可追溯：395⊂399，差 4 例（LUNG1-085 T 缺失；LUNG1-167/232/292 N=4）；
 - [x] D18｜按 6.2 处理 v1 CV 口径问题：D19 已在 399 例上重跑 v1（0.530 ± 0.026，5×10）；与 v1.3 的 395/5×5 口径差异见 §5.2，正式报告需标 n 与 CV；
 - [x] D19｜四模型 5×10 结果回填（§5.1）与协议对齐表（§5.2）；
-- [ ] D19｜全量 422 例确认 Energy 量纲（§4）；
-- [x] D19｜4 个特征方向与 Supplementary Fig. 1 核对（§5.2、§5.4、§6.6-3）；4/4 一致；
-- [ ] D19｜Track A 的 95% CI 不含 0.5（§6.6-4；需折内归一化或 repeat-level/patient bootstrap；森林图 HR 的 pooled 95% CI 见 §5.3，不满足本项）；
-- [ ] D19｜在 `report.md` 第 6 章完成差异归因（§6.6-6）。
+- [x] D19｜全量 422 例确认 Energy 量纲（§4）；统一 HU+1024 中位数 1.03× 论文；
+- [x] D19｜4 个特征方向与 Supplementary Fig. 1 核对（§5.2、§5.4、§6.6-3）；单变量 HR/SD 4/4 一致；多元系数不作判据（§5.5）；
+- [x] D19｜Track A 的 95% CI 不含 0.5（§6.6-4）；signature 0.576 [0.543–0.608]（§5.6）；clinical 的 CI 含 0.5（0.495–0.558），如实报告；
+- [x] D19｜在 `report.md` 第 6 章完成差异归因（§6.6-6）；六条判据全部满足。
+- [x] D19｜stage_bin 编码核对（day19 §7-1/§8-2）：映射正确；单变量 HR 0.93 [0.74–1.16]、log-rank p=0.53；多变量 HR 1.04；age/gender 方向正常；见 §6.2。
 
 已核实的历史口径：545 = 225 + 136 + 95（生存验证 456）+ 89（Lung3，基因关联）。
 

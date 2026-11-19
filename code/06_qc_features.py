@@ -5,7 +5,7 @@
   results/tables/features_all_timing.csv   # 每例耗时与掩膜几何
   results/tables/features_all_failures.csv # 失败清单（可能不存在）
   results/tables/index.csv                 # D12 索引，用于核对应有病例数
-  results/tables/features_10.csv           # D16 基线（10 例），用于一致性比对
+  results/tables/features_10.csv           # 可选：D16 基线（10 例），用于一致性比对
 
 输出：
   results/tables/features_qc.md            # 质控报告
@@ -18,7 +18,7 @@
   - 行数 = 索引中 has_rtstruct=True 且本地存在目录的病例数；
   - 缺失率 > --missing-threshold（默认 0.2）标记，建议剔除；
   - 零方差（nunique <= 1）或全缺失列，建议剔除；
-  - 与 D16 基线、与不同并行度的结果比对，最大相对差应在浮点误差量级；
+  - 与基准表、与不同并行度的结果比对，最大相对差应在浮点误差量级（缺少可比表时明确记为未执行）；
   - 行数不符时以非零码退出，避免"少跑却显示通过"。
 """
 
@@ -264,12 +264,12 @@ def build_report(args, feats: pd.DataFrame, num: pd.DataFrame, timing: pd.DataFr
     lines.append(f"- NaN / inf 总数：**{nonfinite}**")
     lines.append("")
 
-    lines.append("## 5. 与 D16 基线的一致性")
+    lines.append("## 5. 基准表一致性")
     lines.append("")
     if baseline is None or baseline.get("n_cases", 0) == 0:
-        lines.append("- 未找到可比的基线（`features_10.csv` 缺失或无交集），跳过。")
+        lines.append(f"- 未找到可比的基准表（`{args.baseline}` 缺失或无交集），跳过。")
     else:
-        lines.append(f"- 比对病例：**{baseline['n_cases']}** 例（`features_all` ∩ `features_10`）；"
+        lines.append(f"- 比对表：`{baseline['label']}`；病例 **{baseline['n_cases']}** 例，"
                      f"列数 {baseline['n_cols']}")
         lines.append(f"- 最大相对差：**{baseline['max_rel']:.3e}**；最大绝对差：{baseline['max_abs']:.3e}")
         lines.append(f"- 相对差 > {CONSISTENCY_TOL:g} 的列：**{baseline['n_cols_over_tol']}**")
@@ -284,11 +284,11 @@ def build_report(args, feats: pd.DataFrame, num: pd.DataFrame, timing: pd.DataFr
     lines.append("## 6. 并行一致性")
     lines.append("")
     if parallel is None:
-        lines.append("- 未找到 `speed_j1.csv` / `speed_j2.csv`，跳过。")
+        lines.append(f"- 未提供并行比对表（`{args.parallel_a}` / `{args.parallel_b}`），跳过。")
     elif parallel.get("n_cases", 0) == 0:
         lines.append("- 两份结果无共同病例，跳过。")
     else:
-        lines.append(f"- 比对病例：**{parallel['n_cases']}** 例（`speed_j1` vs `speed_j2`）")
+        lines.append(f"- 比对表：`{parallel['label']}`；病例 **{parallel['n_cases']}** 例")
         lines.append(f"- 最大相对差：**{parallel['max_rel']:.3e}**；最大绝对差：{parallel['max_abs']:.3e}")
         lines.append(f"- 相对差 > {CONSISTENCY_TOL:g} 的列：**{parallel['n_cols_over_tol']}**")
     lines.append("")
@@ -319,6 +319,11 @@ def build_report(args, feats: pd.DataFrame, num: pd.DataFrame, timing: pd.DataFr
     lines.append("## 9. 结论")
     lines.append("")
     problems = []
+    skipped = []
+    if baseline is None or baseline.get("n_cases", 0) == 0:
+        skipped.append("基准表一致性")
+    if parallel is None or parallel.get("n_cases", 0) == 0:
+        skipped.append("并行一致性")
     if len(missing):
         problems.append(f"{len(missing)} 例缺失（见 §1）")
     if len(zero_tbl):
@@ -326,9 +331,13 @@ def build_report(args, feats: pd.DataFrame, num: pd.DataFrame, timing: pd.DataFr
     if len(high_missing):
         problems.append(f"{len(high_missing)} 个列缺失率超过阈值（见 §2）")
     if baseline and baseline.get("max_rel", 0) > CONSISTENCY_TOL:
-        problems.append(f"与 D16 基线最大相对差 {baseline['max_rel']:.2e} 超出浮点误差")
+        problems.append(f"基准表最大相对差 {baseline['max_rel']:.2e} 超出浮点误差")
+    if parallel and parallel.get("max_rel", 0) > CONSISTENCY_TOL:
+        problems.append(f"并行一致性最大相对差 {parallel['max_rel']:.2e} 超出浮点误差")
     if problems:
         lines.append("- 需要复核：" + "；".join(problems))
+    elif skipped:
+        lines.append("- 已执行的检查通过；未执行：" + "、".join(skipped))
     else:
         lines.append("- 行数、缺失、零方差与一致性检查均通过。")
     lines.append("")
@@ -377,8 +386,12 @@ def main() -> None:
     zero_tbl.to_csv(args.zero_out, index=False)
     missing.to_csv(args.missing_patients_out, index=False)
 
-    baseline = compare_tables(feats, baseline_df, "features_all vs features_10") if baseline_df is not None else None
-    parallel = compare_tables(par_a, par_b, "speed_j1 vs speed_j2") if (par_a is not None and par_b is not None) else None
+    baseline = (compare_tables(feats, baseline_df,
+                               f"features_all vs {Path(args.baseline).name}")
+                if baseline_df is not None else None)
+    parallel = (compare_tables(par_a, par_b,
+                               f"{Path(args.parallel_a).name} vs {Path(args.parallel_b).name}")
+                if (par_a is not None and par_b is not None) else None)
 
     hist_cols = plot_random_histograms(num, Path(args.hist_out), args.n_hist, args.seed)
 
@@ -399,10 +412,10 @@ def main() -> None:
     print(f"缺失率 > {args.missing_threshold:.0%}: {len(high_missing)} 列；"
           f"零方差/全缺失: {len(zero_tbl)} 列")
     if baseline and baseline.get("n_cases"):
-        print(f"与 features_10 比对 {baseline['n_cases']} 例，"
+        print(f"{baseline['label']} 比对 {baseline['n_cases']} 例，"
               f"最大相对差 {baseline['max_rel']:.3e}")
     if parallel and parallel.get("n_cases"):
-        print(f"speed_j1 vs speed_j2 比对 {parallel['n_cases']} 例，"
+        print(f"{parallel['label']} 比对 {parallel['n_cases']} 例，"
               f"最大相对差 {parallel['max_rel']:.3e}")
     print(f"报告: {args.out}")
     print(f"缺例清单: {args.missing_patients_out}")

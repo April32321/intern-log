@@ -9,13 +9,15 @@
 | 目录/文件 | 用途 |
 |---|---|
 | `journal/` | 每日工作日志（`day01.md` … `day20.md`）与打卡表 `INDEX.md` |
-| `notes/` | 9 个能力模块的知识笔记 |
-| `env/` | Conda 环境、Dockerfile 与重建说明 |
+| `notes/` | 9 个能力模块的知识笔记；`report-brief.md` 两页汇报版；`nsclc-cox-report-v2.0.md` 复现报告 v2.0；`nsclc-cox-README.md` 项目原始 README |
+| `env/` | Conda 环境、Dockerfile 与重建说明；`environment.nsclc-cox.yml` 为迁移前单文件环境 |
 | `data/` | 数据说明、临床表、manifest；原始影像放 `data/raw/`，不入库 |
-| `code/` | 从下载到建模的完整管线 |
+| `code/` | 从下载到建模的完整管线（`00`–`13` + `params*.yaml`） |
 | `results/` | 特征表、模型结果与图（`tables/`、`figures/`、`repro/`） |
 | `logs/` | 运行日志 |
-| `report.md` | 复现报告（D20 定稿） |
+| `images/` | 报告内嵌图（`images/radar/report/` 主图、`images/radar/cv/` 交叉验证图、`images/radar/qc/` 质控图） |
+| `configs/` | 预留配置目录 |
+| `report.md` | 实习报告（v3.0，D20 定稿） |
 | `reflection.md` | 学习反思（D20 定稿） |
 
 ## 快速开始

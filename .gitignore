@@ -50,5 +50,6 @@ data/paper/
 .vscode/
 logs/*.log
 
-# 嵌套子仓库（独立 repo，结果以 nsclc-cox 为准）
-/nsclc-cox/
+# 本地工具脚本（不入库）
+kilo_ds_allow.jsonc
+patch_deny.py

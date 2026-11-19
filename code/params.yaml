@@ -1,7 +1,7 @@
 # Day 16：PyRadiomics 参数（对齐 Aerts 2014）
 # 每一条的出处见 results/repro/target.md §2.2 与 §4，改动前先改那份文档。
 #
-# 与 Day16 计划模板的三处有意偏离：
+# 与 Day16 计划模板的四处有意偏离：
 #   1) 不写 resampledPixelSpacing —— 论文未重采样，用原始体素（Lung1 层厚 3 mm）
 #   2) 不开 glszm / gldm / ngtdm —— 论文只定义四类特征
 #   3) 保留 Wavelet —— signature 的第 4 个特征是小波 GLN，不可省
@@ -25,3 +25,4 @@ setting:
   normalize: false       # 论文明确未做归一化，直接用 DICOM 原始值
   label: 1
   geometryTolerance: 1e-4
+  preCrop: true          # 控制大 CT 内存峰值；已在 LUNG1-111 验证与全图提取等价（最大相对差 3.8e-14）
